@@ -5,10 +5,9 @@
 <meta http-equiv="x-dns-prefetch-control" content="on">
 <link rel="dns-prefetch" href="//cdn.jsdelivr.net">	
 <meta name="referrer" content="no-referrer">
-<link rel="preconnect" href="https://geoip.gbxcloud.com">
+<link rel="preconnect" href="https://qqwry.api.skk.moe">
 <link rel="preconnect" href="https://myip.ipip.net">
-<link rel="preconnect" href="https://api.ip.sb/geoip/">
-<link rel="preconnect" href="https://ip4.seeip.org/json">
+<link rel="preconnect" href="https://api.ipify.org">
 </head>
 </html>	
 <style>
@@ -310,9 +309,9 @@
 							throw error;
 						}),
 				  parseIPIpip: (ip, elID) => {
-						IP.get(`https://geoip.gbxcloud.com/?geoip=${ip}`, 'text')
+						IP.get(`https://qqwry.api.skk.moe/${ip}`, 'json')
 							.then(resp => {
-								 document.getElementById(elID).innerHTML = resp.data;
+								 document.getElementById(elID).innerHTML = resp.data.geo;
 							})
 					},
 

@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk 
 
 PKG_NAME:=luci-app-clash
-PKG_VERSION:=v1.8.0
+PKG_VERSION:=v1.7.5.7
 PKG_MAINTAINER:=frainzy1477
 
 include $(INCLUDE_DIR)/package.mk
@@ -9,7 +9,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/$(PKG_NAME)
 	SECTION:=luci
 	CATEGORY:=LuCI
-	SUBMENU:=2. Clash For OpenWRT
+	SUBMENU:=3. Applications
 	TITLE:=LuCI app for clash
 	DEPENDS:=+luci-base +wget +iptables +coreutils-base64 +coreutils +coreutils-nohup +bash +ipset +libustream-openssl +curl +jsonfilter +ca-certificates +iptables-mod-tproxy +kmod-tun
 	PKGARCH:=all
@@ -111,8 +111,6 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/usr/lib/lua/luci
 	$(INSTALL_DIR) $(1)/usr/share/
 	$(INSTALL_DIR) $(1)/usr/share/clash
-	$(INSTALL_DIR) $(1)/usr/share/rpcd	
-	$(INSTALL_DIR) $(1)/usr/share/rpcd/acl.d	
 	$(INSTALL_DIR) $(1)/usr/share/clash/rules
 	$(INSTALL_DIR) $(1)/usr/share/clash/rules/g_rules
 	$(INSTALL_DIR) $(1)/etc/clash/dashboard
@@ -137,7 +135,6 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_CONF) ./root/etc/clash/Country.mmdb $(1)/etc/clash
 	$(INSTALL_BIN) ./root/usr/share/clash/create/* $(1)/usr/share/clash/create
 	$(INSTALL_BIN) ./root/usr/share/clash/*.sh $(1)/usr/share/clash
-	$(INSTALL_BIN) ./root/usr/share/rpcd/acl.d/luci-app-clash.json $(1)/usr/share/rpcd/acl.d
 	$(INSTALL_BIN) ./root/usr/share/clash/rules/g_rules/Steam.rules $(1)/usr/share/clash/rules/g_rules
 	$(INSTALL_BIN) ./root//usr/share/clash/rules/rules.list $(1)/usr/share/clash/rules
 	
