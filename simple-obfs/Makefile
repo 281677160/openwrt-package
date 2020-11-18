@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=simple-obfs
 PKG_VERSION:=0.0.5
-PKG_RELEASE:=4
+PKG_RELEASE:=5
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/shadowsocks/simple-obfs.git
@@ -36,6 +36,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/simple-obfs
 	SECTION:=net
 	CATEGORY:=Network
+	SUBMENU:=Web Servers/Proxies
 	TITLE:=Simple-obfs
 	URL:=https://github.com/shadowsocks/simple-obfs
 	DEPENDS:=+libpthread +!SIMPLE_OBFS_STATIC_LINK:libev
