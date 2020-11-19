@@ -11,7 +11,7 @@
 
 # 安装到OpenWRT/LEDE
 	
-	git clone https://github.com/garypang13/luci-app-eqos
+	git clone https://github.com/lwxlwxlwx/eqos.git
 	cp -r eqos LEDE_DIR/package/eqos
 	
 	cd LEDE_DIR
