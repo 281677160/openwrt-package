@@ -11,10 +11,10 @@ msgstr ""
 
 
 msgid "EQoS"
-msgstr "网速控制"
+msgstr "内网控速"
 
 msgid "eqos"
-msgstr "网速控制"
+msgstr "内网控速"
 
 msgid "Comment"
 msgstr "注解"
