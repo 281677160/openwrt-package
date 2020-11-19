@@ -19,8 +19,8 @@ msgstr "网速控制"
 msgid "Comment"
 msgstr "注解"
 
-msgid "Download speed (Mbit/s)"
-msgstr "下载速度 (Mbit/s)"
+msgid "Download speed (Kbit/s)"
+msgstr "下载速度 (Kbit/s)"
 
 msgid "Enable"
 msgstr "开启"
@@ -31,8 +31,8 @@ msgstr "QoS"
 msgid "Network speed control service"
 msgstr "网速控制服务"
 
-msgid "Upload speed (Mbit/s)"
-msgstr "上传速度 (Mbit/s)"
+msgid "Upload speed (Kbit/s)"
+msgstr "上传速度 (Kbit/s)"
 
 msgid "Speed limit based on IP address"
 msgstr "IP限速"

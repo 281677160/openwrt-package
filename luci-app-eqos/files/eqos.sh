@@ -14,16 +14,17 @@ start_qos() {
 	local up=$2
 	
 	tc qdisc add dev $dev root handle 1: htb
-	tc class add dev $dev parent 1: classid 1:1 htb rate ${dl}mbit
+	tc class add dev $dev parent 1: classid 1:1 htb rate ${dl}kbit
 	
 	ip link add dev ${dev}-ifb name ${dev}-ifb type ifb
 	ip link set dev ${dev}-ifb up
 	
 	tc qdisc add dev ${dev}-ifb root handle 1: htb
-	tc class add dev ${dev}-ifb parent 1: classid 1:1 htb rate ${up}mbit
+	tc class add dev ${dev}-ifb parent 1: classid 1:1 htb rate ${up}kbit
 	
 	tc qdisc add dev $dev ingress
 	tc filter add dev $dev parent ffff: protocol ip u32 match u32 0 0 flowid 1:1 action mirred egress redirect dev ${dev}-ifb
+        cp /etc/config/eqos /etc/config/usereqos
 }
 
 case "$1" in
@@ -41,20 +42,19 @@ case "$1" in
 		
 		cnt=$(tc class show dev $dev | wc -l)
 		
-		tc class add dev $dev parent 1:1 classid 1:1$cnt htb rate ${dl}mbit ceil ${dl}mbit
+		tc class add dev $dev parent 1:1 classid 1:1$cnt htb rate ${dl}kbit ceil ${dl}kbit
 		tc filter add dev $dev parent 1:0 protocol ip u32 match ip dst $ip flowid 1:1$cnt
 		
-		tc class add dev ${dev}-ifb parent 1:1 classid 1:1$cnt htb rate ${up}mbit ceil ${up}mbit
+		tc class add dev ${dev}-ifb parent 1:1 classid 1:1$cnt htb rate ${up}kbit ceil ${up}kbit
 		tc filter add dev ${dev}-ifb parent 1:0 protocol ip u32 match ip src $ip flowid 1:1$cnt
 	;;
 	*)
 		echo "Usage: $0 <command> [options]"
 		echo "Commands:"
-		echo "  start dl_rate up_rate       #Total bandwidth (Mbit/s)"
+		echo "  start dl_rate up_rate       #Total bandwidth (Kbit/s)"
 		echo "  stop"
-		echo "  add ip dl_rate up_rate      #Limiting the bandwidth of a single IP (Mbit/s)"
+		echo "  add ip dl_rate up_rate      #Limiting the bandwidth of a single IP (Kbit/s)"
 		echo "Example:"
-		echo "  $0 start 30 20              # Total bandwidth: down 30Mbit/s up 20Mbit/s"
-		echo "  $0 add 192.168.22.12 10 2   # down 10Mbit/s  up 2Mbit/s"
+		echo "  $0 start 30 20              # Total bandwidth: down 30Kbit/s up 20Kbit/s"
+		echo "  $0 add 192.168.22.12 10 2   # down 10Kbit/s  up 2Kbit/s"
 	;;
-esac
