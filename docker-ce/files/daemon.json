@@ -1,0 +1,5 @@
+{
+    "data-root": "/opt/docker/",
+    "log-level": "warn",
+	"dns" : ["172.17.0.1","114.114.114.114"]
+}
