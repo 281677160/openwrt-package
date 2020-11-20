@@ -10,10 +10,7 @@ module("luci.controller.dockerman",package.seeall)
 
 function index()
 
-  local e = entry({"admin", "docker"}, firstchild(), "Docker", 40)
-  e.dependent = false
-  e.acl_depends = { "luci-app-dockerman" }
-
+  entry({"admin", "docker"}, firstchild(), "Docker", 40).dependent = false
   entry({"admin","docker","overview"},cbi("dockerman/overview"),_("Overview"),0).leaf=true
 
   local remote = luci.model.uci.cursor():get("dockerman", "local", "remote_endpoint")
