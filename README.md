@@ -1,4 +1,4 @@
-# [[281677160/build-openwrt的专用插件](https://github.com/281677160/build-openwrt.git)]
+# [[281677160/build-openwrt的专用软件包](https://github.com/281677160/build-openwrt.git)]
 
 #
 - 分支master为281677160/build-openwrt的lede源码专用
