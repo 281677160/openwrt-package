@@ -1,4 +1,4 @@
-# [[281677160/build-openwrt的专用插件](https://github.com/281677160/build-openwrt.git)]
+# [[281677160/build-openwrt的专用软件包](https://github.com/281677160/build-openwrt.git)]
 
 #
 - 分支master为281677160/build-openwrt的lede源码专用
@@ -11,7 +11,7 @@
 
 #
 #
-## 感谢各位大神的源码，openwrt有各位大神而精彩，感谢！感谢！，插件每天白天12点跟晚上12点都同步一次各位大神的源码
+## 感谢各位大神的源码，openwrt有各位大神而精彩，感谢！感谢！，插件每天白天12点跟晚上12点都同步一次各位大神的源码！
 
 #
 
