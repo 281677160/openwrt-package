@@ -1,7 +1,7 @@
 # [[281677160/build-openwrt的专用软件包](https://github.com/281677160/build-openwrt.git)]
 
 #
-## 分支master为281677160/build-openwrt的lede源码专用
+## 分支master为lede源码专用
 ### 添加以下插件
 #### luci-theme-rosy    #主题-rosy<br>
 #### luci-theme-edge    #主题-edge<br>
