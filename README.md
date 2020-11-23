@@ -11,7 +11,7 @@
 ###### luci-app-serverchan    #微信推送<br>
 ###### luci-app-eqos    #内网控速 内网IP限速工具<br>
 ###### luci-app-jd-dailybonus    #京东签到<br>
-###### luci-app-passwall    #passwall ，出国软件，  源码已自带，所有没加进来<br>
+###### luci-app-passwall    #passwall ，出国软件，  源码已自带，所以没加进来<br>
 ###### luci-app-poweroff    #关机（增加关机功能）<br>
 ###### luci-theme-argon    #新的argon主题<br>
 ###### luci-app-argon-config    #argon主题设置（编译时候选上,在固件的‘系统’里面）<br>
@@ -22,6 +22,7 @@
 ###### luci-app-vssr   #Hello World 也叫彩旗飘飘  出国软件<br>
 ###### luci-app-gost   #GO语言实现的安全隧道<br>
 ###### luci-app-cpulimit   #CPU性能限制<br>
+###### luci-app-wrtbwmon-zhcn   #流量统计<br>
 ###### luci-app-smartdns   #smartdns DNS加速<br>  
-###### luci-app-adguardhome   #adguardhome  ，源码已自带，所有没加进来<br>
-###### luci-app-dockerman   #docker容器  ，源码已自带，所有没加进来<br>
+###### luci-app-adguardhome   #adguardhome  ，源码已自带，所以没加进来<br>
+###### luci-app-dockerman   #docker容器  ，源码已自带，所以没加进来<br>
