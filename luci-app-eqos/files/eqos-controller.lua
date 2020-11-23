@@ -7,7 +7,6 @@ function index()
 	
 	local page
 
-	entry({"admin","Control"}, firstchild(), "Control", 87).dependent = false
-	page = entry({"admin", "control", "eqos"}, cbi("eqos"),  _("EQoS"), 15)
+	page = entry({"admin", "services", "eqos"}, cbi("eqos"), "EQoS")
 	page.dependent = true
 end
