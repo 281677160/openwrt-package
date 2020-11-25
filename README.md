@@ -22,7 +22,7 @@
 ###### luci-app-vssr   #Hello World 也叫彩旗飘飘  出国软件<br>
 ###### luci-app-gost   #GO语言实现的安全隧道<br>
 ###### luci-app-cpulimit   #CPU性能限制<br>
-###### luci-app-wrtbwmon-zhcn   #流量统计<br>
+###### luci-app-wrtbwmon-zhcn   #流量统计，替代luci-app-wrtbwmon，在固件状态栏显示<br>
 ###### luci-app-smartdns   #smartdns DNS加速<br>
 ###### luci-app-autopoweroff   #定时设置，替换luci-app-autoreboot<br>
 ###### luci-app-control-webrestriction   #访问限制 ，源码已自带，所以没加进来<br>
@@ -31,3 +31,10 @@
 ###### luci-app-pptp-vpnserver-manyusers   #PPTP VPN 服务器 ，源码已自带，所以没加进来<br>
 ###### luci-app-adguardhome   #adguardhome  ，源码已自带，所以没加进来<br>
 ###### luci-app-dockerman   #docker容器  ，源码已自带，所以没加进来<br>
+
+#
+#
+#
+##### 如果还是没有你需要的插件，请不要一下子就拉取别人的插件包
+##### 相同的文件都拉一起，因为有一些可能还是其他大神修改过的容易造成编译错误的
+##### 想要什么插件就单独的拉取什么插件就好，或者告诉我，我把插件放我的插件包就行了
