@@ -23,6 +23,11 @@
 ###### luci-app-gost   #GO语言实现的安全隧道<br>
 ###### luci-app-cpulimit   #CPU性能限制<br>
 ###### luci-app-wrtbwmon-zhcn   #流量统计<br>
-###### luci-app-smartdns   #smartdns DNS加速<br>  
+###### luci-app-smartdns   #smartdns DNS加速<br>
+###### luci-app-autopoweroff   #定时设置，替换luci-app-autoreboot<br>
+###### luci-app-control-webrestriction   #访问限制 ，源码已自带，所以没加进来<br>
+###### luci-app-control-weburl   #网址过滤 ，源码已自带，所以没加进来<br>
+###### luci-app-control-timewol   #定时唤醒 ，源码已自带，所以没加进来<br>
+###### luci-app-pptp-vpnserver-manyusers   #PPTP VPN 服务器 ，源码已自带，所以没加进来<br>
 ###### luci-app-adguardhome   #adguardhome  ，源码已自带，所以没加进来<br>
 ###### luci-app-dockerman   #docker容器  ，源码已自带，所以没加进来<br>
