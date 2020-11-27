@@ -9,7 +9,6 @@
 ###### luci-theme-edge    #主题-edge
 ###### luci-theme-opentomcat   #主题-opentomcat
 ###### luci-theme-opentopd   #主题-opentopd<br>
-###### luci-theme-material   #material-主题<br>
 ###### luci-theme-atmaterial   #atmaterial-主题<br>
 ###### luci-theme-rosy   #主题-rosy<br>
 ###### luci-theme-infinityfreedom    #透明主题<br>
