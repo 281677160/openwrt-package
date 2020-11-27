@@ -4,7 +4,6 @@
 ###### luci-theme-edge    #主题-edge
 ###### luci-theme-opentomcat   #主题-opentomcat
 ###### luci-theme-opentopd   #主题-opentopd<br>
-###### luci-theme-atmaterial   #三合一主题<br>
 ###### luci-theme-rosy   #主题-rosy<br>
 ###### luci-theme-infinityfreedom    #透明主题<br>
 ###### luci-app-openclash    #openclash 出国软件<br>
@@ -12,7 +11,6 @@
 ###### luci-app-serverchan    #微信推送<br>
 ###### luci-app-eqos    #内网控速 内网IP限速工具<br>
 ###### luci-app-jd-dailybonus    #京东签到<br>
-###### luci-app-passwall    #passwall ，出国软件，  源码已自带，所以没加进来<br>
 ###### luci-app-poweroff    #关机（增加关机功能）<br>
 ###### luci-theme-argon    #新的argon主题<br>
 ###### luci-app-argon-config    #argon主题设置（编译时候选上,在固件的‘系统’里面）<br>
@@ -26,13 +24,8 @@
 ###### luci-app-wrtbwmon-zhcn   #流量统计，替代luci-app-wrtbwmon，在固件状态栏显示<br>
 ###### luci-app-smartdns   #smartdns DNS加速<br>
 ###### luci-app-autopoweroff   #定时设置，替换luci-app-autoreboot<br>
-###### luci-app-control-webrestriction   #访问限制 ，源码已自带，所以没加进来<br>
-###### luci-app-control-weburl   #网址过滤 ，源码已自带，所以没加进来<br>
-###### luci-app-control-timewol   #定时唤醒 ，源码已自带，所以没加进来<br>
-###### luci-app-pptp-vpnserver-manyusers   #PPTP VPN 服务器 ，源码已自带，所以没加进来<br>
-###### luci-app-adguardhome   #adguardhome  ，源码已自带，所以没加进来<br>
-###### luci-app-dockerman   #docker容器  ，源码已自带，所以没加进来<br>
-
+#
+##### 如果lede那个插件包有这里又没有的插件，那就代表源码已自带了，不需要再添加
 #
 #
 #
