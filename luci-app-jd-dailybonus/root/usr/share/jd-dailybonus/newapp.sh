@@ -82,7 +82,12 @@ if [ -e $TEMP_SCRIPT ]; then
 else
     remote_ver=$(cat $JD_SCRIPT | sed -n '/更新时间/p' | awk '{for (i=1;i<=NF;i++){if ($i ~/v/) {print $i}}}' | sed 's/v//')
 fi
-local_ver=$(uci_get_by_type global version)
+## local_ver=$(uci_get_by_type global version)
+if [ -e $JD_SCRIPT ]; then
+    local_ver=$(cat $JD_SCRIPT | sed -n '/更新时间/p' | awk '{for (i=1;i<=NF;i++){if ($i ~/v/) {print $i}}}' | sed 's/v//')
+else
+    local_ver='1'
+fi
 
 add_cron() {
     sed -i '/jd-dailybonus/d' $CRON_FILE
