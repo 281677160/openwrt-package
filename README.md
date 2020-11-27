@@ -4,6 +4,7 @@
 ###### luci-theme-edge    #主题-edge
 ###### luci-theme-opentomcat   #主题-opentomcat
 ###### luci-theme-opentopd   #主题-opentopd<br>
+###### luci-theme-atmaterial   #三合一主题<br>
 ###### luci-theme-rosy   #主题-rosy<br>
 ###### luci-theme-infinityfreedom    #透明主题<br>
 ###### luci-app-openclash    #openclash 出国软件<br>
