@@ -5,6 +5,7 @@
 ###### luci-theme-opentomcat   #主题-opentomcat
 ###### luci-theme-opentopd   #主题-opentopd<br>
 ###### luci-theme-rosy   #主题-rosy<br>
+###### luci-theme-atmaterial   #atmaterial-主题<br>
 ###### luci-theme-infinityfreedom    #透明主题<br>
 ###### luci-app-openclash    #openclash 出国软件<br>
 ###### luci-app-clash    #clash 出国软件<br>
