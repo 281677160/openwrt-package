@@ -19,7 +19,6 @@
 ###### luci-app-jd-dailybonus    #京东签到<br>
 ###### luci-app-passwall    #passwall 出国软件<br>
 ###### luci-app-poweroff    #关机（增加关机功能）<br>
-###### luci-app-modeminfo    #OpenWrt LuCi的3G / LTE加密狗信息<br>
 ###### luci-theme-argon    #新的argon主题<br>
 ###### luci-app-argon-config    #argon主题设置（编译时候选上,在固件的‘系统’里面）<br>
 ###### luci-app-k3screenctrl   #k3屏幕，k3路由器专用<br>
@@ -33,7 +32,10 @@
 ###### luci-app-autopoweroff   #定时设置，替代luci-app-autoreboot<br>
 ###### luci-app-control-webrestriction   #访问限制<br>
 ###### luci-app-control-weburl   #网址过滤<br>
-###### luci-app-control-timewol   #定时唤醒<br>
+###### luci-app-modeminfo    #OpenWrt LuCi的3G / LTE加密狗信息<br>
+###### luci-app-filebrowser   #文件浏览器<br>
+###### luci-app-gowebdav   #GoWebDav 是一个轻巧、简单、快速的 WebDav 服务端程序<br>
+###### luci-app-smartinfo   #磁盘监控 ，该工具帮助您通过S.M.A.R.T技术来监控您硬盘的健康状况<br>
 ###### luci-app-pptp-vpnserver-manyusers   #PPTP VPN 服务器
 ###### luci-app-smartdns   #smartdns DNS加速<br>
 ###### luci-app-adguardhome   #adguardhome<br>
