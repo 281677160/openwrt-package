@@ -19,6 +19,7 @@
 ###### luci-app-jd-dailybonus    #京东签到<br>
 ###### luci-app-passwall    #passwall 出国软件<br>
 ###### luci-app-poweroff    #关机（增加关机功能）<br>
+###### luci-app-modeminfo    #OpenWrt LuCi的3G / LTE加密狗信息<br>
 ###### luci-theme-argon    #新的argon主题<br>
 ###### luci-app-argon-config    #argon主题设置（编译时候选上,在固件的‘系统’里面）<br>
 ###### luci-app-k3screenctrl   #k3屏幕，k3路由器专用<br>
