@@ -29,7 +29,7 @@
 ###### luci-app-gost   #GO语言实现的安全隧道<br>
 ###### luci-app-cpulimit   #CPU性能限制<br>
 ###### luci-app-wrtbwmon-zhcn   #流量统计，替代luci-app-wrtbwmon，在固件状态栏显示<br>
-###### luci-app-autopoweroff   #定时设置，替代luci-app-autoreboot<br>
+###### luci-app-autopoweroff   #定时自动关机，替代luci-app-autoreboot<br>
 ###### luci-app-control-webrestriction   #访问限制<br>
 ###### luci-app-control-weburl   #网址过滤<br>
 ###### luci-app-modeminfo    #OpenWrt LuCi的3G / LTE加密狗信息<br>
@@ -42,6 +42,10 @@
 ###### luci-app-dockerman   #docker容器，和源码自带的luci-app-docker不能同时编译，同时编译会失败，所有要注意<br>
 
 #
+##### N1盒子写入emmc方法
+- 1、SSH连接配置固件时候找到 Utilities 里面的 install-program  按键盘的y选择上，插件里面也选上luci-app-ttyd方便后续执行命令
+- 2、编译完成之后使用【balenaEtcher】把镜像写入U盘在盒子上启动，之后用固件里的ttyd或者SSH执行 n1-install 命令，即可安装到 emmc
+- 3、这是我根据作者描述个人理解为这样的，我没N1盒子没办法测试，有谁测试过的什么情况请告知
 #
 #
 ##### 如果还是没有你需要的插件，请不要一下子就拉取别人的插件包

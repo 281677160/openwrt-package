@@ -56,26 +56,26 @@ function gen_outbound(node, tag, relay_port)
                 node.address = "127.0.0.1"
             end
             node.stream_security = "none"
-        end
-
-        if node.tls and node.tls == "1" then
-            node.stream_security = "tls"
-            if node.xtls and node.xtls == "1" then
-                node.stream_security = "xtls"
+        else
+            if node.tls and node.tls == "1" then
+                node.stream_security = "tls"
+                if node.xtls and node.xtls == "1" then
+                    node.stream_security = "xtls"
+                end
             end
-        end
-
-        if node.transport == "mkcp" or node.transport == "quic" then
-            node.stream_security = "none"
+    
+            if node.transport == "mkcp" or node.transport == "quic" then
+                node.stream_security = "none"
+            end
         end
 
         result = {
             tag = tag,
             protocol = node.protocol,
-            mux = {
+            mux = (node.stream_security ~= "xtls") and {
                 enabled = (node.mux == "1") and true or false,
                 concurrency = (node.mux_concurrency) and tonumber(node.mux_concurrency) or 8
-            },
+            } or nil,
             -- 底层传输配置
             streamSettings = (node.protocol == "vmess" or node.protocol == "vless" or node.protocol == "socks" or node.protocol == "shadowsocks" or node.protocol == "trojan") and {
                 network = node.transport,
