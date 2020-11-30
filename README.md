@@ -18,6 +18,7 @@
 ###### luci-app-eqos    #内网控速 内网IP限速工具<br>
 ###### luci-app-jd-dailybonus    #京东签到<br>
 ###### luci-app-passwall    #passwall 出国软件<br>
+###### luci-app-advanced    #高级设置<br>
 ###### luci-app-poweroff    #关机（增加关机功能）<br>
 ###### luci-theme-argon    #新的argon主题<br>
 ###### luci-app-argon-config    #argon主题设置（编译时候选上,在固件的‘系统’里面）<br>
@@ -40,6 +41,12 @@
 ###### luci-app-smartdns   #smartdns DNS加速<br>
 ###### luci-app-adguardhome   #adguardhome<br>
 ###### luci-app-dockerman   #docker容器，和源码自带的luci-app-docker不能同时编译，同时编译会失败，所有要注意<br>
+
+#
+
+- luci-app-advanced 和 luci-app-filebrowser 不能同时编译，同时编译会失败
+- luci-app-samba 和 luci-app-samba4 不能同时编译，同时编译会失败
+- luci-app-dockerman 和 luci-app-docker 不能同时编译，同时编译会失败
 
 #
 ##### N1盒子写入emmc方法
