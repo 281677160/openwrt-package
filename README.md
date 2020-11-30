@@ -7,6 +7,7 @@
 ###### luci-theme-rosy   #主题-rosy<br>
 ###### luci-theme-atmaterial   #atmaterial-主题<br>
 ###### luci-theme-infinityfreedom    #透明主题<br>
+###### luci-app-advanced    #高级设置<br>
 ###### luci-app-openclash    #openclash 出国软件<br>
 ###### luci-app-clash    #clash 出国软件<br>
 ###### luci-app-serverchan    #微信推送<br>
@@ -31,6 +32,10 @@
 #
 ##### 如果lede那个插件包有这里又没有的插件，那就代表源码已自带了，不需要再添加
 #
+#
+
+- luci-app-advanced 和 luci-app-filebrowser 不能同时编译，同时编译会失败
+- luci-app-samba 和 luci-app-samba4 不能同时编译，同时编译会失败
 #
 #
 ##### 如果还是没有你需要的插件，请不要一下子就拉取别人的插件包
