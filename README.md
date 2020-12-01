@@ -46,6 +46,7 @@
 
 - luci-app-advanced 和 luci-app-filebrowser 不能同时编译，同时编译会失败
 - luci-app-samba 和 luci-app-samba4 不能同时编译，同时编译会失败
+- 想选择luci-app-samba4，首先在Extra packages ---> 把autosamba取消，然后在Network ---> 把 samba36-server取消，记得顺序别搞错
 - luci-app-dockerman 和 luci-app-docker 不能同时编译，同时编译会失败
 
 #
