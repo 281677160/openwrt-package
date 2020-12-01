@@ -3,6 +3,8 @@ adguardhome
 cpulimit
 cpulimit-ng
 gost
+haproxy
+https-dns-proxy
 install-program
 k3screenctrl
 k3screenctrl_build
