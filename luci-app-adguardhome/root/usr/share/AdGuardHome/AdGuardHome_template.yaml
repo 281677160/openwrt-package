@@ -29,31 +29,34 @@ dns:
   refuse_any: true
   upstream_dns:
   - tls://1dot1dot1dot1.cloudflare-dns.com
-  - tls://dns.google
-  - https://cloudflare-dns.com/dns-query
   - https://1.0.0.1/dns-query
   - https://dns.adgk.net:4433/dns-query
   - https://esdns.kbsml.com/dns-query
+  - tcp://8.8.8.8
   - tcp://8.8.4.4
   - 117.50.11.11
   - 117.50.22.22
   - 223.5.5.5
+  - 223.6.6.6
   - 208.67.222.222
   - 114.114.114.114
   - 180.76.76.76
+  upstream_dns_file: ""
   bootstrap_dns:
   - 119.29.29.29
   - 223.5.5.5
   - 114.114.114.114
-  - 8.8.4.4:53
-  - 1.0.0.1:53
+  - 8.8.8.8
   - 2620:fe::10
   - 2620:fe::fe:10
   all_servers: false
   fastest_addr: false
   allowed_clients: []
   disallowed_clients: []
-  blocked_hosts: []
+  blocked_hosts:
+  - version.bind
+  - id.server
+  - hostname.bind
   cache_size: 1194304
   cache_ttl_min: 60
   cache_ttl_max: 86400
@@ -61,6 +64,8 @@ dns:
   aaaa_disabled: true
   enable_dnssec: true
   edns_client_subnet: true
+  max_goroutines: 50
+  ipset: []
   filtering_enabled: true
   filters_update_interval: 24
   parental_enabled: false
@@ -78,6 +83,7 @@ tls:
   force_https: false
   port_https: 443
   port_dns_over_tls: 853
+  port_dns_over_quic: 784
   allow_unencrypted_doh: false
   strict_sni_check: false
   certificate_chain: ""
@@ -214,18 +220,22 @@ user_rules:
 - '||google.com/pagead/'
 - '||static.doubleclick.net^$domain=youtube.com'
 - '||youtube.com/get_midroll_'
-- '@@||g.live.com^$important'
-- '@@||s.click.taobao.com^$important'
-- '@@||ipassport.ele.me^$important'
 dhcp:
   enabled: false
   interface_name: ""
-  gateway_ip: ""
-  subnet_mask: ""
-  range_start: ""
-  range_end: ""
-  lease_duration: 86400
-  icmp_timeout_msec: 1000
+  dhcpv4:
+    gateway_ip: ""
+    subnet_mask: ""
+    range_start: ""
+    range_end: ""
+    lease_duration: 86400
+    icmp_timeout_msec: 1000
+    options: []
+  dhcpv6:
+    range_start: ""
+    lease_duration: 86400
+    ra_slaac_only: false
+    ra_allow_slaac: false
 clients: []
 log_compress: false
 log_localtime: false
@@ -234,4 +244,4 @@ log_max_size: 100
 log_max_age: 3
 log_file: ""
 verbose: false
-schema_version: 6
+schema_version: 7
