@@ -52,7 +52,7 @@
 #
 ##### N1盒子写入emmc方法
 - 1、SSH连接配置固件时候找到 Utilities 里面的 install-program  按键盘的y选择上，插件里面也选上luci-app-ttyd方便后续执行命令
-- 2、编译完成之后使用【balenaEtcher】把镜像写入U盘在盒子上启动，之后用固件里的ttyd或者SSH执行 n1-install 命令，即可安装到 emmc
+- 2、编译完成之后使用【balenaEtcher】把镜像写入U盘在盒子上启动，之后用固件里的ttyd（命令窗）或者SSH执行 n1-install 命令，即可安装到 emmc
 - 3、这是我根据作者描述个人理解为这样的，我没N1盒子没办法测试，有谁测试过的什么情况请告知
 #
 #
