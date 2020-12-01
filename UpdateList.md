@@ -1,5 +1,4 @@
 UpdateList.md
-adguardhome
 cpulimit
 cpulimit-ng
 gost
@@ -7,7 +6,6 @@ install-program
 k3screenctrl
 k3screenctrl_build
 lua-maxminddb
-luci-app-adguardhome
 luci-app-advanced
 luci-app-aliddns
 luci-app-argon-config
@@ -19,7 +17,6 @@ luci-app-control-weburl
 luci-app-cpulimit
 luci-app-dockerman
 luci-app-eqos
-luci-app-filebrowser
 luci-app-gost
 luci-app-gowebdav
 luci-app-jd-dailybonus
@@ -50,7 +47,6 @@ luci-theme-rosy
 miniupnpd
 mwan3
 netdata
-node-request
 openwrt-mentohust
 passwall
 smartdns
