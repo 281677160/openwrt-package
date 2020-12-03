@@ -1,6 +1,8 @@
+UpdateList.md
 adguardhome
 cpulimit
 cpulimit-ng
+filebrowser
 gost
 haproxy
 https-dns-proxy
