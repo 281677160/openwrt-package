@@ -1,4 +1,3 @@
-UpdateList.md
 adguardhome
 brook
 chinadns-ng
@@ -6,6 +5,7 @@ cpulimit
 cpulimit-ng
 dns2socks
 filebrowser
+filebrowser2
 gost
 haproxy
 https-dns-proxy

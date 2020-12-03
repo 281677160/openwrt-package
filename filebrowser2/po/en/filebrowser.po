@@ -1,0 +1,50 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Project-Id-Version: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.4.1\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Last-Translator: monwf <boluo2@gmail.com>\n"
+"Language: en\n"
+
+#: applications/luci-app-filebrowser/htdocs/luci-static/resources/fb/fb.js:147
+msgid "Delete"
+msgstr "Delete"
+
+#: applications/luci-app-filebrowser/htdocs/luci-static/resources/fb/fb.js:35
+msgid "Enter New Name:"
+msgstr "Enter New Name:"
+
+#: applications/luci-app-filebrowser/luasrc/controller/filebrowser.lua:5
+#: applications/luci-app-filebrowser/luasrc/view/filebrowser.htm:4
+msgid "File Browser"
+msgstr "File Browser"
+
+#: applications/luci-app-filebrowser/luasrc/view/filebrowser.htm:8
+msgid "File List:"
+msgstr "File List:"
+
+#: applications/luci-app-filebrowser/htdocs/luci-static/resources/fb/fb.js:146
+msgid "Rename"
+msgstr "Rename"
+
+#: applications/luci-app-filebrowser/luasrc/view/filebrowser.htm:13
+msgid "Start"
+msgstr "Start"
+
+#: applications/luci-app-filebrowser/luasrc/view/filebrowser.htm:9
+msgid "Upload"
+msgstr "Upload"
+
+#: applications/luci-app-filebrowser/htdocs/luci-static/resources/fb/fb.js:212
+msgid "Upload failed"
+msgstr "Upload failed"
+
+#: applications/luci-app-filebrowser/htdocs/luci-static/resources/fb/fb.js:20
+msgid "Want to delete:"
+msgstr "Want to delete:"
