@@ -45,10 +45,12 @@
 #
 
 - luci-app-advanced 和 luci-app-filebrowser 不能同时编译，同时编译会失败
+
 - luci-app-samba 和 luci-app-samba4 不能同时编译，同时编译会失败
 - 想选择luci-app-samba4，首先在Extra packages ---> 把autosamba取消，然后在Network ---> 把 samba36-server取消，最后选择luci-app-samba4，记得顺序别搞错
-- luci-app-dockerman 和 luci-app-docker 不能同时编译，同时编译会失败
 
+- luci-app-dockerman 和 luci-app-docker 不能同时编译，同时编译会失败
+- 编译luci-app-dockerman或者luci-app-docker，首先要在Global build settings ---> Enable IPv6 support in packages (NEW)（选上）
 #
 ##### N1盒子写入emmc方法
 - 1、SSH连接配置固件时候找到 Utilities 里面的 install-program  按键盘的y选择上，插件里面也选上luci-app-ttyd方便后续执行命令
