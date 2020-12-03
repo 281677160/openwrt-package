@@ -53,7 +53,7 @@ mwan3
 netdata
 node-request
 openwrt-mentohust
-openwrt-passwall
 smartdns
+trunk
 vssr
 wrtbwmon
