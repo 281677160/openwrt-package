@@ -72,4 +72,3 @@ trojan-go
 trojan-plus
 vssr
 wrtbwmon
-xray
