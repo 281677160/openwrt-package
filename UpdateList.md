@@ -1,5 +1,6 @@
 UpdateList.md
 adguardhome
+branches
 cpulimit
 cpulimit-ng
 filebrowser
@@ -54,7 +55,7 @@ mwan3
 netdata
 node-request
 openwrt-mentohust
-openwrt-passwall
 smartdns
+trunk
 vssr
 wrtbwmon
