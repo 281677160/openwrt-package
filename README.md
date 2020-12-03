@@ -5,6 +5,7 @@
 #
 
 ##### 添加以下插件
+###### [luci-theme-rosy](https://github.com/281677160/build-openwrt.git)    &nbsp;&nbsp;&nbsp;&nbsp;#主题-rosy
 ###### luci-theme-rosy    &nbsp;&nbsp;&nbsp;&nbsp;#主题-rosy
 ###### luci-theme-edge    &nbsp;&nbsp;&nbsp;&nbsp;#主题-edge
 ###### luci-theme-opentomcat   &nbsp;&nbsp;&nbsp;&nbsp;#主题-opentomcat
