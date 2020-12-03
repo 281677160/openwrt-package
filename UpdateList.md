@@ -33,7 +33,6 @@ luci-app-modeminfo
 luci-app-netdata
 luci-app-oaf
 luci-app-openclash
-luci-app-passwall
 luci-app-poweroff
 luci-app-pptp-vpnserver-manyusers
 luci-app-serverchan
@@ -55,7 +54,7 @@ mwan3
 netdata
 node-request
 openwrt-mentohust
-passwall
+openwrt-passwall
 smartdns
 vssr
 wrtbwmon
