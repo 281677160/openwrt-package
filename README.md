@@ -6,7 +6,7 @@
 
 ##### 添加以下插件
 #####  luci-theme-rosy    &nbsp;&nbsp;#主题-rosy
-###### luci-theme-edge    #主题-edge
+###### luci-theme-edge    &nbsp;&nbsp;&nbsp;#主题-edge
 ###### luci-theme-opentomcat   #主题-opentomcat
 ###### luci-theme-opentopd   #主题-opentopd<br>
 ###### luci-theme-atmaterial   #atmaterial-主题<br>
