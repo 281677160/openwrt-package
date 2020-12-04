@@ -115,6 +115,7 @@ run() {
 
 back_run() {
     run
+    sleep 1s
     serverchan
 }
 
