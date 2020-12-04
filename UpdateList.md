@@ -5,7 +5,6 @@ chinadns-ng
 cpulimit
 cpulimit-ng
 dns2socks
-filebrowser
 gost
 haproxy
 https-dns-proxy
@@ -27,7 +26,6 @@ luci-app-control-weburl
 luci-app-cpulimit
 luci-app-dockerman
 luci-app-eqos
-luci-app-filebrowser
 luci-app-gost
 luci-app-gowebdav
 luci-app-jd-dailybonus
