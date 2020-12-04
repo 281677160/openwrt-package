@@ -1,4 +1,3 @@
-UpdateList.md
 adguardhome
 brook
 chinadns-ng
@@ -26,6 +25,7 @@ luci-app-control-weburl
 luci-app-cpulimit
 luci-app-dockerman
 luci-app-eqos
+luci-app-filebrowser
 luci-app-gost
 luci-app-gowebdav
 luci-app-jd-dailybonus
