@@ -51,10 +51,11 @@
 - luci-app-dockerman 和 luci-app-docker 不能同时编译，同时编译会失败
 - 编译luci-app-dockerman或者luci-app-docker，首先要在Global build settings ---> Enable IPv6 support in packages (NEW)（选上）
 #
-##### N1盒子写入emmc方法
-- 1、SSH连接配置固件时候找到 Utilities 里面的 install-program  按键盘的y选择上，插件里面也选上luci-app-ttyd方便后续执行命令
-- 2、编译完成之后使用【balenaEtcher】把镜像写入U盘在盒子上启动，之后用固件里的ttyd（命令窗）或者SSH执行 n1-install 命令，即可安装到 emmc
+##### 写入emmc方法
+- 1、编译完成之后解压出.img文件，使用【balenaEtcher】把镜像写入U盘在盒子上启动，之后用固件里的ttyd（命令窗）或者SSH执行 n1-install 命令，即可把固件安装到 emmc
+- 2、如果本来就是openwrt的，将固件上传到 /tmp/upgrade( xxx.img )，之后执行 n1-update 即可从该固件升级
 - 3、这是我根据作者描述个人理解为这样的，我没N1盒子没办法测试，有谁测试过的什么情况请告知
+- 4、写盘工具推荐使用[Etcher](https://www.balena.io/etcher/)
 #
 #
 ##### 如果还是没有你需要的插件，请不要一下子就拉取别人的插件包
