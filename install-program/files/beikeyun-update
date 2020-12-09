@@ -43,7 +43,7 @@ cat >${mnt_loop}p2/etc/init.d/rmfiles <<-EOF
 START=99
 
 boot() {
-    [ -f $image ] && rm -f $image
+    rm -f $image
     rm -f /etc/rc.d/S99rmfiles
 }
 EOF
