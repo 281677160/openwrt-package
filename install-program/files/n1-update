@@ -1,16 +1,17 @@
 #!/bin/sh
 
 die() {
-    echo -e "\033[1;31mError:\033[0m $1" && exit 1
+    echo -e "\033[31me\033[0m => $1"
+    exit 1
 }
 
 model=$(cat /tmp/sysinfo/model)
-[ "$model" = "Phicomm N1" ] || die "this script if for Phicomm N1, your device is ${model}!!"
+[ "$model" = "Phicomm N1" ] || die "this script if only for Phicomm N1, but your device is ${model}!!"
 
 emmc=$(lsblk | grep -oE 'mmcblk[0-9]' | sort | uniq)
 dev_emmc="/dev/$emmc"
 
-if [ $(blkid ${dev_emmc}p[1-3]| grep -E 'BOOT_EMMC|ROOT_EMMC|DATA' | wc -l) != 3 ]; then
+if [ $(blkid ${dev_emmc}p[1-3] | grep -E 'BOOT_EMMC|ROOT_EMMC|DATA' | wc -l) != 3 ]; then
     die "you have never installed a OS to emmc, please boot with usb and run n1-install to install at first!"
 fi
 
@@ -36,7 +37,7 @@ else
     sed -i 's/ROOTFS/ROOT_EMMC/' ${mnt_loop}p1/uEnv.txt
 fi
 
-cp ${mnt_loop}p2/etc/config/fstab ${mnt_loop}p2/etc/config/fstab.bak
+[ -f ${mnt_loop}p2/etc/config/fstab.bak ] || cp ${mnt_loop}p2/etc/config/fstab ${mnt_loop}p2/etc/config/fstab.bak
 
 echo && read -p "do you want to save configuration? [Y/n] " yn
 case $yn in
@@ -81,15 +82,13 @@ chmod +x ${mnt_loop}p2/etc/init.d/resizefs
 
 macaddr=$(uuidgen | md5sum | sed 's/^\(..\)\(..\)\(..\)\(..\)\(..\).*$/fc:\1:\2:\3:\4:\5/')
 [ "$macaddr" ] && {
-    (
-        cd ${mnt_loop}p2/lib/firmware/brcm
-        sdio="brcmfmac43455-sdio.phicomm,n1.txt"
-        [ -f $sdio ] || ln -s brcmfmac43455-sdio.txt $sdio
-        sed -i "s/macaddr=b8:27:eb:74:f2:6c/macaddr=$macaddr/" $sdio
-    )
+    sdio="${mnt_loop}p2/lib/firmware/brcm/brcmfmac43455-sdio.phicomm,n1.txt"
+    [ -f $sdio ] && sed -i "s/macaddr=b8:27:eb:74:f2:6c/macaddr=$macaddr/" $sdio
 }
 
 rm -f ${mnt_loop}p2/usr/bin/n1-install
+rm -f ${mnt_loop}p2/usr/bin/beikeyun-update
+
 tune2fs -L "ROOT_EMMC" ${loop}p2 >/dev/null
 
 echo -e "
@@ -99,22 +98,13 @@ echo -e "
 ----------------------------
 "
 
-(
-    cd ${mnt_loop}p1
-    tar -cf boot.tar *
-)
-
 echo "upgrading boot..."
 grep -w '/boot' /proc/mounts | grep -q $dev_emmc || {
     umount -f /boot 2>/dev/null
     mount -t vfat ${dev_emmc}p1 /boot
 }
 rm -rf /boot/*
-boottar="${mnt_loop}p1/boot.tar"
-pv -rpt $boottar | (
-    cd /boot
-    tar -xf -
-)
+cp -r ${mnt_loop}p1/* /boot
 echo ""
 
 echo "upgrading rootfs..."
@@ -122,4 +112,5 @@ pv -rpt ${loop}p2 | dd of=${dev_emmc}p2 conv=fsync 2>/dev/null
 echo ""
 
 echo "done, will reboot your device now!"
+echo 's' >/proc/sysrq-trigger
 echo 'b' >/proc/sysrq-trigger
