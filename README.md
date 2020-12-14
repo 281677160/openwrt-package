@@ -38,6 +38,7 @@
 ###### [luci-app-smartinfo](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#磁盘监控 ，该工具帮助您通过S.M.A.R.T技术来监控您硬盘的健康状况<br>
 ###### [luci-app-pptp-vpnserver-manyusers](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#PPTP VPN 服务器
 ###### [luci-app-smartdns](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#smartdns DNS加速<br>
+###### [luci-app-mentohust](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#MentoHUST 的 LuCI 控制界面<br>
 ###### [luci-app-adguardhome](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#adguardhome<br>
 ###### [luci-app-dockerman](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#docker容器，和源码自带的luci-app-docker不能同时编译，同时编译会失败，所以要注意<br>
 
