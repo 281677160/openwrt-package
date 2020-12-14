@@ -27,6 +27,7 @@
 ###### luci-app-smartdns   &nbsp;&nbsp;&nbsp;&nbsp;#smartdns DNS加速<br>
 ###### luci-app-autopoweroff   &nbsp;&nbsp;&nbsp;&nbsp;#定时自动关机，替代luci-app-autoreboot<br>
 ###### luci-app-modeminfo    &nbsp;&nbsp;&nbsp;&nbsp;#OpenWrt LuCi的3G / LTE加密狗信息<br>
+###### [luci-app-mentohust]   &nbsp;&nbsp;&nbsp;&nbsp;#MentoHUST 的 LuCI 控制界面<br>
 ###### luci-app-gowebdav   &nbsp;&nbsp;&nbsp;&nbsp;#GoWebDav 是一个轻巧、简单、快速的 WebDav 服务端程序<br>
 ###### luci-app-smartinfo   &nbsp;&nbsp;&nbsp;&nbsp;#磁盘监控 ，该工具帮助您通过S.M.A.R.T技术来监控您硬盘的健康状况<br>
 #
