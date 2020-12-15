@@ -61,7 +61,7 @@ run_mentohust()
 
         /bin/ash -c "mentohust -u$username -p$password -n$ifname -b3 -w $cmd"
     else
-        /bin/ash -c "mentohust -k"
+        [ -n "$(ps | grep mentohust | grep -v grep)" ] && /bin/ash -c "mentohust -k"
     fi
 }
 
