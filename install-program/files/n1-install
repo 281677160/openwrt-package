@@ -14,7 +14,7 @@ sd=$(lsblk | grep -oE 'sd[a-z]' | sort | uniq)
 [ "$emmc" ] || die "no emmc found!!"
 [ "$sd" ] || die "no usb device found!!"
 
-sd=$(lsblk | grep -wE '/|/overlay' | grep -oE 'sd[a-z]')
+sd=$(grep -wE '/|/overlay' /proc/mounts | grep -oE 'sd[a-z]')
 [ "$sd" ] || die "you are running in emmc mode, please boot system with usb!!"
 
 dev_emmc="/dev/$emmc"
@@ -116,7 +116,7 @@ ln -sf tmp var
 
 [ -f etc/config/fstab.bak ] || cp etc/config/fstab etc/config/fstab.bak
 
-grep -wq '/opt' /proc/mounts || mount $part_data /opt
+grep -wq '/opt' /proc/mounts || mount -t etx4 $part_data /opt
 backups=$(ls /opt | grep 'backup-OpenWrt.*.tar.gz$')
 [ "$backups" ] && {
     for x in $backups; do backtgz=$x; done
