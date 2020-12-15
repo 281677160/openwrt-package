@@ -1,8 +1,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=install-program
-PKG_VERSION:=2.2
-PKG_RELEASE:=20201209
+PKG_VERSION:=2.4
+PKG_RELEASE:=20201215
 
 include $(INCLUDE_DIR)/package.mk
 
