@@ -57,3 +57,4 @@ case "$1" in
 		echo "  $0 start 30 20              # Total bandwidth: down 30Kbit/s up 20Kbit/s"
 		echo "  $0 add 192.168.22.12 10 2   # down 10Kbit/s  up 2Kbit/s"
 	;;
+esac
