@@ -31,7 +31,7 @@
 ###### luci-app-gowebdav   &nbsp;&nbsp;&nbsp;&nbsp;#GoWebDav 是一个轻巧、简单、快速的 WebDav 服务端程序<br>
 ###### luci-app-smartinfo   &nbsp;&nbsp;&nbsp;&nbsp;#磁盘监控 ，该工具帮助您通过S.M.A.R.T技术来监控您硬盘的健康状况<br>
 #
-##### 如果lede那个插件包有这里又没有的插件，那就代表源码已自带了，不需要再添加
+##### 如果lede那个插件包有这里又没有的插件，那就代表源码已自带了，不需要再添加，所以看说明在master分支看就好了
 #
 #
 
