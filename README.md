@@ -29,8 +29,8 @@
 ###### [luci-app-vssr](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#Hello World 也叫彩旗飘飘  出国软件<br>
 ###### [luci-app-gost](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#GO语言实现的安全隧道<br>
 ###### [luci-app-cpulimit](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#CPU性能限制<br>
-###### [luci-app-wrtbwmon-zhcn](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#流量统计，替代luci-app-wrtbwmon，在固件状态栏显示<br>
-###### [luci-app-autopoweroff](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#定时自动关机，替代luci-app-autoreboot<br>
+###### [luci-app-wrtbwmon-zhcn](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#流量统计，替代luci-app-wrtbwmon，在固件状态栏显示，[不能同时编译](#/README.md)<br>
+###### [luci-app-autopoweroff](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#定时自动关机，替代luci-app-autoreboot，[不能同时编译](#/README.md) <br>
 ###### [luci-app-control-webrestriction](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#访问限制<br>
 ###### [luci-app-control-weburl](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#网址过滤<br>
 ###### [luci-app-modeminfo](#/README.md)    &nbsp;&nbsp;&nbsp;&nbsp;#OpenWrt LuCi的3G / LTE加密狗信息<br>
@@ -40,14 +40,14 @@
 ###### [luci-app-smartdns](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#smartdns DNS加速<br>
 ###### [luci-app-mentohust](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#MentoHUST 的 LuCI 控制界面<br>
 ###### [luci-app-adguardhome](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#adguardhome<br>
-###### [luci-app-dockerman](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#docker容器，和源码自带的luci-app-docker不能同时编译，同时编译会失败，所以要注意<br>
+###### [luci-app-dockerman](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#docker容器，和源码自带的luci-app-docker[不能同时编译](#/README.md)，同时编译会失败，所以要注意<br>
 
 #
 
 - 编译luci-app-advanced时候自动带上luci-app-filebrowser ，高级设置+文件浏览器（文件管理）
 
 - luci-app-samba 和 luci-app-samba4 不能同时编译，同时编译会失败
-- 想选择luci-app-samba4，首先在Extra packages ---> 把autosamba取消，然后在Network ---> 把 samba36-server取消，最后选择luci-app-samba4，记得顺序别搞错
+- 想选择luci-app-samba4，首先在Extra packages ---> 把autosamba取消，在选择插件的那里把luci-app-samba取消，然后在Network ---> 把 samba36-server取消，最后选择luci-app-samba4，记得顺序别搞错
 
 - luci-app-dockerman 和 luci-app-docker 不能同时编译，同时编译会失败
 - 编译luci-app-dockerman或者luci-app-docker，首先要在Global build settings ---> Enable IPv6 support in packages (NEW)（选上）
