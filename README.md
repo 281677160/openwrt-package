@@ -25,7 +25,6 @@
 ###### luci-app-cpulimit   &nbsp;&nbsp;&nbsp;&nbsp;#CPU性能限制<br>
 ###### luci-app-wrtbwmon-zhcn   &nbsp;&nbsp;&nbsp;&nbsp;#流量统计，替代luci-app-wrtbwmon，在固件状态栏显示<br>
 ###### luci-app-smartdns   &nbsp;&nbsp;&nbsp;&nbsp;#smartdns DNS加速<br>
-###### luci-app-autopoweroff   &nbsp;&nbsp;&nbsp;&nbsp;#定时自动关机，替代luci-app-autoreboot<br>
 ###### luci-app-modeminfo    &nbsp;&nbsp;&nbsp;&nbsp;#OpenWrt LuCi的3G / LTE加密狗信息<br>
 ###### [luci-app-mentohust]   &nbsp;&nbsp;&nbsp;&nbsp;#MentoHUST 的 LuCI 控制界面<br>
 ###### luci-app-gowebdav   &nbsp;&nbsp;&nbsp;&nbsp;#GoWebDav 是一个轻巧、简单、快速的 WebDav 服务端程序<br>
