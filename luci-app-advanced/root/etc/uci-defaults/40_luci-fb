@@ -4,5 +4,4 @@ ver=$(date +%s)
 sed -i "s/@ver/$ver/g" /usr/lib/lua/luci/view/filebrowser.htm
 
 rm -f /tmp/luci-indexcache
-killall -HUP rpcd 2>/dev/null
 exit 0
