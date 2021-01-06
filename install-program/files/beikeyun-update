@@ -13,7 +13,7 @@ image="$1"
 [ -f $image ] || die "$image does not exist!"
 ls $image | grep -q ".img$" || die "invalid firmware $image!"
 
-kill `ps | grep dockerd | grep -v grep | awk '{print $1}'`
+kill "$(ps | grep dockerd | grep -v grep | awk '{print $1}')"
 
 loop=$(losetup -P -f --show $image)
 [ "$loop" ] || die "create loop device failed!"

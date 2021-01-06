@@ -22,7 +22,7 @@ dev_sd="/dev/$sd"
 
 echo -e "emmc: $dev_emmc\nusb:  $dev_sd\n"
 
-kill `ps | grep dockerd | grep -v grep | awk '{print $1}'`
+kill "$(ps | grep dockerd | grep -v grep | awk '{print $1}')"
 
 part_boot="${dev_emmc}p1"
 part_root="${dev_emmc}p2"
