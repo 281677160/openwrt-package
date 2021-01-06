@@ -20,7 +20,7 @@ image="/tmp/upgrade/*.img"
 
 echo "start upgrade from $(ls /tmp/upgrade | grep '.img$')..."
 
-kill `ps | grep dockerd | grep -v grep | awk '{print $1}'`
+kill "$(ps | grep dockerd | grep -v grep | awk '{print $1}')"
 
 loop=$(losetup -P -f --show $image)
 [ "$loop" ] || die "create loop device failed!!"
