@@ -28,7 +28,7 @@ function get_containers()
     data[index]["_selected"] = 0
     data[index]["_id"] = v.Id:sub(1,12)
     data[index]["name"] = v.Names[1]:sub(2)
-    data[index]["_name"] = '<a href='..luci.dispatcher.build_url("admin/docker/container/"..v.Id)..'  class="dockerman_link" title="'..translate("Container detail")..'">'.. v.Names[1]:sub(2).."</a>"
+    data[index]["_name"] = '<a href='..luci.dispatcher.build_url("admin/services/docker/container/"..v.Id)..'  class="dockerman_link" title="'..translate("Container detail")..'">'.. v.Names[1]:sub(2).."</a>"
     data[index]["_status"] = v.Status
     if v.Status:find("^Up") then
       data[index]["_status"] = '<font color="green">'.. data[index]["_status"] .. "</font>"
@@ -46,13 +46,11 @@ function get_containers()
     -- if image ~= nil then
     --   image=image:sub(1,12)
     -- end
-    if v.Ports and next(v.Ports) ~= nil then
+    
+    if v.Ports then
       data[index]["_ports"] = nil
       for _,v2 in ipairs(v.Ports) do
-        data[index]["_ports"] = (data[index]["_ports"] and (data[index]["_ports"] .. ", ") or "")
-        .. ((v2.PublicPort and v2.Type and v2.Type == "tcp") and ('<a href="javascript:void(0);" onclick="window.open((window.location.origin.match(/^(.+):\\d+$/) && window.location.origin.match(/^(.+):\\d+$/)[1] || window.location.origin) + \':\' + '.. v2.PublicPort ..', \'_blank\');">') or "")
-        .. (v2.PublicPort and (v2.PublicPort .. ":") or "")  .. (v2.PrivatePort and (v2.PrivatePort .."/") or "") .. (v2.Type and v2.Type or "")
-        .. ((v2.PublicPort and v2.Type and v2.Type == "tcp")and "</a>" or "")
+        data[index]["_ports"] = (data[index]["_ports"] and (data[index]["_ports"] .. ", ") or "") .. (v2.PublicPort and (v2.PublicPort .. ":") or "")  .. (v2.PrivatePort and (v2.PrivatePort .."/") or "") .. (v2.Type and v2.Type or "")
       end
     end
     for ii,iv in ipairs(images) do
@@ -60,13 +58,7 @@ function get_containers()
         data[index]["_image"] = iv.RepoTags and iv.RepoTags[1] or (iv.RepoDigests[1]:gsub("(.-)@.+", "%1") .. ":<none>")
       end
     end
-    if type(v.Mounts) == "table" and next(v.Mounts) then
-      for _, v2 in pairs(v.Mounts) do
-        if v2.Type ~= "volume" then
-          data[index]["_mounts"] = (data[index]["_mounts"] and (data[index]["_mounts"] .. "<br>") or "") .. v2.Source .. "￫" .. v2.Destination
-        end
-      end
-    end
+    
     data[index]["_image_id"] = v.ImageID:sub(8,20)
     data[index]["_command"] = v.Command
   end
@@ -77,6 +69,7 @@ local c_lists = get_containers()
 -- list Containers
 -- m = Map("docker", translate("Docker"))
 m = SimpleForm("docker", translate("Docker"))
+m.template = "dockerman/cbi/xsimpleform"
 m.submit=false
 m.reset=false
 
@@ -106,12 +99,8 @@ container_ip = c_table:option(DummyValue, "_network", translate("Network"))
 container_ip.width="15%"
 container_ports = c_table:option(DummyValue, "_ports", translate("Ports"))
 container_ports.width="10%"
-container_ports.rawhtml = true
-container_ports = c_table:option(DummyValue, "_mounts", translate("Mounts"))
-container_ports.width="15%"
-container_ports.rawhtml = true
 container_image = c_table:option(DummyValue, "_image", translate("Image"))
-container_image.width="8%"
+container_image.width="10%"
 container_command = c_table:option(DummyValue, "_command", translate("Command"))
 container_command.width="20%"
 
@@ -143,7 +132,7 @@ local start_stop_remove = function(m,cmd)
       end
     end
     if success then docker:clear_status() end
-    luci.http.redirect(luci.dispatcher.build_url("admin/docker/containers"))
+    luci.http.redirect(luci.dispatcher.build_url("admin/services/docker/containers"))
   end
 end
 
@@ -172,18 +161,13 @@ btnstop.template = "dockerman/cbi/inlinebutton"
 btnstop.inputtitle=translate("Stop")
 btnstop.inputstyle = "reset"
 btnstop.forcewrite = true
-btnkill=action_section:option(Button, "_kill")
-btnkill.template = "dockerman/cbi/inlinebutton"
-btnkill.inputtitle=translate("Kill")
-btnkill.inputstyle = "reset"
-btnkill.forcewrite = true
 btnremove=action_section:option(Button, "_remove")
 btnremove.template = "dockerman/cbi/inlinebutton"
 btnremove.inputtitle=translate("Remove")
 btnremove.inputstyle = "remove"
 btnremove.forcewrite = true
 btnnew.write = function(self, section)
-  luci.http.redirect(luci.dispatcher.build_url("admin/docker/newcontainer"))
+  luci.http.redirect(luci.dispatcher.build_url("admin/services/docker/newcontainer"))
 end
 btnstart.write = function(self, section)
   start_stop_remove(m,"start")
@@ -196,9 +180,6 @@ btnremove.write = function(self, section)
 end
 btnstop.write = function(self, section)
   start_stop_remove(m,"stop")
-end
-btnkill.write = function(self, section)
-  start_stop_remove(m,"kill")
 end
 
 return m

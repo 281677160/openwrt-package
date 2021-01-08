@@ -1,18 +1,12 @@
 include $(TOPDIR)/rules.mk
 
-LUCI_TITLE:=LuCI Support for docker
-LUCI_DEPENDS:=@(aarch64||arm||x86_64) \
-	+luci-compat \
-	+luci-lib-docker \
-	+docker \
-	+ttyd
-LUCI_PKGARCH:=all
-
+LUCI_TITLE:=Docker Manager interface for LuCI
+LUCI_DEPENDS:=+luci-lib-docker +docker +e2fsprogs +fdisk +ttyd
+PKG_NAME:=luci-app-dockerman
+PKG_VERSION:=v0.4.7
+PKG_RELEASE:=leanmod
+PKG_MAINTAINER:=lisaac <https://github.com/lisaac/luci-app-dockerman>
 PKG_LICENSE:=AGPL-3.0
-PKG_MAINTAINER:=lisaac <lisaac.cn@gmail.com> \
-		Florian Eckert <fe@dev.tdt.de>
-
-PKG_VERSION:=v0.5.13
 
 include $(TOPDIR)/feeds/luci/luci.mk
 

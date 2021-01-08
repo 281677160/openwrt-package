@@ -17,6 +17,7 @@ local update_image = function(self, image_name)
   if res and res.code == 200 and (#res.body > 0 and not res.body[#res.body].error and res.body[#res.body].status and (res.body[#res.body].status == "Status: Downloaded newer image for ".. image_name)) then
     _docker:append_status("done\n")
   else
+    res.code = 500
     res.body.message = res.body[#res.body] and res.body[#res.body].error or (res.body.message or res.message)
   end
   new_image_id = self.images:inspect({name = image_name}).body.Id
@@ -65,28 +66,27 @@ local map_subtract = function(t1, t2)
       end
     end
     if not found then
-      res[k1] = v1
-      -- if v1 and type(v1) == "table" then
-      --   if next(v1) == nil then 
-      --     res[k1] = { k = 'v' }
-      --   else
-      --     res[k1] = v1
-      --   end
-      -- end
+      if v1 and type(v1) == "table" then
+        if next(v1) == nil then 
+          res[k1] = { k = 'v' }
+        else
+          res[k1] = v1
+        end
+      end
     end
   end
 
   return next(res) ~= nil and res or nil
 end
 
-_docker.clear_empty_tables = function ( t )
+local function clear_empty_tables( t )
   local k, v
   if next(t) == nil then
     t = nil
   else
     for k, v in pairs(t) do
       if type(v) == 'table' then
-        t[k] = _docker.clear_empty_tables(v)
+        t[k] = clear_empty_tables(v)
       end
     end
   end
@@ -129,8 +129,8 @@ local get_config = function(container_config, image_config)
 
   -- handle hostconfig
   local host_config = old_host_config
-  -- if host_config.PortBindings and next(host_config.PortBindings) == nil then host_config.PortBindings = nil end
-  -- host_config.LogConfig = nil
+  if host_config.PortBindings and next(host_config.PortBindings) == nil then host_config.PortBindings = nil end
+  host_config.LogConfig = nil
   host_config.Mounts = {}
   -- for volumes
   for i, v in ipairs(container_config.Mounts) do
@@ -139,7 +139,7 @@ local get_config = function(container_config, image_config)
         Type = v.Type,
         Target = v.Destination,
         Source = v.Source:match("([^/]+)\/_data"),
-        BindOptions = (v.Type == "bind") and {Propagation = v.Propagation} or nil,
+        BindOptions = v.Type == "bind" and {Propagation = v.Propagation} or nil,
         ReadOnly = not v.RW
       })
     end
@@ -150,8 +150,8 @@ local get_config = function(container_config, image_config)
   local create_body = config
   create_body["HostConfig"] = host_config
   create_body["NetworkingConfig"] = {EndpointsConfig = network_setting}
-  create_body = _docker.clear_empty_tables(create_body) or {}
-  extra_network = _docker.clear_empty_tables(extra_network) or {}
+  create_body = clear_empty_tables(create_body) or {}
+  extra_network = clear_empty_tables(extra_network) or {}
   return create_body, extra_network
 end
 
@@ -195,13 +195,15 @@ local upgrade = function(self, request)
 
   -- create new container
   _docker:append_status("Container: Create" .. " " .. container_name .. "...")
-  create_body = _docker.clear_empty_tables(create_body)
   res = self.containers:create({name = container_name, body = create_body})
   if res and res.code > 300 then return res end
   _docker:append_status("done\n")
 
   -- extra networks need to network connect action
   for k, v in pairs(extra_network) do
+    -- if v.IPAMConfig and next(v.IPAMConfig) == nil then v.IPAMConfig =nil end
+    -- if v.DriverOpts and next(v.DriverOpts) == nil then v.DriverOpts =nil end
+    -- if v.Aliases and next(v.Aliases) == nil then v.Aliases =nil end
     _docker:append_status("Networks: Connect" .. " " .. container_name .. "...")
     res = self.networks:connect({id = k, body = {Container = container_name, EndpointConfig = v}})
     if res.code > 300 then return res end
@@ -216,6 +218,9 @@ local duplicate_config = function (self, request)
   local container_info = self.containers:inspect({id = request.id})
   if container_info.code > 300 and type(container_info.body) == "table" then return nil end
   local old_image_id = container_info.body.Image
+  -- local old_config = container_info.body.Config
+  -- local old_host_config = container_info.body.HostConfig
+  -- local old_network_setting = container_info.body.NetworkSettings.Networks or {}
   local image_config = self.images:inspect({id = old_image_id}).body.Config
   return get_config(container_info.body, image_config)
 end
@@ -303,23 +308,23 @@ end
 --{"status":"Downloading from https://downloads.openwrt.org/releases/19.07.0/targets/x86/64/openwrt-19.07.0-x86-64-generic-rootfs.tar.gz"}
 --{"status":"Importing","progressDetail":{"current":1572391,"total":3821714},"progress":"[====================\u003e                              ]  1.572MB/3.822MB"}
 --{"status":"sha256:d5304b58e2d8cc0a2fd640c05cec1bd4d1229a604ac0dd2909f13b2b47a29285"}
-_docker.import_image_show_status_cb = function(res, source)
-  return status_cb(res, source, function(chunk)
-    local json_parse = luci.jsonc.parse
-    local step = json_parse(chunk)
-    if type(step) == "table" then
-      local buf = _docker:read_status()
-      local num = 0
-      local str = '\t' .. (step.status and step.status or "") .. (step.progress and (" " .. step.progress) or "").."\n"
-      if step.status then buf, num = buf:gsub("\t"..step.status .. " .-\n", str) end
-      if num == 0 then
-        buf = buf .. str
-      end
-      _docker:write_status(buf)
-    end
-  end
-  )
-end
+-- _docker.import_image_show_status_cb = function(res, source)
+--   return status_cb(res, source, function(chunk)
+--     local json_parse = luci.jsonc.parse
+--     local step = json_parse(chunk)
+--     if type(step) == "table" then
+--       local buf = _docker:read_status()
+--       local num = 0
+--       local str = '\t' .. (step.status and step.status or "") .. (step.progress and (" " .. step.progress) or "").."\n"
+--       if step.status then buf, num = buf:gsub("\t"..step.status .. " .-\n", str) end
+--       if num == 0 then
+--         buf = buf .. str
+--       end
+--       _docker:write_status(buf)
+--     end
+--   end
+--   )
+-- end
 
 -- _docker.print_status_cb = function(res, source)
 --   return status_cb(res, source, function(step)
@@ -327,71 +332,5 @@ end
 --   end
 --   )
 -- end
-
-_docker.create_macvlan_interface = function(name, device, gateway, subnet)
-  if not nixio.fs.access("/etc/config/network") or not nixio.fs.access("/etc/config/firewall") then return end
-  if uci:get("dockerman", "local", "remote_endpoint") == "true" then return end
-  local ip = require "luci.ip"
-  local if_name = "docker_"..name
-  local dev_name = "macvlan_"..name
-  local net_mask = tostring(ip.new(subnet):mask())
-  local lan_interfaces
-  -- add macvlan device
-  uci:delete("network", dev_name)
-  uci:set("network", dev_name, "device")
-  uci:set("network", dev_name, "name", dev_name)
-  uci:set("network", dev_name, "ifname", device)
-  uci:set("network", dev_name, "type", "macvlan")
-  uci:set("network", dev_name, "mode", "bridge")
-  -- add macvlan interface
-  uci:delete("network", if_name)
-  uci:set("network", if_name, "interface")
-  uci:set("network", if_name, "proto", "static")
-  uci:set("network", if_name, "ifname", dev_name)
-  uci:set("network", if_name, "ipaddr", gateway)
-  uci:set("network", if_name, "netmask", net_mask)
-  uci:foreach("firewall", "zone", function(s)
-    if s.name == "lan" then
-      local interfaces
-      if type(s.network) == "table" then
-        interfaces = table.concat(s.network, " ")
-        uci:delete("firewall", s[".name"], "network")
-      else
-        interfaces = s.network and s.network or ""
-      end
-      interfaces = interfaces .. " " .. if_name
-      interfaces = interfaces:gsub("%s+", " ")
-      uci:set("firewall", s[".name"], "network", interfaces)
-    end
-  end)
-  uci:commit("firewall")
-  uci:commit("network")
-  os.execute("ifup " .. if_name)
-end
-
-_docker.remove_macvlan_interface = function(name)
-  if not nixio.fs.access("/etc/config/network") or not nixio.fs.access("/etc/config/firewall") then return end
-  if uci:get("dockerman", "local", "remote_endpoint") == "true" then return end
-  local if_name = "docker_"..name
-  local dev_name = "macvlan_"..name
-  uci:foreach("firewall", "zone", function(s)
-    if s.name == "lan" then
-      local interfaces
-      if type(s.network) == "table" then
-        interfaces = table.concat(s.network, " ")
-      else
-        interfaces = s.network and s.network or ""
-      end
-      interfaces = interfaces and interfaces:gsub(if_name, "")
-      interfaces = interfaces and interfaces:gsub("%s+", " ")
-      uci:set("firewall", s[".name"], "network", interfaces)
-    end
-  end)
-  uci:commit("firewall")
-  uci:delete("network", dev_name)
-  uci:delete("network", if_name)
-  uci:commit("network")
-  os.execute("ip link del " .. if_name)
-end
 
 return _docker
