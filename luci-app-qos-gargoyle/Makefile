@@ -17,6 +17,15 @@ LUCI_TITLE:=LuCI Support for Gargoyle QoS
 LUCI_DEPENDS:=+qos-gargoyle
 LUCI_PKGARCH:=all
 
-include $(TOPDIR)/feeds/luci/luci.mk
+include ../../luci.mk
+
+define Package/$(PKG_NAME)/config
+# shown in make menuconfig <Help>
+help
+	$(LUCI_TITLE)
+	.
+	Version: $(PKG_VERSION)-$(PKG_RELEASE)
+	$(PKG_MAINTAINER)
+endef
 
 # call BuildPackage - OpenWrt buildroot signature
