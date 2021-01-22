@@ -4,7 +4,7 @@ PKG_NAME:=luci-app-dnsfilter
 PKG_VERSION:=1.0
 PKG_RELEASE:=5
 PKG_LICENSE:=GPLv2
-PKG_MAINTAINER:=GaryPang
+PKG_MAINTAINER:=small_5 GaryPang
 
 include $(INCLUDE_DIR)/package.mk
 
