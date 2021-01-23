@@ -43,6 +43,8 @@
 ###### [luci-app-dockerman](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#docker容器，和源码自带的luci-app-docker[不能同时编译](#/README.md)，同时编译会失败，所以要注意<br>
 ###### [luci-app-syncthing](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#Syncthing是一个连续的文件同步程序。它在两台或多台计算机之间同步文件
 ###### [luci-app-dnsfilter](#/README.md)    &nbsp;&nbsp;&nbsp;&nbsp;#广告过滤，支持 AdGuardHome/Host/DNSMASQ/Domain 格式的规则订阅
+###### [luci-app-tencentddns](#/README.md)    &nbsp;&nbsp;&nbsp;&nbsp;#腾讯DDNS
+
 
 #
 
