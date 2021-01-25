@@ -7,8 +7,8 @@
 include $(TOPDIR)/rules.mk
 PKG_NAME:=luci-app-jd-dailybonus
 LUCI_PKGARCH:=all
-PKG_VERSION:=1.0.2
-PKG_RELEASE:=20210124
+PKG_VERSION:=1.0.3
+PKG_RELEASE:=20210125
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -44,6 +44,7 @@ define Package/luci-app-jd-dailybonus/install
 	$(INSTALL_DIR) $(1)/usr/share/jd-dailybonus
 	$(INSTALL_BIN) ./root/usr/share/jd-dailybonus/*.sh $(1)/usr/share/jd-dailybonus/
 	$(INSTALL_DATA) ./root/usr/share/jd-dailybonus/*.js $(1)/usr/share/jd-dailybonus/
+	$(INSTALL_DATA) ./root/usr/share/jd-dailybonus/*.lua $(1)/usr/share/jd-dailybonus/
 
 	$(INSTALL_DIR) $(1)/usr/share/rpcd/acl.d
 	$(INSTALL_DATA) ./root/usr/share/rpcd/acl.d/* $(1)/usr/share/rpcd/acl.d
@@ -59,6 +60,9 @@ define Package/luci-app-jd-dailybonus/install
 
 	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/view/jd-dailybonus
 	$(INSTALL_DATA) ./luasrc/view/jd-dailybonus/* $(1)/usr/lib/lua/luci/view/jd-dailybonus/
+
+	$(INSTALL_DIR) $(1)/lib/upgrade/keep.d
+	$(INSTALL_DATA) ./root/lib/upgrade/keep.d/* $(1)/lib/upgrade/keep.d/
 
 endef
 

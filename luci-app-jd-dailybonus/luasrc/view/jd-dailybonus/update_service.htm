@@ -219,6 +219,7 @@
     const QRCODE_URL = '<%=luci.dispatcher.build_url("admin", "services", "jd-dailybonus","qrcode")%>';
     const CHECK_LOGIN_URL = '<%=luci.dispatcher.build_url("admin", "services", "jd-dailybonus","check_login")%>';
     const UPDATE_URL = '<%=luci.dispatcher.build_url("admin", "services", "jd-dailybonus","update")%>';
+    const LOG_URL = '<%=luci.dispatcher.build_url("admin", "services", "jd-dailybonus","realtime_log")%>';
     const CHECKING_TEXT = '<%= translate("正在检查是否存在新的版本 ...") %>';
     const UPDATING_TEXT = '<%= translate("正在更新脚本，请稍候 ...") %>';
     const NEW_VERSION = '<%= translate("当前已是最新版本：") %>';
@@ -258,7 +259,7 @@
             auto_update_time: el("auto_update").checked?el("auto_update_time").value:"0",
             auto_run: el("auto_run").checked?"1":"0",
             auto_run_time_h: el("auto_run").checked?el("auto_run_time_h").value:"0",
-            auto_run_time_h: el("auto_run").checked?el("auto_run_time_m").value:"0",
+            auto_run_time_m: el("auto_run").checked?el("auto_run_time_m").value:"0",
             cookie: el("cookie").value,
             cookie2: el("cookie2").value,
             stop: el("stop").value,
@@ -281,7 +282,7 @@
 
     //获取实时日志
     function get_realtime_log() {
-        XHR.poll(1, "/JD_DailyBonus.htm", null, x => {
+        XHR.poll(1, LOG_URL, null, x => {
             let retArea = document.getElementById("log_content3");
             if (x.response.search(" 秒") != -1) {
                 noChange++;
@@ -324,12 +325,30 @@
         });
         return false
     }
-    
-    qrcode = new QRCode(document.getElementById("qrcode"),
-                {
-                    text: "sample",
-                    correctLevel: QRCode.CorrectLevel.L
-                });
+
+    //初始化二维码
+    (function(){
+        let cookieBtn = Array.prototype.slice.call(document.getElementsByClassName("cookie-button"));
+        try {
+            qrcode = new QRCode(document.getElementById("qrcode"),
+                    {
+                        text: "sample",
+                        correctLevel: QRCode.CorrectLevel.L
+                    });
+            cookieBtn.forEach(e => {
+                e.onclick = () => {
+                    ckid = e.getAttribute("data-rel");
+                    get_code();
+                    return false;
+                }
+            });
+        } catch (error) {
+            alert("网络离线状态无法使用二维码获取Cookie，请刷新后重试！")
+            cookieBtn.forEach(e => {
+                e.disabled = true;
+            });
+        }
+    }());
     
     //获取二维码
     function get_code(){
@@ -342,14 +361,6 @@
         });
         return false;
     }
-
-    Array.prototype.slice.call(document.getElementsByClassName("cookie-button")).forEach(e => {
-        e.onclick = () => {
-            ckid = e.getAttribute("data-rel");
-            get_code();
-            return false;
-        }
-    });
         
     function checkLogin(check_url){
         let cname = ckid == 1?"cookie":"cookie2"
