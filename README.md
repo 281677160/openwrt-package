@@ -24,7 +24,7 @@
 ###### [luci-app-argon-config](#/README.md)    &nbsp;&nbsp;&nbsp;&nbsp;#argon主题设置（编译时候选上,在固件的‘系统’里面）<br>
 ###### [luci-app-k3screenctrl](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#k3屏幕，k3路由器专用<br>
 ###### [luci-app-koolproxyR](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#广告过滤大师 plus+  ，慎用，不懂的话，打开就没网络了<br>
-###### [luci-app-oaf （OpenAppFilter）](#/README.md)  &nbsp;&nbsp;&nbsp;&nbsp;#应用过滤 ，该模块只工作在路由模式， 旁路模式、桥模式不生效，还有和Turbo ACC 网络加速有冲突<br>
+###### [luci-app-oaf （OpenAppFilter）](#/README.md)  &nbsp;&nbsp;&nbsp;&nbsp;#应用过滤 ，该模块只工作在路由模式， 旁路模式、桥模式不生效，还有和Turbo ACC 网络加速有冲突，[不支持5.4内核，暂时取消此插件](#/README.md)<br>
 ###### [luci-app-ssr-plus](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#shadowsocksR Puls+  出国软件<br>
 ###### [luci-app-vssr](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#Hello World 也叫彩旗飘飘  出国软件<br>
 ###### [luci-app-gost](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#GO语言实现的安全隧道<br>
