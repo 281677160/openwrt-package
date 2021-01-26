@@ -9,10 +9,11 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=simple-obfs
 PKG_VERSION:=0.0.5
-PKG_RELEASE:=5
+PKG_RELEASE:=4
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/shadowsocks/simple-obfs.git
+PKG_MIRROR_HASH:=ea8f2b9825bbb87d5d860524e29bade265141687338db2dbf7ecd32690cf02fc
 PKG_SOURCE_VERSION:=486bebd9208539058e57e23a12f23103016e09b4
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION)
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
@@ -36,7 +37,6 @@ include $(INCLUDE_DIR)/package.mk
 define Package/simple-obfs
 	SECTION:=net
 	CATEGORY:=Network
-	SUBMENU:=Web Servers/Proxies
 	TITLE:=Simple-obfs
 	URL:=https://github.com/shadowsocks/simple-obfs
 	DEPENDS:=+libpthread +!SIMPLE_OBFS_STATIC_LINK:libev
