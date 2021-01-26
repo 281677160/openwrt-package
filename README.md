@@ -8,8 +8,6 @@
 ###### luci-theme-atmaterial   &nbsp;&nbsp;&nbsp;&nbsp;#atmaterial-主题<br>
 ###### luci-theme-infinityfreedom    &nbsp;&nbsp;&nbsp;&nbsp;#透明主题<br>
 ###### [luci-app-advanced](#/README.md)   &nbsp;&nbsp;&nbsp;&nbsp;#[luci-app-advanced&nbsp;高级设置&nbsp;+&nbsp;luci-app-filebrowser&nbsp;文件浏览器（文件管理）](#/README.md)<br>
-###### luci-app-openclash    &nbsp;&nbsp;&nbsp;&nbsp;#openclash 出国软件<br>
-###### luci-app-clash    &nbsp;&nbsp;&nbsp;&nbsp;#clash 出国软件<br>
 ###### luci-app-serverchan    &nbsp;&nbsp;&nbsp;&nbsp;#微信推送<br>
 ###### luci-app-eqos    &nbsp;&nbsp;&nbsp;&nbsp;#内网控速 内网IP限速工具<br>
 ###### luci-app-jd-dailybonus    &nbsp;&nbsp;&nbsp;&nbsp;#京东签到<br>
@@ -19,8 +17,6 @@
 ###### luci-app-k3screenctrl   &nbsp;&nbsp;&nbsp;&nbsp;#k3屏幕，k3路由器专用<br>
 ###### luci-app-koolproxyR   &nbsp;&nbsp;&nbsp;&nbsp;#广告过滤大师 plus+  ，慎用，不懂的话，打开就没网络了<br>
 ###### luci-app-oaf   &nbsp;&nbsp;&nbsp;&nbsp;#应用过滤 ，该模块只工作在路由模式， 旁路模式、桥模式不生效，还有和Turbo ACC 网络加速有冲突<br>
-###### luci-app-ssr-plus   &nbsp;&nbsp;&nbsp;&nbsp;#shadowsocksR Puls+  出国软件<br>
-###### luci-app-vssr   &nbsp;&nbsp;&nbsp;&nbsp;#Hello World 也叫彩旗飘飘  出国软件<br>
 ###### luci-app-gost   &nbsp;&nbsp;&nbsp;&nbsp;#GO语言实现的安全隧道<br>
 ###### luci-app-cpulimit   &nbsp;&nbsp;&nbsp;&nbsp;#CPU性能限制<br>
 ###### luci-app-wrtbwmon-zhcn   &nbsp;&nbsp;&nbsp;&nbsp;#流量统计，替代luci-app-wrtbwmon，在固件状态栏显示<br>
