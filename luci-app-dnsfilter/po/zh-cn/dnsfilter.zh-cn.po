@@ -99,3 +99,6 @@ msgstr "安全搜索"
 
 msgid "Enforcing SafeSearch for google, bing, duckduckgo, yandex and youtube."
 msgstr "强制为google,bing,duckduckgo,yandex,youtube开启安全搜索,过滤不健康内容"
+
+msgid "Update Log"
+msgstr "更新日志"
