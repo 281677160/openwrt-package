@@ -168,14 +168,26 @@ TIME && echo "正在检查版本更新..."
 wget -q ${Github_Tags} -O - > /tmp/Github_Tags
 if [[ ${Stable_Mode} == 1 ]];then
     GET_Version_Type="stable"
-    GET_FullVersion=$(cat /tmp/Github_Tags | egrep -o "openwrt-${CURRENT_Device}-${GET_Version_Type}-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
-    GET_Ver="${GET_FullVersion#*${CURRENT_Device}-}"
-    GET_Version="${GET_Ver:0:20}"
+    	if [[ $CURRENT_Device == x86-64 ]];then
+            GET_FullVersion=$(cat /tmp/Github_Tags | egrep -o "openwrt-${CURRENT_Device}-${GET_Version_Type}-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
+            GET_Ver="${GET_FullVersion#*${CURRENT_Device}-}"
+	        GET_Version="${GET_Ver:0:20}"
+        else
+            GET_FullVersion=$(cat /tmp/Github_Tags | egrep -o "openwrt-${CURRENT_Device}-${GET_Version_Type}-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
+            GET_Ver="${GET_FullVersion#*${CURRENT_Device}-}"
+	        GET_Version="${GET_Ver:0:20}"
+        fi
 else
     GET_Version_Type="beta"
-    GET_FullVersion=$(cat /tmp/Github_Tags | egrep -o "openwrt-${CURRENT_Device}-${GET_Version_Type}-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
-    GET_Ver="${GET_FullVersion#*${CURRENT_Device}-}"
-    GET_Version="${GET_Ver:0:18}"
+        if [[ $CURRENT_Device == x86-64 ]];then
+            GET_FullVersion=$(cat /tmp/Github_Tags | egrep -o "openwrt-${CURRENT_Device}-${GET_Version_Type}-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
+            GET_Ver="${GET_FullVersion#*${CURRENT_Device}-}"
+	        GET_Version="${GET_Ver:0:18}"
+        else
+            GET_FullVersion=$(cat /tmp/Github_Tags | egrep -o "openwrt-${CURRENT_Device}-${GET_Version_Type}-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
+            GET_Ver="${GET_FullVersion#*${CURRENT_Device}-}"
+	        GET_Version="${GET_Ver:0:18}"
+        fi
 fi
 if [[ -z "${GET_FullVersion}" ]] || [[ -z "${GET_Version}" ]];then
 	TIME && echo "检查更新失败,请稍后重试!"
