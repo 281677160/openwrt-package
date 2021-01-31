@@ -17,20 +17,28 @@ Github_Tags="https://api.github.com/repos/${Author}/releases/latest"
 function Stable(){
     Github_Tags="https://api.github.com/repos/${Author}/releases/tags/openwrt-stable"
     wget -q ${Github_Tags} -O - > /tmp/stable_Tags
-    GET_Version_Type="stable"
-    GET_FullVersion=$(cat /tmp/Github_Tags | egrep -o "openwrt-${CURRENT_Device}-${GET_Version_Type}-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
-    GET_Ver="${GET_FullVersion#*${CURRENT_Device}-}"
-    GET_Version="${GET_Ver:0:20}"
+    if [[ $CURRENT_DEVICE == x86-64 ]];then
+    	GET_FullVersion=$(cat /tmp/stable_Tags | egrep -o "openwrt-${CURRENT_DEVICE}-stable-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
+    	GET_Stable="${GET_FullVersion:0-27:20}"
+		echo $GET_Stable
+    else
+	    GET_FullVersion=$(cat /tmp/stable_Tags | egrep -o "openwrt-${CURRENT_DEVICE}-stable-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
+    	GET_Stable="${GET_FullVersion:0-24:20}"
+		echo $GET_Stable
     fi
 }
 
 function Nightly(){
     Github_Tags=https://api.github.com/repos/${Author}/releases/latest
     wget -q ${Github_Tags} -O - > /tmp/beta_Tags
-    GET_Version_Type="beta"
-    GET_FullVersion=$(cat /tmp/Github_Tags | egrep -o "openwrt-${CURRENT_Device}-${GET_Version_Type}-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
-    GET_Ver="${GET_FullVersion#*${CURRENT_Device}-}"
-    GET_Version="${GET_Ver:0:18}"
+    if [[ $CURRENT_DEVICE == x86-64 ]];then
+  	    GET_FullVersion=$(cat /tmp/beta_Tags | egrep -o "openwrt-${CURRENT_DEVICE}-beta-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
+  	    GET_Nightly="${GET_FullVersion:0-25:18}"
+	        echo $GET_Nightly
+    else
+   	    GET_FullVersion=$(cat /tmp/beta_Tags | egrep -o "openwrt-${CURRENT_DEVICE}-beta-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
+   	    GET_Nightly="${GET_FullVersion:0-22:18}"
+		echo $GET_Nightly
     fi
 }
 

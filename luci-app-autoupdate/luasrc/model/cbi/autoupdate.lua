@@ -49,13 +49,6 @@ button_upgrade_nightly_firmware.write = function()
 	luci.sys.call ("bash /bin/AutoUpdate.sh -u > /dev/null")
 end
 
-button_upgrade_stable_firmware = s:option (Button, "_button_upgrade_stable_firmware", translate("Upgrade to Stable Version"),
-translatef("") .. "<br>最新稳定版本: " .. cloud_stable_version)
-button_upgrade_stable_firmware.inputtitle = translate ("Do Upgrade")
-button_upgrade_stable_firmware.write = function()
-	luci.sys.call ("bash /bin/AutoUpdate.sh -s > /dev/null")
-end
-
 local e=luci.http.formvalue("cbi.apply")
 if e then
   io.popen("/etc/init.d/autoupdate restart")
