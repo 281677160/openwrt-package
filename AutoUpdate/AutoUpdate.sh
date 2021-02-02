@@ -186,7 +186,7 @@ else
     else
     Build_Date=$(cat /tmp/Github_Tags | egrep -o "${Github}/releases/tag/beta-[0-9]+.[0-9]+" | awk 'END {print}')
     Updaet_Date="${Build_Date#*tag/}"
-    Github_Download="${Github}/releases/download/${Updaet_Date}"
+    Github_Download="${Github}/releases/download/beta"
     fi
 fi
 echo -e "\n固件作者: ${Author%/*}"
