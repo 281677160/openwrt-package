@@ -14,6 +14,7 @@ Input_Other="$2"
 CURRENT_Version="$(awk 'NR==1' /etc/openwrt_info)"
 Github="$(awk 'NR==2' /etc/openwrt_info)"
 CURRENT_Device="$(awk 'NR==3' /etc/openwrt_info)"
+CURRENT_Source="$(awk 'NR==4' /etc/openwrt_info)"
 Author="${Github##*com/}"
 Disk_List="/tmp/disk_list"
 [ -f ${Disk_List} ] && rm -f ${Disk_List}
