@@ -172,7 +172,7 @@ if [[ ${Stable_Mode} == 1 ]];then
     GET_Ver="${GET_FullVersion#*${CURRENT_Device}-}"
     GET_Version="${GET_Ver:0:20}"
 else
-    GET_Version_Type="firmware"
+    GET_Version_Type="Firmware"
     GET_FullVersion=$(cat /tmp/Github_Tags | egrep -o "openwrt-${CURRENT_Device}-${GET_Version_Type}-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
     GET_Ver="${GET_FullVersion#*${CURRENT_Device}-}"
     GET_Version="${GET_Ver:0:18}"
