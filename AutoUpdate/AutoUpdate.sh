@@ -99,6 +99,7 @@ else
 		echo "硬盘个数:	${Disk_Number}"
 		echo "硬盘可用:	${Disk_Available}M"
 		echo "固件下载位置:	${Download_Path}/Downloads"
+		echo "源码作者:	${CURRENT_Source}"
 		echo "当前版本:	${CURRENT_Version}"
 		echo "Github 地址:	${Github}"
 		echo "当前设备:	${CURRENT_Device}"
@@ -169,12 +170,12 @@ TIME && echo "正在检查版本更新..."
 wget -q ${Github_Tags} -O - > /tmp/Github_Tags
 if [[ ${Stable_Mode} == 1 ]];then
     GET_Version_Type="stable"
-    GET_FullVersion=$(cat /tmp/Github_Tags | egrep -o "openwrt-${CURRENT_Device}-${GET_Version_Type}-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
+    GET_FullVersion=$(cat /tmp/Github_Tags | egrep -o "openwrt-${CURRENT_Source}-${CURRENT_Device}-${GET_Version_Type}-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
     GET_Ver="${GET_FullVersion#*${CURRENT_Device}-}"
     GET_Version="${GET_Ver:0:20}"
 else
     GET_Version_Type="Firmware"
-    GET_FullVersion=$(cat /tmp/Github_Tags | egrep -o "openwrt-${CURRENT_Device}-${GET_Version_Type}-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
+    GET_FullVersion=$(cat /tmp/Github_Tags | egrep -o "openwrt-${CURRENT_Source}-${CURRENT_Device}-${GET_Version_Type}-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
     GET_Ver="${GET_FullVersion#*${CURRENT_Device}-}"
     GET_Version="${GET_Ver:0:22}"
 fi
@@ -190,6 +191,7 @@ else
 fi
 echo -e "\n固件作者: ${Author%/*}"
 echo "设备名称: ${CURRENT_Device}"
+echo "源码作者: ${CURRENT_Source}"
 echo -e "\n当前固件版本: ${CURRENT_Version}"
 echo "云端固件版本: ${GET_Version}"
 Check_Stable_Version=$(echo ${GET_Version})
