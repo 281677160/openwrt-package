@@ -9,6 +9,7 @@ if [ ! -f /bin/AutoUpdate.sh ];then
 	exit
 fi
 CURRENT_Device="$(awk 'NR==3' /etc/openwrt_info)"
+CURRENT_Source="$(awk 'NR==4' /etc/openwrt_info)"
 Github="$(awk 'NR==2' /etc/openwrt_info)"
 [[ -z "${Github}" ]] && exit
 Author="${Github##*com/}"
@@ -18,7 +19,7 @@ function Stable(){
     Github_Tags="https://api.github.com/repos/${Author}/releases/tags/openwrt-stable"
     wget -q ${Github_Tags} -O - > /tmp/stable_Tags
     GET_Version_Type="stable"
-    GET_FullVersion=$(cat /tmp/stable_Tags | egrep -o "openwrt-${CURRENT_Device}-${GET_Version_Type}-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
+    GET_FullVersion=$(cat /tmp/stable_Tags | egrep -o "openwrt-${CURRENT_Source}-${CURRENT_Device}-${GET_Version_Type}-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
     GET_Ver="${GET_FullVersion#*${CURRENT_Device}-}"
     GET_Stable="${GET_Ver:0:20}"
     echo $GET_Stable
@@ -28,7 +29,7 @@ function Nightly(){
     Github_Tags=https://api.github.com/repos/${Author}/releases/latest
     wget -q ${Github_Tags} -O - > /tmp/Firmware_Tags
     GET_Version_Type="Firmware"
-    GET_FullVersion=$(cat /tmp/Firmware_Tags | egrep -o "openwrt-${CURRENT_Device}-${GET_Version_Type}-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
+    GET_FullVersion=$(cat /tmp/Firmware_Tags | egrep -o "openwrt-${CURRENT_Source}-${CURRENT_Device}-${GET_Version_Type}-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
     GET_Ver="${GET_FullVersion#*${CURRENT_Device}-}"
     GET_Nightly="${GET_Ver:0:22}"
     echo $GET_Nightly
