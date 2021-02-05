@@ -214,7 +214,7 @@ echo -e "\n云端固件名称: ${Firmware}"
 echo "固件下载地址: ${Github_Download}"
 cd ${Download_Path}/Downloads
 echo "固件保存位置: ${Download_Path}/Downloads"
-TIME && echo "正在下载固件,请耐心等待..."
+TIME && echo "正在云端下载固件,请耐心等待..."
 wget -q "${Github_Download}/${Firmware}" -O ${Firmware}
 if [[ ! "$?" == 0 ]];then
 	TIME && echo "固件下载失败,请检查网络后重试!"
@@ -239,7 +239,7 @@ if [[ ! "${GET_MD5}" == "${CURRENT_MD5}" ]];then
 	echo -e "\nMD5 对比失败,请检查网络后重试!"
 	exit
 else
-	TIME && echo -e "MD5 对比通过!"
+	TIME && echo -e "MD5 对比成功!"
 fi
 TIME && echo -e "开始更新固件,请耐心等待路由器重启...\n"
 sleep 3
