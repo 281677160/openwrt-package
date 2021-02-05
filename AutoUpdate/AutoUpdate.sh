@@ -209,7 +209,7 @@ if [[ ! ${Force_Update} == 1 ]];then
 	fi
 fi
 Firmware="${GET_FullVersion}"
-Firmware_Detail="openwrt-${CURRENT_Device}-${GET_Version}.detail"
+Firmware_Detail="openwrt-${CURRENT_Source}-${CURRENT_Device}-${GET_Version}.detail"
 echo -e "\n云端固件名称: ${Firmware}"
 echo "固件下载地址: ${Github_Download}"
 cd ${Download_Path}/Downloads
