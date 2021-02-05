@@ -163,7 +163,7 @@ fi
 if [[ ${Stable_Mode} == 1 ]];then
 Github_Tags="https://api.github.com/repos/${Author}/releases/tags/openwrt-stable"
 else
-Github_Tags="https://api.github.com/repos/${Author}/releases/latest"
+Github_Tags="https://api.github.com/repos/${Author}/releases/tags/update_Firmware"
 fi
 TIME && echo "正在检查版本更新..."
 [ ! -f /tmp/Github_Tags ] && touch /tmp/Github_Tags
