@@ -26,7 +26,7 @@ function Stable(){
 }
 
 function Nightly(){
-    Github_Tags=https://api.github.com/repos/${Author}/releases/latest
+    Github_Tags="https://api.github.com/repos/${Author}/releases/tags/update_Firmware"
     wget -q ${Github_Tags} -O - > /tmp/Firmware_Tags
     GET_Version_Type="Firmware"
     GET_FullVersion=$(cat /tmp/Firmware_Tags | egrep -o "openwrt-${CURRENT_Source}-${CURRENT_Device}-${GET_Version_Type}-[0-9]+.[0-9]+.[0-9]+.[0-9]+.[a-z]+.[a-z]+" | awk 'END {print}')
