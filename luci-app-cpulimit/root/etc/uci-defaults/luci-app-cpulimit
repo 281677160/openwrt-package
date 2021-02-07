@@ -3,7 +3,6 @@
 uci -q batch <<-EOF >/dev/null
           delete ucitrack.@cpulimit[-1]
           add ucitrack cpulimit
-	service cpulimit enable
           set ucitrack.@cpulimit[-1].init=cpulimit
           commit ucitrack
 EOF
