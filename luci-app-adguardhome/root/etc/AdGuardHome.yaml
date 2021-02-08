@@ -1,5 +1,3 @@
-#提交就可以直接用的配置模板文件
-#a template config can be use with a apply
 bind_host: 0.0.0.0
 bind_port: 3000
 users:
@@ -44,7 +42,7 @@ dns:
   - 114.114.114.114
   - 2620:fe::10
   - 2620:fe::fe:10
-  all_servers: true
+  all_servers: false
   fastest_addr: false
   allowed_clients: []
   disallowed_clients: []
