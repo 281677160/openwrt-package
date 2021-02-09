@@ -70,11 +70,11 @@ endef
 define Build/Compile
 endef
 
-define Package/AdGuardHome/install
-	$(call GoPackage/Package/Install/Bin,$(PKG_INSTALL_DIR))
+define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/usr/bin/AdGuardHome
-	$(INSTALL_BIN) $(GO_PKG_BUILD_BIN_DIR)/AdGuardHome $(1)/usr/bin/AdGuardHome/AdGuardHome
+	$(INSTALL_BIN) $(BUILD_DIR)/AdGuardHome/AdGuardHome $(1)/usr/bin/AdGuardHome/AdGuardHome
+	$(INSTALL_DIR) $(1)/etc
+	$(CP) -r ./files/etc $(1)/etc
 endef
 
-$(eval $(call GoBinPackage,AdGuardHome))
-$(eval $(call BuildPackage,AdGuardHome))
+$(eval $(call BuildPackage,$(PKG_NAME)))
