@@ -437,7 +437,7 @@ start_service() {
 	local ADDITIONAL_ARGS=""
 	config_get binpath $CONFIGURATION binpath "/usr/bin/AdGuardHome/AdGuardHome"
 
-	mkdir -p usr/bin/AdGuardHome/
+	mkdir -p /usr/bin/AdGuardHome/
 	mkdir -p ${binpath%/*}
 	ADDITIONAL_ARGS="$ADDITIONAL_ARGS -c $configpath"
 	ADDITIONAL_ARGS="$ADDITIONAL_ARGS -w $workdir"
