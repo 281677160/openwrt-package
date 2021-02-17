@@ -36,7 +36,7 @@ AutoBuild_Tools() {
 			clear && mount
 			Enter
 		;;
-		5)
+		05)
 			Install_UI	
 		;;
 		esac
