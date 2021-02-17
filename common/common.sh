@@ -103,14 +103,4 @@ cd reform
 sudo ./gen_openwrt -d -k latest
          
 devices=("phicomm-n1" "rk3328" "s9xxx" "vplus")
-cd out
-for x in ${devices[*]}; do
-cd $x
-filename=$(ls | awk -F '.img' '{print $1}')
-gzip *.img
-cd ../
-echo "firmware_$x=$filename" >> $GITHUB_ENV
-done
-cd ../../
-mv -f reform/out/*/*.img.gz openwrt/bin/targets/armvirt/*
 }
