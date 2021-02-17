@@ -14,7 +14,6 @@ AutoBuild_Tools() {
 		echo "2.Samba 共享"
 		echo "3.挂载硬盘"
 		echo "4.查看挂载点"
-		echo "5.安装软件包"
 		echo -e "\nq.退出\n"
 		read -p "请从上方选择一个操作:" Choose
 		case $Choose in
@@ -49,7 +48,7 @@ AutoExpand_UI() {
 	uci set fstab.@global[0].auto_swap='0'
 	uci commit fstab
 	clear
-	echo -e "Newifi-D2 一键扩展内部空间\n"
+	echo -e "一键扩展内部空间\n"
 	USB_Check_Core
 	if [[ ! -z "${Check_Disk}" ]];then
 		for ((i=1;i<=${Disk_Number};i++));
