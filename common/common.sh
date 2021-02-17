@@ -103,6 +103,7 @@ cd openwrt
 }
 
 Diy_n1_2() {
+cd ../
 cp openwrt/bin/targets/armvirt/*/*.tar.gz reform/openwrt
 cd reform
 sudo ./gen_openwrt -d -k latest
