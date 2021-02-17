@@ -75,7 +75,6 @@ popd
 
 Diy_lede2() {
 echo "LEDE源码自定义2"
-curl -fsSL  https://raw.githubusercontent.com/xiaorouji/openwrt-passwall/main/v2ray-plugin/Makefile > package/lean/v2ray-plugin/Makefile
 }
 
 Diy_lienol2() {
