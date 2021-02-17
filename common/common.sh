@@ -5,7 +5,7 @@ echo "all"
 #####
 
 Diy_lede() {
-echo "LEDE源码自定义"
+echo "LEDE源码自定义1"
 rm -rf package/lean/{luci-app-netdata,luci-theme-argon,k3screenctrl}
 
 git clone -b $REPO_BRANCH --single-branch https://github.com/281677160/openwrt-package package/danshui
@@ -26,7 +26,7 @@ find package/*/ feeds/*/ -maxdepth 2 -path "*luci-app-bypass/Makefile" | xargs -
 #####
 
 Diy_lienol() {
-echo "LIENOL源码自定义"
+echo "LIENOL源码自定义1"
 rm -rf package/lean/{luci-app-netdata,luci-theme-argon,k3screenctrl}
 
 git clone -b $REPO_BRANCH --single-branch https://github.com/281677160/openwrt-package package/danshui
@@ -47,7 +47,7 @@ find package/*/ feeds/*/ -maxdepth 2 -path "*luci-app-bypass/Makefile" | xargs -
 #####
 
 Diy_immortalwrt() {
-echo "天灵源码自定义"
+echo "天灵源码自定义1"
 rm -rf package/lienol/luci-app-timecontrol
 rm -rf package/ctcgfw/{luci-app-argon-config,luci-theme-argonv3}
 
@@ -64,6 +64,9 @@ svn co https://github.com/garypang13/openwrt-packages/trunk/lua-maxminddb
 
 Diy_all2() {
 echo "all2"
+rm -rf {LICENSE,README,README.md}
+rm -rf ./*/{LICENSE,README,README.md}
+rm -rf ./*/*/{LICENSE,README,README.md}
 git clone https://github.com/openwrt-dev/po2lmo.git
 pushd po2lmo
 make && sudo make install
@@ -73,23 +76,14 @@ popd
 Diy_lede2() {
 echo "LEDE源码自定义2"
 curl -fsSL  https://raw.githubusercontent.com/xiaorouji/openwrt-passwall/main/v2ray-plugin/Makefile > package/lean/v2ray-plugin/Makefile
-rm -rf {LICENSE,README,README.md}
-rm -rf ./*/{LICENSE,README,README.md}
-rm -rf ./*/*/{LICENSE,README,README.md}
 }
 
 Diy_lienol2() {
 echo "LIENOL源码自定义2"
-rm -rf {LICENSE,README,README.md}
-rm -rf ./*/{LICENSE,README,README.md}
-rm -rf ./*/*/{LICENSE,README,README.md}
 }
 
 Diy_immortalwrt2() {
 echo "天灵源码自定义2"
-rm -rf {LICENSE,README,README.md}
-rm -rf ./*/{LICENSE,README,README.md}
-rm -rf ./*/*/{LICENSE,README,README.md}
 }
 
 
