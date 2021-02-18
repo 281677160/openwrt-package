@@ -1,8 +1,24 @@
+# 全脚本源码通用diy.sh文件
+
 Diy_all() {
-echo "all"
+echo "all1"
 }
 
-#####
+# 全脚本源码通用diy2.sh文件
+
+Diy_all2() {
+echo "all2"
+rm -rf {LICENSE,README,README.md}
+rm -rf ./*/{LICENSE,README,README.md}
+rm -rf ./*/*/{LICENSE,README,README.md}
+git clone https://github.com/openwrt-dev/po2lmo.git
+pushd po2lmo
+make && sudo make install
+popd
+}
+
+################################################################################################################
+# LEDE源码通用diy1.sh文件
 
 Diy_lede() {
 echo "LEDE源码自定义1"
@@ -23,7 +39,18 @@ find package/*/ feeds/*/ -maxdepth 2 -path "*luci-app-bypass/Makefile" | xargs -
 find package/*/ feeds/*/ -maxdepth 2 -path "*luci-app-bypass/Makefile" | xargs -i sed -i 's/shadowsocksr-libev-ssr-server/shadowsocksr-libev-server/g' {}
 }
 
-#####
+# LEDE源码通用diy2.sh文件
+
+Diy_lede2() {
+echo "LEDE源码自定义2"
+}
+
+################################################################################################################
+
+
+
+################################################################################################################
+# LIENOL源码通用diy1.sh文件
 
 Diy_lienol() {
 echo "LIENOL源码自定义1"
@@ -44,7 +71,18 @@ find package/*/ feeds/*/ -maxdepth 2 -path "*luci-app-bypass/Makefile" | xargs -
 find package/*/ feeds/*/ -maxdepth 2 -path "*luci-app-bypass/Makefile" | xargs -i sed -i 's/shadowsocksr-libev-ssr-server/shadowsocksr-libev-server/g' {}
 }
 
-#####
+# LIENOL源码通用diy2.sh文件
+
+Diy_lienol2() {
+echo "LIENOL源码自定义2"
+}
+
+################################################################################################################
+
+
+
+################################################################################################################
+# 天灵源码通用diy1.sh文件
 
 Diy_immortalwrt() {
 echo "天灵源码自定义1"
@@ -59,44 +97,20 @@ git clone https://github.com/garypang13/luci-app-bypass package/luci-app-bypass
 svn co https://github.com/garypang13/openwrt-packages/trunk/lua-maxminddb
 }
 
-######################################################################################################
-
-
-Diy_all2() {
-echo "all2"
-rm -rf {LICENSE,README,README.md}
-rm -rf ./*/{LICENSE,README,README.md}
-rm -rf ./*/*/{LICENSE,README,README.md}
-git clone https://github.com/openwrt-dev/po2lmo.git
-pushd po2lmo
-make && sudo make install
-popd
-}
-
-Diy_lede2() {
-echo "LEDE源码自定义2"
-}
-
-Diy_lienol2() {
-echo "LIENOL源码自定义2"
-}
+# 天灵源码通用diy2.sh文件
 
 Diy_immortalwrt2() {
 echo "天灵源码自定义2"
 }
 
+################################################################################################################
 
-######################################################################################################
 
+# N1、微加云、贝壳云、我家云、S9xxx 打包程序
 
 Diy_n1() {
 cd ../
 svn co https://github.com/281677160/N1/trunk reform
-cd openwrt
-}
-
-Diy_n1_2() {
-cd ../
 cp openwrt/bin/targets/armvirt/*/*.tar.gz reform/openwrt
 cd reform
 sudo ./gen_openwrt -d -k latest
@@ -104,7 +118,10 @@ sudo ./gen_openwrt -d -k latest
 devices=("phicomm-n1" "rk3328" "s9xxx" "vplus")
 }
 
-#########################################################################################################
+
+################################################################################################################
+
+# 公告
 
 Diy_notice() {
 echo "#"
