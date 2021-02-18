@@ -108,7 +108,7 @@ devices=("phicomm-n1" "rk3328" "s9xxx" "vplus")
 
 Diy_notice() {
 echo "《公告内容》"
-echo "Google 的免费翻译服务可提供简体中文和另外100 多种语言之间的互译功能，可让您即时翻译字" >> $GITHUB_ENV
-echo "Google 的免费翻译服务可提供简体中文和另外100 多种字" >> $GITHUB_ENV
-echo "https://github.com/281677160/build-openwrt/blob/main/.github/workflows/build-openwrt.yml" >> $GITHUB_ENV
+echo "Google 的免费翻译服务可提供简体中文和另外100 多种语言之间的互译功能，可让您即时翻译字"
+echo "Google 的免费翻译服务可提供简体中文和另外100 多种字"
+echo "https://github.com/281677160/build-openwrt/blob/main/.github/workflows/build-openwrt.yml"
 }
