@@ -111,6 +111,6 @@ echo ""
 echo "《公告内容》"
 echo "各地开学时间陆续确定:黑龙江最晚"
 echo "Google 的免费翻译服务可提供简体中文和另外100 多种字"
-echo "增加passwass<git clone https://github.com/xiaorouji/openwrt-passwall package/luci-app-passwall>放入diy-1.sh"
+echo "源码已增加所以梯子插件"
 echo ""
 }
