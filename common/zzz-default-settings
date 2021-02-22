@@ -57,7 +57,7 @@ echo 'hsts=0' > /root/.wgetrc
 rm -rf /tmp/luci-modulecache/
 rm -f /tmp/luci-indexcache
 
-sed -i 's/(ver.distversion)%>/(ver.distversion)%> <\!--/g' /usr/lib/lua/luci/view/admin_status/index.htm
-sed -i 's/(ver.luciversion)%>)/(ver.luciversion)%>) \!-->/g' /usr/lib/lua/luci/view/admin_status/index.htm
+sed -i 's/(ver.distversion)%>/(ver.distversion)%> <!--/g' /usr/lib/lua/luci/view/admin_status/index.htm
+sed -i 's/(ver.luciversion)%>)/(ver.luciversion)%>) !-->/g' /usr/lib/lua/luci/view/admin_status/index.htm
 
 exit 0
