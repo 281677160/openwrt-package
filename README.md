@@ -42,8 +42,6 @@
 ###### [luci-app-ttnode](#/README.md)    &nbsp;&nbsp;&nbsp;&nbsp;#一个运行在openwrt下的甜糖星愿自动采集插件
 ###### [luci-app-serverchand](#/README.md)    &nbsp;&nbsp;&nbsp;&nbsp;#钉钉信息推送
 ###### [luci-app-socat](#/README.md)    &nbsp;&nbsp;&nbsp;&nbsp;#端口转发
-###### [luci-app-netkeeper-interception](#/README.md)    &nbsp;&nbsp;&nbsp;&nbsp;#闪讯
-
 #
 
 - 编译luci-app-advanced时候自动带上luci-app-filebrowser ，高级设置+文件浏览器（文件管理），所以luci-app-advanced和luci-app-filebrowser不能同时编译，只能二选一
