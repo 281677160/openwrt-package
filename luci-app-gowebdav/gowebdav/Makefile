@@ -1,29 +1,38 @@
+#
+# Copyright (C) 2021 ImmortalWrt
+# <https://immortalwrt.org>
+#
+# This is free software, licensed under the GNU General Public License v3.
+# See /LICENSE for more information.
+#
+
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=gowebdav
-PKG_VERSION:=0.0.1
+PKG_VERSION:=0.0.2
 PKG_RELEASE:=1
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/1715173329/gowebdav.git
-PKG_SOURCE_VERSION:=8b30e5453e959fd9911a90f2d4f7421616285ffa
-PKG_MAINTAINER:=CN_SZTL <cnsztl@project-openwrt.eu.org>
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=https://codeload.github.com/1715173329/gowebdav/tar.gz/v$(PKG_VERSION)?
+PKG_HASH:=0a6a2af4f24905ffea247b6044d01129d938af4b3a256bf19b42c52bb452f947
 
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE:=$(PKG_SOURCE_SUBDIR)-$(PKG_VERSION).tar.gz
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_SOURCE_SUBDIR)
+PKG_MAINTAINER:=CN_SZTL <cnsztl@immortalwrt.org>
+
+PKG_CONFIG_DEPENDS:= \
+	CONFIG_GOWEBDAV_COMPRESS_GOPROXY \
+	CONFIG_GOWEBDAV_COMPRESS_UPX
 
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
 
-GO_PKG:=gowebdav
+GO_PKG:=github.com/1715173329/gowebdav
 GO_PKG_LDFLAGS:=-s -w
 
 include $(INCLUDE_DIR)/package.mk
 include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
 
-define Package/$(PKG_NAME)
+define Package/gowebdav
 	SECTION:=net
 	CATEGORY:=Network
 	SUBMENU:=File Transfer
@@ -32,32 +41,43 @@ define Package/$(PKG_NAME)
 	DEPENDS:=$(GO_ARCH_DEPENDS)
 endef
 
-define Package/$(PKG_NAME)/description
+define Package/gowebdav/description
 	A simple WebDav server written in Golang.
 endef
 
-define Build/Prepare
-	tar -zxf $(DL_DIR)/$(PKG_SOURCE) -C $(PKG_BUILD_DIR) --strip-components 1
+define Package/gowebdav/config
+config GOWEBDAV_COMPRESS_GOPROXY
+	bool "Compiling with GOPROXY proxy"
+	default n
+
+config GOWEBDAV_COMPRESS_UPX
+	bool "Compress executable files with UPX"
+	default y
 endef
 
-define Build/Configure
-endef
+ifeq ($(CONFIG_GOWEBDAV_COMPRESS_GOPROXY),y)
+	export GO111MODULE=on
+	export GOPROXY=https://goproxy.io
+endif
 
 define Build/Compile
-	$(eval GO_PKG_BUILD_PKG:=$(GO_PKG))
-	$(call GoPackage/Build/Configure)
 	$(call GoPackage/Build/Compile)
+ifeq ($(CONFIG_GOWEBDAV_COMPRESS_UPX),y)
 	$(STAGING_DIR_HOST)/bin/upx --lzma --best $(GO_PKG_BUILD_BIN_DIR)/gowebdav
+endif
 endef
 
-define Package/$(PKG_NAME)/install
+define Package/gowebdav/install
+	$(call GoPackage/Package/Install/Bin,$(PKG_INSTALL_DIR))
+
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(GO_PKG_BUILD_BIN_DIR)/gowebdav $(1)/usr/bin/gowebdav
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/gowebdav $(1)/usr/bin/gowebdav
+
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) $(CURDIR)/files/gowebdav.config $(1)/etc/config/gowebdav
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) $(CURDIR)/files/gowebdav.init $(1)/etc/init.d/gowebdav
 endef
 
-$(eval $(call GoBinPackage,$(PKG_NAME)))
-$(eval $(call BuildPackage,$(PKG_NAME)))
+$(eval $(call GoBinPackage,gowebdav))
+$(eval $(call BuildPackage,gowebdav))
