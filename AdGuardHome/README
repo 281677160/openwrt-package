@@ -1,1 +1,0 @@
-sed -i '$i '"chmod -R 777 /etc/init.d/AdGuardHome /usr/share/AdGuardHome/addhost.sh"'' ./package/lean/default-settings/files/zzz-default-settings
