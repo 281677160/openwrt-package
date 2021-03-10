@@ -10,4 +10,3 @@ config AdGuardHome 'AdGuardHome'
 	option redirect 'dnsmasq-upstream'
 	option waitonboot '0'
 	option ucitracktest '1'
-
