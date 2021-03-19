@@ -1,14 +1,13 @@
-# Copyright (C) 2019-2020 kenzo<kenzok8@gmail.com>
+#
+# Copyright (C) 2008-2014 The LuCI Team <luci@lists.subsignal.org>
 #
 # This is free software, licensed under the Apache License, Version 2.0 .
 #
 
 include $(TOPDIR)/rules.mk
 
-LUCI_TITLE:=Atmaterial new by kenzo
+LUCI_TITLE:=ATMaterial Theme
 LUCI_DEPENDS:=
-PKG_VERSION:=1.2
-PKG_RELEASE:=02-20200209
 
 include $(TOPDIR)/feeds/luci/luci.mk
 
