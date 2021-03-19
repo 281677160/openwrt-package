@@ -1,3 +1,3 @@
 #!/bin/sh
 
-tmate -V | grep "${2#*v}"
+tmate -V | grep "$PKG_VERSION"

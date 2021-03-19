@@ -1,9 +1,6 @@
+# SPDX-License-Identifier: GPL-3.0-only
 #
 # Copyright (C) 2021 ImmortalWrt.org
-#
-# This is free software, licensed under the GNU General Public License v3.
-# See <https://www.gnu.org/licenses/gpl-3.0.html> for more information.
-#
 
 include $(TOPDIR)/rules.mk
 
