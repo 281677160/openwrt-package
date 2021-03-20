@@ -41,6 +41,7 @@
 ###### [luci-app-ttnode](#/README.md)    &nbsp;&nbsp;&nbsp;&nbsp;#一个运行在openwrt下的甜糖星愿自动采集插件
 ###### [luci-app-serverchand](#/README.md)    &nbsp;&nbsp;&nbsp;&nbsp;#钉钉信息推送
 ###### [luci-app-socat](#/README.md)    &nbsp;&nbsp;&nbsp;&nbsp;#端口转发
+###### [luci-app-ddnsto](#/README.md)    &nbsp;&nbsp;&nbsp;&nbsp;#DDNSTO 通过穿透技术，不需要公网 IP 也可以访问内网设备
 #
 
 - 编译luci-app-advanced时候自动带上luci-app-filebrowser ，高级设置+文件浏览器（文件管理），所以luci-app-advanced和luci-app-filebrowser不能同时编译，只能二选一
@@ -52,6 +53,8 @@
 - 编译luci-app-dockerman或者luci-app-docker，首先要在Global build settings ---> Enable IPv6 support in packages (NEW)（选上）
 
 - luci-app-autopoweroff 和 luci-app-autoreboot 不能同时编译，同时编译会编译失败
+
+- luci-app-ddnsto  如果有兼容性问题，安装好固件后执行 `/etc/init.d/ddnsto enable` 命令，这个插件是由两部分组成的，有一部分在Network --->里面默认自动运行的，如果你不需要这个插件，又不想默认运行部分运行的话，在.config的配置文件里面加入一句 `# CONFIG_PACKAGE_ddnsto is not set` 就行
 #
 #
 ##### 如果还是没有你需要的插件，请不要一下子就拉取别人的插件包
