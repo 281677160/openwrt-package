@@ -169,7 +169,7 @@ input,
 
 select:not([multiple="multiple"]):focus,
 input:focus {
-    border-color: #94a494;
+    border-color: #FF4040;
 }
 
 select[multiple="multiple"] {
@@ -177,7 +177,7 @@ select[multiple="multiple"] {
 }
 
 code {
-    color: #94a494;
+    color: #FF4040;
 }
 
 abbr {
@@ -320,7 +320,7 @@ header > .container > .brand {
     line-height:60px;
     color: white;
     cursor: default;
-    background: #94a494;
+    background: #FF4040;
     display:block;
     width:17rem;
     padding-right: 10px;
@@ -493,7 +493,7 @@ header > .container > a[class="brand"]:after {
     content: "\e01b";
 }
 .main > .main-left > .nav > .slide > a[data-title="Docker"]:before {
-    content: "\e025";
+    content: "\e027";
 }
 .main > .main-left > .nav > .slide > a[data-title="NAS"]:before {
     content: "\e00b";
@@ -760,7 +760,7 @@ fieldset > .table > .tr:nth-of-type(odd) {
     width: 100% !important;
     border-color:#ccc !important;
     height:20px !important;
-    color:#bcdeb8 !important;
+    color:#7fde7a !important;
 }
 
 #cpu_free > div > div,
@@ -773,7 +773,7 @@ fieldset > .table > .tr:nth-of-type(odd) {
 #memcache > div > div,
 #memtotal > div > div {
     height: 1.4rem !important;
-    background-color: #bcdeb8 !important;
+    background-color: #7fde7a !important;
 }
 
 /* fix multiple table */
