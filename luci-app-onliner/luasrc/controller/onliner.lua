@@ -1,9 +1,9 @@
 module("luci.controller.onliner",package.seeall)
 nixio=require"nixio"
 function index()
-entry({"admin","status","onliner"},alias("admin","status","onliner","onliner"),_("Connection info"))
+entry({"admin","status","onliner"},alias("admin","status","onliner","onliner"),_("Online User"))
 entry({"admin","status","onliner","onliner"},template("onliner/onliner"),_("Online User"),1)
-entry({"admin", "status","onliner","speed"}, template("onliner/display"), _("Speed monitor"), 2)
+entry({"admin", "status","onliner","speed"}, template("onliner/display"), _("speed"), 2)
 entry({"admin", "status","onliner","setnlbw"}, call("set_nlbw"))
 end
 function set_nlbw()
