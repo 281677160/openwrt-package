@@ -3,6 +3,13 @@
 sleeptime=60
 logfile="/var/log/oscam.log"
 OSCAM_PATH=/usr/bin
+
+[ -f  /tmp/oscam ] && 
+{
+	OSCAM_PATH=/tmp
+	[ -x  /tmp/oscam ] ||  chmod +x /tmp/oscam
+}
+
 enable=$(uci get oscam.config.enabled 2>/dev/null)
 
 oscam_log(){
@@ -20,12 +27,13 @@ do
 	echo "$curtime online! "
 
 	if ! pidof oscam>/dev/null; then
-		service_start ${OSCAM_PATH}/oscam -b -r 2 -u
+		${OSCAM_PATH}/oscam -b -r 2 -u -d 32
 		echo "$curtime 重启服务！" >> ${logfile}
 	fi
 
 sleep ${sleeptime}
 continue
 done
+
 
 
