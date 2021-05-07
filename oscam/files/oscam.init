@@ -21,7 +21,7 @@ start() {
 		fi
 	echo "enable"
 	[ -d /var/log/oscam ] || mkdir -p /var/log/oscam
-	service_start ${OSCAM_PATH}/oscam -b -r 2 -u -d 32
+	service_start ${OSCAM_PATH}/oscam -b -r 2 -u
 	nohup /usr/share/oscam/oscam-watchdog.sh > /var/log/oscam.log 2>&1 &
 	fi
 }
