@@ -5,10 +5,10 @@
 
 include $(TOPDIR)/rules.mk
 
-LUCI_TITLE:=LuCI support for ddnsto
-LUCI_DEPENDS:=+ddnsto
+LUCI_TITLE:=LuCI support for linkease
+LUCI_DEPENDS:=+linkease
 LUCI_PKGARCH:=all
-PKG_VERSION:=1.0.0
+PKG_VERSION:=2.1.0
 PKG_RELEASE:=1
 
 include $(TOPDIR)/feeds/luci/luci.mk
