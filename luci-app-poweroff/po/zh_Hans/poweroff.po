@@ -1,6 +1,5 @@
 msgid ""
-msgstr "Content-Type: text/plain; charset=UTF-8\n"
-
+msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Project-Id-Version: \n"
 "POT-Creation-Date: \n"
@@ -11,7 +10,7 @@ msgstr "Content-Type: text/plain; charset=UTF-8\n"
 "X-Generator: Poedit 2.2.4\n"
 "Last-Translator: eSirPlayground <https://www.youtube.com/c/esirplayground>\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"Language: zh_CN\n"
+"Language: zh_Hans\n"
 
 msgid "PowerOff"
 msgstr "关机"
