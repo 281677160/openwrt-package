@@ -1,4 +1,6 @@
-msgid 
+msgid ""
+msgid "Content-Type: text/plain; charset=UTF-8
+"
 msgid "DDNS.to"
 msgstr "DDNS.to内网穿透"
 

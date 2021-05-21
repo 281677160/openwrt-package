@@ -1,4 +1,6 @@
-msgid 
+msgid ""
+msgid "Content-Type: text/plain; charset=UTF-8
+"
 msgid "LinkEase"
 msgstr "易有云文件管理器"
 
