@@ -1,3 +1,4 @@
+msgid 
 msgid "Scheduled Setting"
 msgstr "定时设置"
 

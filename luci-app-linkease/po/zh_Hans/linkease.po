@@ -1,3 +1,4 @@
+msgid 
 msgid "LinkEase"
 msgstr "易有云文件管理器"
 
