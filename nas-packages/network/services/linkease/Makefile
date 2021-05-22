@@ -11,7 +11,7 @@ PKG_ARCH_LINKEASE:=$(ARCH)
 
 PKG_NAME:=linkease
 PKG_VERSION:=0.3.58
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 PKG_SOURCE:=$(PKG_NAME)-binary-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://firmware.koolshare.cn/binary/LinkEase/LinuxStorage/
 PKG_HASH:=74bbfd4805711e84d49d15dbe577519acd60e43624232628eccbfd180c0aaf75
@@ -56,6 +56,7 @@ endef
 define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/usr/sbin $(1)/etc/config $(1)/etc/init.d $(1)/etc/uci-defaults
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/linkease.$(PKG_ARCH_LINKEASE) $(1)/usr/sbin/linkease
+	$(INSTALL_BIN) ./files/aria2.sh $(1)/usr/sbin/aria2.sh
 	$(INSTALL_CONF) ./files/linkease.config $(1)/etc/config/linkease
 	$(INSTALL_BIN) ./files/linkease.init $(1)/etc/init.d/linkease
 	$(INSTALL_BIN) ./files/linkease.uci-default $(1)/etc/uci-defaults/linkease
