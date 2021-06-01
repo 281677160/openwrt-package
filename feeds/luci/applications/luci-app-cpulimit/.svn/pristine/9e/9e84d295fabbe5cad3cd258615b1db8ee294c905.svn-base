@@ -1,6 +1,0 @@
-
-config list
-	option exename 'ksmbd.mountd'
-	option enabled '0'
-	option limit '50'
-
