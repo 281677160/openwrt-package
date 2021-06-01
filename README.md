@@ -54,7 +54,7 @@
 
 - luci-app-autotimeset 和 luci-app-autoreboot 不能同时编译，同时编译会编译失败
 
-- luci-app-ddnsto  如果有兼容性问题，安装好固件后执行 `/etc/init.d/ddnsto enable` 命令，这个插件是由两部分组成的，有一部分在Network --->里面默认自动选择的，如果你不需要这个插件，又不想默选择这个的话，在.config的配置文件里面加入一句 `# CONFIG_PACKAGE_ddnsto is not set` 就行，一般不是太小的闪存机子都不需要理会这个东西的，x86的除外，其他机子编译时候增加这个插件会有编译失败风险，实在想用的话，就编译好固件后再用命令安装插件好了
+- luci-app-ddnsto  如果有兼容性问题，安装好固件后执行 `/etc/init.d/ddnsto enable` 命令
 #
 #
 ##### 如果还是没有你需要的插件，请不要一下子就拉取别人的插件包
