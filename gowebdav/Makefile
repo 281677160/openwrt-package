@@ -30,7 +30,7 @@ GO_PKG:=github.com/1715173329/gowebdav
 GO_PKG_LDFLAGS:=-s -w
 
 include $(INCLUDE_DIR)/package.mk
-include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
+include ../../lang/golang/golang-package.mk
 
 define Package/gowebdav
 	SECTION:=net
@@ -57,7 +57,7 @@ endef
 
 ifeq ($(CONFIG_GOWEBDAV_COMPRESS_GOPROXY),y)
 	export GO111MODULE=on
-	export GOPROXY=https://goproxy.io
+	export GOPROXY=https://goproxy.baidu.com
 endif
 
 define Build/Compile

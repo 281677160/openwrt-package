@@ -12,7 +12,7 @@ PKG_VERSION:=2.5
 PKG_RELEASE:=20210107
 
 
-include $(TOPDIR)/feeds/luci/luci.mk
+include ../../luci.mk
 
 define Package/luci-theme-edge/postinst
 #!/bin/sh
