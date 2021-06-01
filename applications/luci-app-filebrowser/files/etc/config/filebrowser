@@ -1,0 +1,10 @@
+
+config filebrowser 'config'
+	option addr_type 'wan'
+	option db_dir '/opt'
+	option db_name 'filebrowser.db'
+	option enabled '0'
+	option port '8082'
+	option root_dir '/'
+	option username 'admin'
+	option password 'admin'
