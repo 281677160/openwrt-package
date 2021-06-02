@@ -44,6 +44,10 @@
 ###### [luci-app-ddnsto](#/README.md)    &nbsp;&nbsp;&nbsp;&nbsp;#DDNSTO 通过穿透技术，不需要公网 IP 也可以访问内网设备
 #
 
+[openwrt-nanopi-r1s-h5 移植openwrt 到 Nanopi r1s h5](https://github.com/jerrykuku/openwrt-nanopi-r1s-h5)
+
+#
+
 - 编译luci-app-advanced时候自动带上luci-app-filebrowser ，高级设置+文件浏览器（文件管理），所以luci-app-advanced和luci-app-filebrowser不能同时编译，只能二选一
 
 - luci-app-samba 和 luci-app-samba4 不能同时编译，同时编译会失败
@@ -55,6 +59,7 @@
 - luci-app-autotimeset 和 luci-app-autoreboot 不能同时编译，同时编译会编译失败
 
 - luci-app-ddnsto  如果有兼容性问题，安装好固件后执行 `/etc/init.d/ddnsto enable` 命令
+
 #
 #
 ##### 如果还是没有你需要的插件，请不要一下子就拉取别人的插件包
