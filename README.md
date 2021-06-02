@@ -1,4 +1,4 @@
-# [[281677160/AutoBuild-OpenWrt的专用软件包](https://github.com/281677160/AutoBuild-OpenWrt)]
+# [[281677160/build-openwrt的专用软件包](https://github.com/281677160/build-openwrt.git)]
 
 #
 #### 分支[master]的为lede源码专用，分支[19.07]的为lienol源码专用，分支[project-18.06]的为project源码专用
