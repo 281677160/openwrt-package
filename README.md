@@ -44,8 +44,6 @@
 ###### [luci-app-ddnsto](#/README.md)    &nbsp;&nbsp;&nbsp;&nbsp;#DDNSTO 通过穿透技术，不需要公网 IP 也可以访问内网设备
 #
 
-[openwrt-nanopi-r1s-h5 移植openwrt 到 Nanopi r1s h5](https://github.com/jerrykuku/openwrt-nanopi-r1s-h5)
-
 #
 
 - 编译luci-app-advanced时候自动带上luci-app-filebrowser ，高级设置+文件浏览器（文件管理），所以luci-app-advanced和luci-app-filebrowser不能同时编译，只能二选一
