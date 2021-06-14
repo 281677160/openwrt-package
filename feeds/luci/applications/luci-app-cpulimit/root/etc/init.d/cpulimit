@@ -8,11 +8,10 @@ DEFAULT=/etc/default/cpulimit
 
 
 start() {
-	 /usr/bin/cpulimit.sh start &
+ /usr/bin/cpulimit.sh start &
 }
 
 stop() {
   killall -9 cpulimit
 }
-
 
