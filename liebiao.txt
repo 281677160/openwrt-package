@@ -24,6 +24,7 @@ luci-app-netdata
 luci-app-netkeeper-interception
 luci-app-oaf
 luci-app-onliner
+luci-app-openclash
 luci-app-oscam
 luci-app-poweroff
 luci-app-pptp-vpnserver-manyusers
@@ -36,9 +37,11 @@ luci-app-syncthing
 luci-app-tencentddns
 luci-app-ttnode
 luci-app-vssr
+luci-theme-Butterfly
 luci-theme-argon
 luci-theme-atmaterial
 luci-theme-edge
+luci-theme-infinityfreedom
 luci-theme-opentomato
 luci-theme-opentomcat
 luci-theme-rosy
