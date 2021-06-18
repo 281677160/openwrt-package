@@ -1,13 +1,13 @@
 # [[281677160/AutoBuild-OpenWrt的专用软件包](https://github.com/281677160/AutoBuild-OpenWrt)]
 
 #
-#### 分支[master]的为lede源码专用，分支[19.07]的为lienol源码专用
+#### 分支[master]的为[[lede](https://github.com/coolsnowwolf/lede)]源码专用，分支[19.07]的为[[lienol](https://github.com/Lienol/openwrt)]源码专用
 #
 
 ##### 添加以下插件
 ###### [luci-app-adguardhome](#/README.md)
 ###### [luci-app-advancedsetting](#/README.md)
-###### [luci-app-aliddns](#/README.md)]
+###### [luci-app-aliddns](#/README.md)
 ###### [luci-app-argon-config](#/README.md)
 ###### [luci-app-autotimeset](#/README.md)
 ###### [luci-app-clash](#/README.md)
