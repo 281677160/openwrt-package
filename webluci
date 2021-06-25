@@ -245,11 +245,8 @@ PATH1="$PWD/openwrt/build/${firmware}"
 TIME g "正在加载自定义文件和下载插件,请耐心等候~~~"
 echo
 cd $Home
-./scripts/feeds update -a > /dev/null 2>&1
-echo
 TIME g "正在加载源和安装源,请耐心等候~~~"
 ./scripts/feeds update -a
-./scripts/feeds install -a
 ./scripts/feeds install -a
 [[ ! -e ${Home}/.bf_config ]] && {
 	cp -rf ${Home}/build/${firmware}/.config ${Home}/.config
