@@ -241,6 +241,7 @@ PATH1="$PWD/openwrt/build/${firmware}"
 [[ -e .bf_config ]] && {
 	cp -Rf {dl,${Core},.bf_config,compile.sh} $Home
 	rm -rf {dl,${Core},.bf_config,compile.sh}
+}
 TIME g "正在加载自定义文件和下载插件,请耐心等候~~~"
 echo
 cd $Home
