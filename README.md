@@ -19,6 +19,7 @@
 ###### [luci-app-dnsfilter](#/README.md)
 ###### [luci-app-eqos](#/README.md)
 ###### [luci-app-filebrowser](#/README.md)
+###### [luci-app-fileassistant](#/README.md)
 ###### [luci-app-godproxy](#/README.md)
 ###### [luci-app-gost](#/README.md)
 ###### [luci-app-gowebdav](#/README.md)
