@@ -1,7 +1,7 @@
 # [[281677160/AutoBuild-OpenWrt的专用软件包](https://github.com/281677160/AutoBuild-OpenWrt)]
 
 #
-#### 分支[master]的为[[lede](https://github.com/coolsnowwolf/lede)]源码专用，分支[19.07]的为[[lienol](https://github.com/Lienol/openwrt)]源码专用
+#### 分支[master]的为[[lede_source](https://github.com/coolsnowwolf/lede)]源码专用，分支[19.07]的为[[lienol_source](https://github.com/Lienol/openwrt)]源码专用，分支[openwrt-21.02]的为[[Mortal_source](https://github.com/immortalwrt/immortalwrt)]源码专用
 #
 
 ##### 添加以下插件
