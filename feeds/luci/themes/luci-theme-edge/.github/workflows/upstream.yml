@@ -1,0 +1,24 @@
+#
+# This is free software, lisence use MIT.
+# 
+# Copyright (C) 2020 KFERMercer <KFER.Mercer@gmail.com>
+# 
+# <https://github.com/KFERMercer/OpenWrt-CI>
+#
+
+name: Trigger packages update
+on:
+  push:
+
+jobs:
+  trigger:
+    if: github.event.repository.owner.id == '48883331'
+    runs-on: Ubuntu-20.04
+
+    steps:
+    - name: Trigger Packages Update
+      run: |
+        curl -X POST https://api.github.com/repos/garypang13/openwrt-packages/dispatches \
+        -H "Accept: application/vnd.github.everest-preview+json" \
+        -H "Authorization: token ${{ secrets.REPO_TOKEN }}" \
+        --data '{"event_type": "update"}'
