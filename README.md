@@ -8,7 +8,7 @@
 ###### [luci-app-adguardhome](#/README.md) &emsp;&emsp; # adguardhome
 ###### [luci-app-advanced](#/README.md) &emsp;&emsp; # 高级设置（内置文件助手）
 ###### [luci-app-aliddns](#/README.md) &emsp;&emsp; # 阿里DDNS
-###### [[luci-app-amlogic](#/README.md) &emsp;&emsp; # N1和晶晨系列合作写入EMMC插件
+###### [luci-app-amlogic](#/README.md) &emsp;&emsp; # N1和晶晨系列盒子写入EMMC插件
 ###### [luci-app-argon-config](#/README.md) &emsp;&emsp; # argon主题设置,要配合argon主题使用
 ###### [luci-app-clash](#/README.md) &emsp;&emsp; # clash
 ###### [luci-app-control-timewol](#/README.md) &emsp;&emsp; # 定时网络设备唤醒
