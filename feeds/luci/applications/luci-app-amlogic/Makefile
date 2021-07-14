@@ -9,7 +9,7 @@ PKG_NAME:=luci-app-amlogic
 PKG_LICENSE:=GPL-2.0 License
 PKG_MAINTAINER:=ophub <https://github.com/ophub/luci-app-amlogic>
 PKG_VERSION:=2.0
-PKG_RELEASE:=6
+PKG_RELEASE:=8
 
 LUCI_TITLE:= LuCI support for Amlogic S9xxx STB
 LUCI_DEPENDS:=@(aarch64||arm) \
@@ -22,7 +22,6 @@ LUCI_DEPENDS:=@(aarch64||arm) \
 	    +lsblk \
 	    +pv \
 	    +resize2fs \
-	    +tune2fs \
 	    +losetup \
 	    +uuidgen
 LUCI_PKGARCH:=all
