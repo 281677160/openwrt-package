@@ -37,9 +37,7 @@
 ###### [luci-app-oscam](#/README.md) &emsp;&emsp; # OSCAM服务器
 ###### [luci-app-poweroff](#/README.md) &emsp;&emsp; # 关机
 ###### [luci-app-pppoe-server](#/README.md) &emsp;&emsp; # 宽带接入认证服务器
-###### [luci-app-pptp-server](#/README.md) &emsp;&emsp; # PPTP VPN
 ###### [luci-app-pushbot](#/README.md) &emsp;&emsp; # 钉钉推送（微信推送修改版）
-###### [luci-app-rebootschedule](#/README.md) &emsp;&emsp; # 集成多功能的定时设置
 ###### [luci-app-serverchan](#/README.md) &emsp;&emsp; # 微信推送
 ###### [luci-app-smartdns](#/README.md) &emsp;&emsp; # smartdns
 ###### [luci-app-smartinfo](#/README.md) &emsp;&emsp; # 穿越蓝天磁盘监控
@@ -72,9 +70,6 @@ luci-app-dockerman 和 luci-app-docker 不能同时编译，同时编译会编�
 想要编译luci-app-dockerman或者luci-app-docker
 
 首先要在Global build settings ---> Enable IPv6 support in packages (NEW)（选上）
-```
-```
-luci-app-rebootschedule 和 luci-app-autoreboot 不能同时编译，同时编译会编译失败
 ```
 ```
 luci-app-ddnsto  如果有兼容性问题，安装好固件后执行 `/etc/init.d/ddnsto enable` 命令
