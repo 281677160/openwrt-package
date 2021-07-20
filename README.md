@@ -5,6 +5,7 @@
 #
 
 ##### 添加以下插件
+###### [luci-app-adblock-plus](#/README.md) &emsp;&emsp; # 拦截广告
 ###### [luci-app-adguardhome](#/README.md) &emsp;&emsp; # adguardhome
 ###### [luci-app-advanced](#/README.md) &emsp;&emsp; # 高级设置（内置文件助手）
 ###### [luci-app-aliddns](#/README.md) &emsp;&emsp; # 阿里DDNS
@@ -19,7 +20,7 @@
 ###### [luci-app-dockerman](#/README.md) &emsp;&emsp; # docker附带控制面板
 ###### [luci-app-eqos](#/README.md) &emsp;&emsp; # 网速限制
 ###### [luci-app-filebrowser](#/README.md) &emsp;&emsp; # 文件管理器
-###### [luci-app-godproxy](#/README.md) &emsp;&emsp; # 广告过滤
+###### [luci-app-godproxy](#/README.md) &emsp;&emsp; # 拦截广告
 ###### [luci-app-gost](#/README.md) &emsp;&emsp; # GO语言实现的安全隧道
 ###### [luci-app-gowebdav](#/README.md) &emsp;&emsp; # GoWebDav 是一个轻巧、简单、快速的 WebDav 服务端程序
 ###### [luci-app-ipsec-vpnserver-manyusers](#/README.md) &emsp;&emsp; # ipsec-vpn

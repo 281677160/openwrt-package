@@ -1,0 +1,160 @@
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8"
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:5
+msgid ""
+"&nbsp;&nbsp;&nbsp;<input class=\"cbi-button cbi-button-apply\" type=\"button"
+"\" value=\""
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:4
+msgid ""
+"* 所有数值可使用 - 连接表示连续范围，比如星期：1-5 表示星期一至星期五；使用,"
+"表示不连续的点，比如星期：1,3,5 表示仅仅星期一、三、五。"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:3
+msgid ""
+"*所有时间参数都是指该自然单位中的时间点，而非累积计数，比如星期只能是0～6，小"
+"时只能是0～23，分钟只能是0～59，不能使用48小时、80分钟这种累积计数表示法。</"
+"br>"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:42
+msgid ""
+"<font color=\"gray\">*表示每分钟，*/n表示每n分钟</br>n1-n5连续，n1,n3,n5不连"
+"续</font>"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:37
+msgid ""
+"<font color=\"gray\">*表示每小时，*/n表示每n小时</br>n1-n5连续，n1,n3,n5不连"
+"续</font>"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:23
+msgid ""
+"<font color=\"gray\">和日期是逻辑“与”关系</br>n1-n5连续，n1,n3,n5不连续</"
+"font>"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:47
+msgid ""
+"<font color=\"gray\">按“--自定义--”可进行修改</br>(亦可添加后到计划任务中修"
+"改)</font>"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:2
+msgid ""
+"<font color=\"red\"><b>让计划任务更加易用的插件，可以使用-表示连续的时间范"
+"围，使用,表示不连续的多个时间点，使用*/表示循环执行。可以使用“添加”来添加多条"
+"计划任务命令。可使用“--自定义--”来自行添加其它参数。</b></font></br>"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:48
+msgid "A.释放内存"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:49
+msgid "B.清理垃圾"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:50
+msgid "C.重启系统"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:51
+msgid "D.关闭电源"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:52
+msgid "E.重启共享"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:53
+msgid "F.重启网络"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:31
+msgid "Friday"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:54
+msgid "G.重启WAN"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:55
+msgid "H.重新拨号"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:56
+msgid "I.关闭联网"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:57
+msgid "J.打开联网"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:58
+msgid "K.关闭WIFI"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:59
+msgid "L.打开WIFI"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:27
+msgid "Monday"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:32
+msgid "Saturday"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:26
+msgid "Sunday"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:30
+msgid "Thursday"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:28
+msgid "Tuesday"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:29
+msgid "Wednesday"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:41
+msgid "分 <font color=\" red\">(数值范围0～59)</font>"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:17
+msgid "启用"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:1
+msgid "定时任务设置"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:46
+msgid "执行命令 <font color=\" red\">(多条用 && 连接)</font>"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:36
+msgid "时 <font color=\" red\">(数值范围0～23)</font>"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:22
+msgid "星期 <font color=\" red\">(数值范围0～6)</font>"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:6
+msgid "查看/验证"
+msgstr ""
+
+#: luci-app-rebootschedule/luasrc/model/cbi/rebootschedule.lua:25
+msgid "每天"
+msgstr ""
