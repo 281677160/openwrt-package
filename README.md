@@ -7,7 +7,7 @@
 ##### 添加以下插件
 ###### [luci-app-adblock-plus](#/README.md) &emsp;&emsp; # 拦截广告
 ###### [luci-app-adguardhome](#/README.md) &emsp;&emsp; # adguardhome
-###### [luci-app-advanced](#/README.md) &emsp;&emsp; # 高级设置（内置文件助手）
+###### [luci-app-advanced](#/README.md) &emsp;&emsp; # 高级设置（内置luci-app-fileassistant文件助手）
 ###### [luci-app-aliddns](#/README.md) &emsp;&emsp; # 阿里DDNS
 ###### [luci-app-amlogic](#/README.md) &emsp;&emsp; # N1和晶晨系列盒子写入EMMC插件
 ###### [luci-app-argon-config](#/README.md) &emsp;&emsp; # argon主题设置,要配合argon主题使用
