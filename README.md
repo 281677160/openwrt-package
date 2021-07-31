@@ -38,6 +38,7 @@
 ###### [luci-app-poweroff](#/README.md) &emsp;&emsp; # 关机
 ###### [luci-app-pppoe-server](#/README.md) &emsp;&emsp; # 宽带接入认证服务器
 ###### [luci-app-pushbot](#/README.md) &emsp;&emsp; # 钉钉推送（微信推送修改版）
+###### [luci-app-rebootschedule](#/README.md) &emsp;&emsp; # 多功能重启（网络、系统、WIFI、拨号...）
 ###### [luci-app-serverchan](#/README.md) &emsp;&emsp; # 微信推送
 ###### [luci-app-smartdns](#/README.md) &emsp;&emsp; # smartdns
 ###### [luci-app-smartinfo](#/README.md) &emsp;&emsp; # 穿越蓝天磁盘监控
