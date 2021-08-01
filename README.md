@@ -38,7 +38,7 @@
 ###### [luci-app-poweroff](#/README.md) &emsp;&emsp; # 关机
 ###### [luci-app-pppoe-server](#/README.md) &emsp;&emsp; # 宽带接入认证服务器
 ###### [luci-app-pushbot](#/README.md) &emsp;&emsp; # 钉钉推送（微信推送修改版）
-###### [luci-app-rebootschedule](#/README.md) &emsp;&emsp; # 多功能重启（网络、系统、WIFI、拨号...）
+###### [luci-app-rebootschedule](#/README.md) &emsp;&emsp; # 多功能定时任务（重启网络、重启系统、重启WIFI、重新拨号...）
 ###### [luci-app-serverchan](#/README.md) &emsp;&emsp; # 微信推送
 ###### [luci-app-smartdns](#/README.md) &emsp;&emsp; # smartdns
 ###### [luci-app-smartinfo](#/README.md) &emsp;&emsp; # 穿越蓝天磁盘监控
@@ -46,7 +46,7 @@
 ###### [luci-app-switch-lan-play](#/README.md) &emsp;&emsp; # 虚拟局域网联机工具
 ###### [luci-app-syncthing](#/README.md) &emsp;&emsp; # syncthing同步工具
 ###### [luci-app-tencentddns](#/README.md) &emsp;&emsp; # 腾讯DDNS
-###### [luci-app-timecontrol](#/README.md) &emsp;&emsp; # 时间控制跟（luci-app-accesscontrol）差不多
+###### [luci-app-timecontrol](#/README.md) &emsp;&emsp; # 时间控制跟（luci-app-accesscontrol）差不多，不同的是这个可以配合高级设置一起使用
 ###### [luci-app-ttnode](#/README.md) &emsp;&emsp; # 甜糖星愿自动采集插件
 ###### [luci-app-vssr](#/README.md) &emsp;&emsp; # vssr
 ###### [luci-theme-argon](#/README.md) &emsp;&emsp; # argon主题
