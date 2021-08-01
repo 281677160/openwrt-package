@@ -4,5 +4,5 @@ if not nixio.fs.access("/etc/config/rebootschedule") then
 return
 end
 
-entry({"admin", "system", "rebootschedule"}, cbi("rebootschedule"), _("定时重启"),88)
+entry({"admin", "system", "rebootschedule"}, cbi("rebootschedule"), _("定时任务"),88)
 end
