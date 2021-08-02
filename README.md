@@ -73,7 +73,7 @@ luci-app-dockerman 和 luci-app-docker 不能同时编译，同时编译会编�
 首先要在Global build settings ---> Enable IPv6 support in packages (NEW)（选上）
 ```
 ```
-luci-app-ddnsto  如果有兼容性问题，安装好固件后执行 `/etc/init.d/ddnsto enable` 命令
+luci-app-ddnsto  如果有兼容性问题，安装好固件后执行 /etc/init.d/ddnsto enable 命令
 ```
 ```
 luci-app-advanced  已内置luci-app-fileassistant文件助手，切莫同时编译他们
