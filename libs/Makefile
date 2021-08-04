@@ -1,76 +1,209 @@
-826a560b-1d11-412d-b124-783a5ddf347f
+#
+# Copyright (C) 2006-2015 OpenWrt.org
+#
+# This is free software, licensed under the GNU General Public License v2.
+# See /LICENSE for more information.
+#
 
-https://api.telegram.org/bot1494307178:AAHaUScEMeT0EVsjF4lwrCH6ykQjOCRuu2E/getUpdates
-find . -name 'python3-cached-property'
-liblua5.3
-grep "python3-pynacl" -rl ./
+include $(TOPDIR)/rules.mk
 
-x86_generic
-git clone -b barrier_breaker https://github.com/lunatickochiya/barrier_breaker open
+PKG_NAME:=iproute2
+PKG_VERSION:=5.0.0
+PKG_RELEASE:=1
 
-git clone -b lede-17.01 https://github.com/coolsnowwolf/openwrt
-git clone --depth 1 -b lede-17.01 https://github.com/281677160/openwrt-package
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
+PKG_SOURCE_URL:=@KERNEL/linux/utils/net/iproute2
+PKG_HASH:=df047302a39650ef832c07e8dab5df7a23218cd398bd310c8628e386161d20ba
+PKG_BUILD_PARALLEL:=1
+PKG_BUILD_DEPENDS:=iptables
+PKG_LICENSE:=GPL-2.0
+PKG_CPE_ID:=cpe:/a:iproute2_project:iproute2
 
-cp -Rf openwrt open
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(BUILD_VARIANT)/$(PKG_NAME)-$(PKG_VERSION)
 
-git clone https://github.com/small-5/luci-app-adblock-plus package/luci-app-adblock-plus
+include $(INCLUDE_DIR)/kernel.mk
+include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/nls.mk
 
-sudo apt-get -y install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch python3 python2.7 unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs git-core gcc-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler g++-multilib antlr3 gperf wget curl rename libpcap0.8-dev swig rsync
+define Package/iproute2/Default
+  SECTION:=net
+  CATEGORY:=Network
+  URL:=http://www.linuxfoundation.org/collaborate/workgroups/networking/iproute2
+  SUBMENU:=Routing and Redirection
+  MAINTAINER:=Russell Senior <russell@personaltelco.net>
+endef
 
-setup-alpine
-https://jy.ahzcxx.cn/transfer/preparesend
-./transfer cow --block 2621440 -s -p 64 --no-progress openwrt/build/Lede_source 2>&1 | tee cowtransfer.log
+define Package/ip-tiny
+$(call Package/iproute2/Default)
+ TITLE:=Routing control utility (Minimal)
+ VARIANT:=tiny
+ DEFAULT_VARIANT:=1
+ PROVIDES:=ip
+ ALTERNATIVES:=200:/sbin/ip:/usr/libexec/ip-tiny
+ DEPENDS:=+libnl-tiny +(PACKAGE_devlink||PACKAGE_rdma):libmnl
+endef
 
-./transfer cow --block 2621440 -s --no-progress openwrt/build/Lede_source
-./transfer wen openwrt/build/Lede_source 2>&1 | tee cowtransfer.log
+define Package/ip-full
+$(call Package/iproute2/Default)
+ TITLE:=Routing control utility (Full)
+ VARIANT:=full
+ PROVIDES:=ip
+ ALTERNATIVES:=300:/sbin/ip:/usr/libexec/ip-full
+ DEPENDS:=+libnl-tiny +libelf +libcap +(PACKAGE_devlink||PACKAGE_rdma):libmnl
+endef
 
-./transfer wen -s -p 16 --no-progress gujian 2>&1 | tee wetransfer.log
+define Package/tc
+$(call Package/iproute2/Default)
+  TITLE:=Traffic control utility
+  VARIANT:=tc
+  PROVIDES:=tc
+  DEPENDS:=+kmod-sched-core +libxtables +libelf +(PACKAGE_devlink||PACKAGE_rdma):libmnl
+endef
 
-mv gujian/07.27-lede-x86-64-generic-squashfs-combined-efi.img.gz gujian/openwrt-x86-64-generic-squashfs-combined-efi.img.gz
+define Package/genl
+$(call Package/iproute2/Default)
+  TITLE:=General netlink utility frontend
+  DEPENDS:=+libnl-tiny +(PACKAGE_devlink||PACKAGE_rdma):libmnl +(PACKAGE_tc||PACKAGE_ip-full):libelf
+endef
 
-sed -i "s/Download Link/奶牛快传/g" cowtransfer.log
+define Package/ip-bridge
+$(call Package/iproute2/Default)
+  TITLE:=Bridge configuration utility from iproute2
+  DEPENDS:=+libnl-tiny +(PACKAGE_devlink||PACKAGE_rdma):libmnl +(PACKAGE_tc||PACKAGE_ip-full):libelf
+endef
 
-sudo apt-get install qemu
-qemu-img convert -f raw -O vmdk op.img op.vmdk
+define Package/ss
+$(call Package/iproute2/Default)
+  TITLE:=Socket statistics utility
+  DEPENDS:=+libnl-tiny +(PACKAGE_devlink||PACKAGE_rdma):libmnl +(PACKAGE_tc||PACKAGE_ip-full):libelf
+endef
 
-cp /home/dan/openwrt/bin/targets/x86/64/openwrt-sdk-x86-64_gcc-7.5.0_musl.Linux-x86_64.tar.xz ./
+define Package/nstat
+$(call Package/iproute2/Default)
+  TITLE:=Network statistics utility
+  DEPENDS:=+libnl-tiny +(PACKAGE_devlink||PACKAGE_rdma):libmnl +(PACKAGE_tc||PACKAGE_ip-full):libelf
+endef
 
-tar xvJf  openwrt-sdk-x86-64_gcc-7.5.0_musl.Linux-x86_64.tar.xz
+define Package/devlink
+$(call Package/iproute2/Default)
+  TITLE:=Network devlink utility
+  DEPENDS:=+libmnl +(PACKAGE_tc||PACKAGE_ip-full):libelf
+endef
 
-cp -Rf /home/dan/openwrt /home/dan/open
+define Package/rdma
+$(call Package/iproute2/Default)
+  TITLE:=Network rdma utility
+  DEPENDS:=+libmnl +(PACKAGE_tc||PACKAGE_ip-full):libelf
+endef
 
-cp openwrt/bin/targets/x86/64/openwrt-x86-64-generic-rootfs.tar.gz vlede/vlede.tar.gz
+ifeq ($(BUILD_VARIANT),tiny)
+  IP_CONFIG_TINY:=y
+endif
 
-mv openwrt-sdk-x86-64_gcc-7.5.0_musl.Linux-x86_64 openwrt-sdk
+ifeq ($(BUILD_VARIANT),full)
+  HAVE_ELF:=y
+endif
 
-svn co https://github.com/1715173329/immortalwrt/branches/1806-k54-r2s-oc/target/linux/rockchip target/linux/rockchip
+ifeq ($(BUILD_VARIANT),tc)
+  HAVE_ELF:=y
+  SHARED_LIBS:=y
+endif
 
-git clone https://github.com/xiaorouji/openwrt-passwall package/openwrt-passwall
-svn co https://github.com/coolsnowwolf/lede/trunk/package/lean/redsocks2 package/redsocks2
+ifdef CONFIG_PACKAGE_devlink
+  HAVE_MNL:=y
+endif
 
-make package/luci-app-ssr-plus/compile V=s
+ifdef CONFIG_PACKAGE_rdma
+  HAVE_MNL:=y
+endif
 
-sed -i "s/'zh_cn'/'auto'/g" /etc/config/luci
-git clone https://github.com/ophub/amlogic-s9xxx-openwrt
-mv amlogic-s9xxx-openwrt/{amlogic-s9xxx,make} $GITHUB_WORKSPACE
+define Build/Configure
+	echo "static const char SNAPSHOT[] = \"$(PKG_VERSION)-$(PKG_RELEASE)-openwrt\";" \
+		> $(PKG_BUILD_DIR)/include/SNAPSHOT.h
+endef
 
-sudo ./make -d -b s905x3_s905x2_s905x_s905d_s922x_s912 -k 5.13.5_5.4.135
+TARGET_CFLAGS += -ffunction-sections -fdata-sections
+TARGET_LDFLAGS += -Wl,--gc-sections
+TARGET_CPPFLAGS += -I$(STAGING_DIR)/usr/include/libnl-tiny
 
-curl -fsSL https://raw.githubusercontent.com/P3TERX/dotfiles/master/.zshrc >> ~/.zshrc
+MAKE_FLAGS += \
+	KERNEL_INCLUDE="$(LINUX_DIR)/user_headers/include" \
+	SHARED_LIBS=$(SHARED_LIBS) \
+	IP_CONFIG_TINY=$(IP_CONFIG_TINY) \
+	HAVE_ELF=$(HAVE_ELF) \
+	HAVE_MNL=$(HAVE_MNL) \
+	IPT_LIB_DIR=/usr/lib/iptables \
+	XT_LIB_DIR=/usr/lib/iptables \
+	FPIC="$(FPIC)"
 
-    - name: Prepare build docker image dir
-      run: |
-        git clone --depth 1 https://github.com/crazygit/openwrt-x86-64.git -b master dockerfile_dir
-        cp openwrt/bin/targets/x86/64/openwrt-x86-64-generic-rootfs.tar.gz dockerfile_dir/openwrt.tar.gz
+define Build/Compile
+	+$(MAKE_VARS) $(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR) $(MAKE_FLAGS)
+endef
 
-    - name: Publish to Registry
-      uses: elgohr/Publish-Docker-Github-Action@main
-      env:
-        FIRMWARE: openwrt.tar.gz
-      with:
-        workdir: dockerfile_dir
-        name: ${{ env.REPOSITORY }}
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_TOKEN }}
-        buildargs: FIRMWARE
-        snapshot: true
+define Build/InstallDev
+	$(INSTALL_DIR) $(1)/usr/include
+	$(CP) $(PKG_BUILD_DIR)/include/{libgenl,libnetlink}.h $(1)/usr/include/
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(CP) $(PKG_BUILD_DIR)/lib/libnetlink.a $(1)/usr/lib/
+endef
+
+define Package/ip-tiny/install
+	$(INSTALL_DIR) $(1)/usr/libexec
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ip/ip $(1)/usr/libexec/ip-tiny
+endef
+
+define Package/ip-full/install
+	$(INSTALL_DIR) $(1)/usr/libexec
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ip/ip $(1)/usr/libexec/ip-full
+endef
+
+define Package/tc/install
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/tc/tc $(1)/usr/sbin/
+	$(INSTALL_DIR) $(1)/etc/hotplug.d/iface
+	$(INSTALL_BIN) ./files/15-teql $(1)/etc/hotplug.d/iface/
+ifeq ($(SHARED_LIBS),y)
+	$(INSTALL_DIR) $(1)/usr/lib/tc
+	$(CP) $(PKG_BUILD_DIR)/tc/*.so $(1)/usr/lib/tc
+endif
+endef
+
+define Package/genl/install
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/genl/genl $(1)/usr/sbin/
+endef
+
+define Package/ip-bridge/install
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/bridge/bridge $(1)/usr/sbin/
+endef
+
+define Package/ss/install
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/misc/ss $(1)/usr/sbin/
+endef
+
+define Package/nstat/install
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/misc/nstat $(1)/usr/sbin/
+endef
+
+define Package/devlink/install
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/devlink/devlink $(1)/usr/sbin/
+endef
+
+define Package/rdma/install
+	$(INSTALL_DIR) $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/rdma/rdma $(1)/usr/sbin/
+endef
+
+$(eval $(call BuildPackage,ip-tiny))
+$(eval $(call BuildPackage,ip-full))
+$(eval $(call BuildPackage,tc))
+$(eval $(call BuildPackage,genl))
+$(eval $(call BuildPackage,ip-bridge))
+$(eval $(call BuildPackage,ss))
+$(eval $(call BuildPackage,nstat))
+$(eval $(call BuildPackage,devlink))
+$(eval $(call BuildPackage,rdma))
