@@ -16,6 +16,7 @@
 ###### [luci-app-control-webrestriction](#/README.md) &emsp;&emsp; # 访问限制
 ###### [luci-app-control-weburl](#/README.md) &emsp;&emsp; # 网址过滤
 ###### [luci-app-cpulimit](#/README.md) &emsp;&emsp; # CPU性能调整
+###### [luci-app-cupsd](#/README.md) &emsp;&emsp; # CUPS 打印服务器
 ###### [luci-app-ddnsto](#/README.md) &emsp;&emsp; # 内网穿透
 ###### [luci-app-dockerman](#/README.md) &emsp;&emsp; # docker附带控制面板
 ###### [luci-app-eqos](#/README.md) &emsp;&emsp; # 网速限制
