@@ -55,6 +55,7 @@
 ###### [luci-theme-opentomato](#/README.md) &emsp;&emsp; # opentomato主题
 ###### [luci-theme-opentomcat](#/README.md) &emsp;&emsp; # opentomcat主题
 ###### [luci-theme-rosy](#/README.md) &emsp;&emsp; # rosy主题
+###### [luci-theme-darkmatter](#/README.md) &emsp;&emsp; # 黑色主题
 #
 
 #
