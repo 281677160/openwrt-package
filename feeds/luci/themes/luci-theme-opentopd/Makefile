@@ -1,27 +1,14 @@
-# Copyright (C) 2008-2019 Jerrykuku
-# Copyright (C) 2019-2021 sirpdboy
-# http://www.github.com/sirpdboy/luci-theme-opentopd
-# This is free software, licensed under the Apache License, Version 2.0 .
+# LuCI Material Theme
+# Copyright 2015 Lutty Yang <lutty@wcan.in>
+#
+# Licensed under the Apache License v2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 
 include $(TOPDIR)/rules.mk
 
-THEME_NAME:=opentopd
-THEME_TITLE:=opentopd Theme
+LUCI_TITLE:=OpenTomato Theme
+LUCI_DEPENDS:=
 
-PKG_NAME:=luci-theme-$(THEME_NAME)
-PKG_VERSION:=1.2.6
-PKG_RELEASE:=20210807
+include ../../luci.mk
 
-include $(INCLUDE_DIR)/package.mk
-
-include $(TOPDIR)/feeds/luci/luci.mk
-
-define Package/luci-theme-opentopd/postinst
-#!/bin/sh
-
-rm -Rf /var/luci-modulecache
-rm -Rf /var/luci-indexcache
-exit 0
-
-endef
 # call BuildPackage - OpenWrt buildroot signature
