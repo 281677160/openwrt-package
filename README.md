@@ -8,7 +8,7 @@
 #
 
 ##### 添加以下插件
-###### [luci-app-adblock-plus](#/README.md) &emsp;&emsp; # 拦截广告
+###### [luci-app-adblock-plus  ](#/README.md) &emsp;&emsp; # 拦截广告
 ###### [luci-app-adguardhome](#/README.md) &emsp;&emsp; # adguardhome
 ###### [luci-app-advanced](#/README.md) &emsp;&emsp; # 高级设置（内置luci-app-fileassistant文件助手）
 ###### [luci-app-aliddns](#/README.md) &emsp;&emsp; # 阿里DDNS
