@@ -1,3 +1,4 @@
+luci-app-adblock-plus
 luci-app-adguardhome
 luci-app-advanced
 luci-app-aliddns
@@ -18,6 +19,7 @@ luci-app-ipsec-vpnserver-manyusers
 luci-app-iptvhelper
 luci-app-k3screenctrl
 luci-app-koolddns
+luci-app-mentohust
 luci-app-netdata
 luci-app-netkeeper-interception
 luci-app-oaf
@@ -37,14 +39,13 @@ luci-app-tencentddns
 luci-app-timecontrol
 luci-app-ttnode
 luci-app-vssr
+luci-theme-Light
 luci-theme-argon
 luci-theme-atmaterial_new
 luci-theme-infinityfreedom
-luci-theme-opentomcat
 luci-theme-opentomato
+luci-theme-opentomcat
 luci-theme-rosy
-luci-theme-darkmatter
-luci-theme-Light
 adguardhome
 core-lateset
 core_version
@@ -56,6 +57,7 @@ ipset-lists
 iptvhelper
 k3screenctrl
 k3screenctrl_build
+mentohust
 netdata
 openwrt-subconverter
 openwrt-tmate
@@ -65,6 +67,11 @@ switch-lan-play
 version
 cpulimit
 cpulimit-ng
+cups
+cups-bjnp
 filebrowser
 lua-maxminddb
 luci-app-ddnsto
+luci-app-dockerman
+luci-lib-docker
+luci-theme-darkmatter
