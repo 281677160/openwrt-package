@@ -70,6 +70,3 @@ cpulimit-ng
 cups
 cups-bjnp
 filebrowser
-lua-maxminddb
-luci-app-ddnsto
-luci-app-dockerman
