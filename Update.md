@@ -73,5 +73,3 @@ filebrowser
 lua-maxminddb
 luci-app-ddnsto
 luci-app-dockerman
-luci-lib-docker
-luci-theme-darkmatter
