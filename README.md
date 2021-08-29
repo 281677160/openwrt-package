@@ -51,6 +51,7 @@
 ###### [luci-app-syncthing](#/README.md) &emsp;&emsp; # syncthing同步工具
 ###### [luci-app-tencentddns](#/README.md) &emsp;&emsp; # 腾讯DDNS
 ###### [luci-app-timecontrol](#/README.md) &emsp;&emsp; # 时间控制跟（luci-app-accesscontrol）差不多，不同的是这个可以配合高级设置一起使用
+###### [luci-app-wolplus](#/README.md) &emsp;&emsp; # 新版网络唤醒，替换luci-app-wol
 ###### [luci-app-ttnode](#/README.md) &emsp;&emsp; # 甜糖星愿自动采集插件
 ###### [luci-theme-argon](#/README.md) &emsp;&emsp; # argon主题
 ###### [luci-theme-atmaterial](#/README.md) &emsp;&emsp; # atmaterials三合一主题
