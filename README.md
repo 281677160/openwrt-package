@@ -39,6 +39,7 @@
 ###### [luci-app-onliner](#/README.md) &emsp;&emsp; # 流量监控
 ###### [luci-app-openclash](#/README.md) &emsp;&emsp; # openclash
 ###### [luci-app-oscam](#/README.md) &emsp;&emsp; # OSCAM服务器
+###### [luci-app-oled](#/README.md) &emsp;&emsp; # R2S液晶小屏幕显示控制
 ###### [luci-app-poweroff](#/README.md) &emsp;&emsp; # 关机
 ###### [luci-app-pppoe-server](#/README.md) &emsp;&emsp; # 宽带接入认证服务器
 ###### [luci-app-pushbot](#/README.md) &emsp;&emsp; # 钉钉推送（微信推送修改版）
@@ -83,6 +84,9 @@ luci-app-ddnsto  如果有兼容性问题，安装好固件后执行 /etc/init.d
 ```
 luci-app-advanced  已内置luci-app-fileassistant文件助手，切莫同时编译他们
 ```
+
+&emsp;luci-app-oled  如果oled不显示，[请看这里](https://github.com/NateLol/luci-app-oled/issues/10)
+
 #
 #
 ##### 如果您是配合我的仓库一起使用的话，这里没有你需要的插件，请不要一下子就拉取别人的插件包
