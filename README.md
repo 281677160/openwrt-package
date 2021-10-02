@@ -85,7 +85,7 @@ luci-app-ddnsto  如果有兼容性问题，安装好固件后执行 /etc/init.d
 luci-app-advanced  已内置luci-app-fileassistant文件助手，切莫同时编译他们
 ```
 
-&emsp;luci-app-oled  如果oled不显示，[请看这里](https://github.com/NateLol/luci-app-oled/issues/10)
+&emsp;luci-app-oled  为1306 0.91 oled专用，如果oled不显示，[请看这里](https://github.com/NateLol/luci-app-oled/issues/10)
 
 #
 #
