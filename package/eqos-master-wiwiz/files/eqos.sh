@@ -41,10 +41,10 @@ case "$1" in
 		
 		cnt=$(tc class show dev $dev | wc -l)
 		
-		tc class add dev $dev parent 1:1 classid 1:1$cnt htb rate ${dl}mbit ceil ${dl}mbit
+		tc class add dev $dev parent 1:1 classid 1:1$cnt htb rate ${dl}kbit ceil ${dl}kbit
 		tc filter add dev $dev parent 1:0 protocol ip u32 match ip dst $ip flowid 1:1$cnt
 		
-		tc class add dev ${dev}-ifb parent 1:1 classid 1:1$cnt htb rate ${up}mbit ceil ${up}mbit
+		tc class add dev ${dev}-ifb parent 1:1 classid 1:1$cnt htb rate ${up}kbit ceil ${up}kbit
 		tc filter add dev ${dev}-ifb parent 1:0 protocol ip u32 match ip src $ip flowid 1:1$cnt
 	;;
 	*)
@@ -55,6 +55,6 @@ case "$1" in
 		echo "  add ip dl_rate up_rate      #Limiting the bandwidth of a single IP (Mbit/s)"
 		echo "Example:"
 		echo "  $0 start 30 20              # Total bandwidth: down 30Mbit/s up 20Mbit/s"
-		echo "  $0 add 192.168.22.12 10 2   # down 10Mbit/s  up 2Mbit/s"
+		echo "  $0 add 192.168.22.12 10 2   # down 10Kbit/s  up 2Kbit/s"
 	;;
 esac

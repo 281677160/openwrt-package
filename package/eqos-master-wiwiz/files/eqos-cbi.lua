@@ -1,6 +1,6 @@
 local ipc = require "luci.ip"
 
-local m = Map("eqos", translate("Network speed control service"))
+local m = Map("eqos", translate("Quality of Service"))
 
 local s = m:section(TypedSection, "eqos", "")
 s.anonymous = true
@@ -28,10 +28,10 @@ ipc.neighbors({family = 4, dev = "br-lan"}, function(n)
 	end
 end)
 
-dl = s:option(Value, "download", translate("Download speed (Mbit/s)"))
+dl = s:option(Value, "download", translate("Download speed (Kbit/s)"))
 dl.datatype = "and(uinteger,min(1))"
 
-ul = s:option(Value, "upload", translate("Upload speed (Mbit/s)"))
+ul = s:option(Value, "upload", translate("Upload speed (Kbit/s)"))
 ul.datatype = "and(uinteger,min(1))"
 
 comment = s:option(Value, "comment", translate("Comment"))

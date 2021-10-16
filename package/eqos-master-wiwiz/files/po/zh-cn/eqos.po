@@ -9,13 +9,6 @@ msgstr ""
 "Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: Pootle 2.0.6\n"
 
-
-msgid "EQoS"
-msgstr "网速控制"
-
-msgid "eqos"
-msgstr "网速控制"
-
 msgid "Comment"
 msgstr "注解"
 
@@ -28,8 +21,8 @@ msgstr "开启"
 msgid "QoS"
 msgstr "QoS"
 
-msgid "Network speed control service"
-msgstr "网速控制服务"
+msgid "Quality of Service"
+msgstr "QOS服务"
 
 msgid "Upload speed (Mbit/s)"
 msgstr "上传速度 (Mbit/s)"
@@ -40,5 +33,8 @@ msgstr "IP限速"
 msgid "Total bandwidth"
 msgstr "总带宽"
 
-msgid "Flow control setting"
-msgstr "流控设置"
+msgid "Download speed (Kbit/s)"
+msgstr "下载速度 (Kbit/s)"
+
+msgid "Upload speed (Kbit/s)"
+msgstr "上传速度 (Kbit/s)"
