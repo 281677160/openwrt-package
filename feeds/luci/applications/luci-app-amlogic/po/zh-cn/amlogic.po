@@ -98,56 +98,68 @@ msgstr "选择设备型号："
 msgid "Select List"
 msgstr "选择列表"
 
-msgid "X96-Max+ (4G DDR) 2124Mtz"
-msgstr "X96-Max+ (4G DDR) 2124Mtz"
-
-msgid "X96-Max+ (4G DDR) 2208Mtz"
-msgstr "X96-Max+ (4G DDR) 2208Mtz"
-
-msgid "HK1-Box (4G DDR) 2124Mtz"
-msgstr "HK1-Box (4G DDR) 2124Mtz"
-
-msgid "HK1-Box (4G DDR) 2184Mtz"
-msgstr "HK1-Box (4G DDR) 2184Mtz"
-
-msgid "H96-Max-X3 (4G DDR) 2124Mtz"
-msgstr "H96-Max-X3 (4G DDR) 2124Mtz"
-
-msgid "H96-Max-X3 (4G DDR) 2208Mtz"
-msgstr "H96-Max-X3 (4G DDR) 2208Mtz"
-
-msgid "Ugoos-X3 (Cube/Pro/Plus) 2124Mtz"
-msgstr "Ugoos-X3 (Cube/Pro/Plus) 2124Mtz"
-
-msgid "Ugoos-X3 (Cube/Pro/Plus) 2208Mtz"
-msgstr "Ugoos-X3 (Cube/Pro/Plus) 2208Mtz"
-
-msgid "X96-Max-4G"
-msgstr "X96-Max-4G"
-
-msgid "X96-Max-2G"
-msgstr "X96-Max-2G"
-
-msgid "Belink-GT-King"
-msgstr "Belink-GT-King"
-
-msgid "Belink-GT-King-Pro"
-msgstr "Belink-GT-King-Pro"
-
-msgid "Ugoos-AM6-Plus"
-msgstr "Ugoos-AM6-Plus"
-
-msgid "Octopus-Planet"
-msgstr "章鱼星球"
-
-msgid "Phicomm-N1"
+msgid "Phicomm N1"
 msgstr "斐讯-N1"
+
+msgid "Phicomm N1 (DMA thresh)"
+msgstr "斐讯-N1 (DMA thresh)"
 
 msgid "HG680P & B860H"
 msgstr "烽火HG680 & 中兴B860H"
 
 msgid "X96-Mini & TX3-Mini"
 msgstr "X96-Mini & TX3-Mini"
+
+msgid "Octopus Planet"
+msgstr "章鱼星球"
+
+msgid "X96 Max 4G"
+msgstr "X96 Max 4G"
+
+msgid "X96 Max 2G"
+msgstr "X96 Max 2G"
+
+msgid "Belink GT-King"
+msgstr "Belink GT-King"
+
+msgid "Belink GT-King Pro"
+msgstr "Belink GT-King Pro"
+
+msgid "Belink GT-King Pro H"
+msgstr "Belink GT-King Pro H"
+
+msgid "Belink GT-King Pro Rev_A"
+msgstr "Belink GT-King Pro Rev_A"
+
+msgid "Hardkernel ODROID N2"
+msgstr "Hardkernel ODROID N2"
+
+msgid "UGOOS AM6 Plus"
+msgstr "UGOOS AM6 Plus"
+
+msgid "X96 Max+"
+msgstr "X96 Max+"
+
+msgid "X96 Max+ (OverClock@2208Mhz)"
+msgstr "X96 Max+ (超频@2208Mhz)"
+
+msgid "HK1 Box"
+msgstr "HK1 Box"
+
+msgid "HK1 Box (OveClock@2208Mhz)"
+msgstr "HK1 Box (超频@2208Mhz)"
+
+msgid "H96 Max X3"
+msgstr "H96 Max X3"
+
+msgid "H96 Max X3 (OveClock@2208Mhz)"
+msgstr "H96 Max X3 (超频@2208Mhz)"
+
+msgid "Ugoos X3"
+msgstr "Ugoos X3"
+
+msgid "Ugoos X3 (OveClock@2208Mhz)"
+msgstr "Ugoos X3 (超频@2208Mhz)"
 
 msgid "Or enter the dtb file name:"
 msgstr "或者输入自定义 dtb 文件名："
@@ -221,8 +233,8 @@ msgstr "支持将 OpenWrt 系统写入 EMMC、升级固件与内核，备份与�
 msgid "Supported Boxes:"
 msgstr "支持的盒子："
 
-msgid "Amlogic s922x --- [ Belink, Belink-Pro, Ugoos-AM6-Plus ]"
-msgstr "晶晨 s922x --- [ Belink, Belink-Pro, Ugoos-AM6-Plus ]"
+msgid "Amlogic s922x --- [ Belink, Belink-Pro, Ugoos-AM6-Plus, ODROID-N2 ]"
+msgstr "晶晨 s922x --- [ Belink, Belink-Pro, Ugoos-AM6-Plus, ODROID-N2 ]"
 
 msgid "Amlogic s905x3 -- [ X96-Max+, HK1-Box, H96-Max-X3, Ugoos-X3, X96-Air, A95XF3-Air ]"
 msgstr "晶晨 s905x3 -- [ X96-Max+, HK1-Box, H96-Max-X3, Ugoos-X3, X96-Air, A95XF3-Air ]"
