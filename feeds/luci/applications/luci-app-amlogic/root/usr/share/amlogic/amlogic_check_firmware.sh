@@ -107,12 +107,12 @@ rm -f ${FIRMWARE_DOWNLOAD_PATH}/*${firmware_suffix} 2>/dev/null && sync
 rm -f ${FIRMWARE_DOWNLOAD_PATH}/*.img 2>/dev/null && sync
 
 firmware_download_url="https:.*${releases_tag_keywords}.*${SOC}.*${main_line_version}.*${firmware_suffix}"
-curl -s "https://api.github.com/repos/${server_firmware_url}/releases" > ${github_api_openwrt} && sync
-sleep 1
 
 # 02. Check Updated
 check_updated() {
     tolog "02. Start checking the updated ..."
+    curl -s "https://api.github.com/repos/${server_firmware_url}/releases" > ${github_api_openwrt} && sync
+    sleep 1
 
     # Get the openwrt firmware updated_at
     api_down_line_array=$( cat ${github_api_openwrt} | grep -n "${firmware_download_url}" | awk -F ":" '{print $1}' | tr "\n" " " | echo $(xargs) )
