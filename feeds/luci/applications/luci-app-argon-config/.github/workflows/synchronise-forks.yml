@@ -1,0 +1,23 @@
+
+name: 重新Fork仓库
+on:
+  workflow_dispatch:
+
+#  schedule:
+#    - cron: 0 8 */5 * *
+
+jobs: 
+  build:
+    runs-on: Ubuntu-20.04
+    name: fork仓库
+    steps:
+    - name: fork
+      uses: danshui-git/github-forks-sync-action@main
+      with:
+        github_token: ${{ secrets.REPO_TOKEN }}
+        upstream_repository: jerrykuku/luci-app-argon-config
+        upstream_branch: e16ecd748f9693f8b9170291ab7f43144e3a6578
+        target_repository: 281677160/luci-app-argon-config
+        target_branch: main
+        force: true
+        tags: false
