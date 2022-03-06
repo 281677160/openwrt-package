@@ -13,9 +13,9 @@ luci-app-cupsd
 luci-app-ddnsto
 luci-app-fileassistant
 luci-app-filebrowser
-luci-app-ikoolproxy
 luci-app-gost
 luci-app-gowebdav
+luci-app-ikoolproxy
 luci-app-ipsec-vpnserver-manyusers
 luci-app-iptvhelper
 luci-app-k3screenctrl
@@ -31,6 +31,7 @@ luci-app-openclash
 luci-app-oscam
 luci-app-poweroff
 luci-app-pppoe-server
+luci-app-pushbot
 luci-app-rebootschedule
 luci-app-smartdns
 luci-app-smartinfo
