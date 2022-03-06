@@ -55,6 +55,8 @@ luci-theme-infinityfreedom
 luci-theme-opentomato
 luci-theme-opentomcat
 luci-theme-rosy
+LICENSE
+README.md
 adguardhome
 core-lateset
 core_version
@@ -62,6 +64,7 @@ gost
 gowebdav
 ipset-lists
 iptvhelper
+luci-app-openclash_0.44.29-beta_all.ipk
 mentohust
 netdata
 openwrt-subconverter
