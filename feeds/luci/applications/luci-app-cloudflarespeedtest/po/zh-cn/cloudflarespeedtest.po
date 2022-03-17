@@ -1,6 +1,9 @@
 msgid ""
 msgstr ""
 
+msgid "<a href=\"https://github.com/mingxiaoyu/luci-app-jd-cloudflarespeedtest\" target=\"_blank\">GitHub</a>"
+msgstr "<a href=\"https://github.com/mingxiaoyu/luci-app-jd-cloudflarespeedtest\" target=\"_blank\">GitHub项目地址</a>"
+
 msgid "Cloudflare Speed Test"
 msgstr "Cloudflare速度测试"
 
