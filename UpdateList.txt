@@ -37,6 +37,7 @@ luci-app-gowebdav
 luci-app-iptvhelper
 luci-app-koolddns
 luci-app-linkease
+luci-app-mentohust
 luci-app-mosdns
 luci-app-netdata
 luci-app-nginx-pingos
@@ -74,6 +75,7 @@ luci-theme-infinityfreedom
 luci-theme-neobird
 luci-theme-opentomcat
 luci-theme-rosy
+mentohust
 netdata
 openwrt-subconverter
 openwrt-tmate
