@@ -3,8 +3,8 @@
 bind_host: 0.0.0.0
 bind_port: 3000
 users:
-- name: root
-  password: $2y$10$FfeQavihMUiXCuJhHuQwy.6EOXDvkXb/S50qI5fXizqarNT/ShhQm
+- name: admin
+  password: $2y$10$vHRcARdPCieYG3RXWomV5evDYN.Nj/edtwEkQgQJZcK6z7qTLaIc6
 language: ""
 rlimit_nofile: 0
 dns:

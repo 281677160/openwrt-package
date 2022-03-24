@@ -1,4 +1,5 @@
 #!/bin/bash
+
 PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 binpath=$(uci get AdGuardHome.AdGuardHome.binpath)
 if [ -z "$binpath" ]; then
@@ -15,7 +16,7 @@ check_if_already_running(){
 
 check_wgetcurl(){
 	which curl && downloader="curl -L -k --retry 2 --connect-timeout 20 -o" && return
-	which wget && downloader="wget --no-check-certificate -t 2 -T 20 -O" && return
+	which wget-ssl && downloader="wget-ssl --no-check-certificate -t 2 -T 20 -O" && return
 	[ -z "$1" ] && opkg update || (echo error opkg && EXIT 1)
 	[ -z "$1" ] && (opkg remove wget wget-nossl --force-depends ; opkg install wget ; check_wgetcurl 1 ;return)
 	[ "$1" == "1" ] && (opkg install curl ; check_wgetcurl 2 ; return)
@@ -130,21 +131,21 @@ doupdate_core(){
 	Arch="amd64"
 	;;
 	"mipsel")
-	Arch="mipsle"
-	;;
+		Arch="mipsle"
+		;;
 	"mips64el")
-	Arch="mips64le"
-	Arch="mipsle"
-	echo -e "mips64el use $Arch may have bug" 
-	;;
+		Arch="mips64le"
+		Arch="mipsle"
+		echo -e "mips64el use $Arch may have bug"
+		;;
 	"mips")
-	Arch="mips"
-	;;
+		Arch="mips"
+		;;
 	"mips64")
-	Arch="mips64"
-	Arch="mips"
-	echo -e "mips64 use $Arch may have bug" 
-	;;
+		Arch="mips64"
+		Arch="mips"
+		echo -e "mips64 use $Arch may have bug"
+		;;
 	"arm")
 	Arch="arm"
 	;;
