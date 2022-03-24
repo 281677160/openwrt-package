@@ -17,6 +17,6 @@ define Package/$(PKG_NAME)/conffiles
 /usr/bin/pushbot/api/ipv6.list
 endef
 
-include ../../luci.mk
+include $(TOPDIR)/feeds/luci/luci.mk
 
 # call BuildPackage - OpenWrt buildroot signature
