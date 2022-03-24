@@ -1,7 +1,6 @@
 Update.txt
 UpdateList.txt
 adguardhome
-aliyundrive-webdav
 app-store-ui
 cdnspeedtest
 cpulimit
@@ -18,7 +17,6 @@ lua-maxminddb
 luci-app-adguardhome
 luci-app-advanced
 luci-app-aliddns
-luci-app-aliyundrive-webdav
 luci-app-amlogic
 luci-app-argon-config
 luci-app-autoipsetadder
@@ -47,11 +45,9 @@ luci-app-onliner
 luci-app-openclash
 luci-app-oscam
 luci-app-poweroff
-luci-app-pppoe-relay
 luci-app-pppoe-server
 luci-app-quickstart
 luci-app-rebootschedule
-luci-app-serverchan
 luci-app-smartdns
 luci-app-smartinfo
 luci-app-socat
