@@ -1,3 +1,0 @@
-UpdateList.txt
-adguardhome
-luci-app-adguardhome
