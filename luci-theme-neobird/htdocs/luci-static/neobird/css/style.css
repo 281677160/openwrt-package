@@ -14,8 +14,8 @@
     --bg: #f1f4f5;
     --mainbg: #fff;
     --bgwhite: #fff;
-    --activeColor: #51c291;
-    --activeBottom: #51c291 2px solid;
+    --activeColor: #346887;
+    --activeBottom: #346887 2px solid;
     --textColor: rgb(132,119,116);
     --borderColor: rgba(0,0,0,.15);
     --navbgColor: rgba(255, 255, 255, .7);
@@ -40,7 +40,7 @@
     --badgebgColor: #f7f7f7;
     --badgeBorder: #e4eaec 1px solid;
     --progressbarColor: #c8c8c8;
-    --progressbar: #51c291;
+    --progressbar: #346887;
     --progressbartxtColor: #fff;
     --logo: url('/luci-static/neobird/images/logo.png');
     --mlogo: url('/luci-static/neobird/images/mlogo.png');
@@ -51,8 +51,8 @@
     --bg: #000;
     --bgwhite: #000;
     --textColor: #fefefe;
-    --activeColor: #51c291;
-    --activeBottom: #51c291 2px solid;
+    --activeColor: #346887;
+    --activeBottom: #346887 2px solid;
     --borderColor: #2C2C3A;
     --navbgColor: hsla(0, 0%, 7%, .8);
     --navBorder: 1px solid #1c1c1e;
@@ -76,7 +76,7 @@
     --badgebgColor: #fefefe;
     --badgeBorder: #3d3d40 1px solid;
     --progressbarColor: #6d6d6d;
-    --progressbar: #51c291;
+    --progressbar: #346887;
     --progressbartxtColor: #fefefe;
     --logo: url('/luci-static/neobird/images/logod.png');
     --mlogo: url('/luci-static/neobird/images/mlogod.png');
@@ -648,7 +648,7 @@ header > .container > .brand {
     /*color: white;*/
     color:rgb(111,42,142);
     cursor: default;
-    /*background: #51c291;*/
+    /*background: #346887;*/
     display:block;
     width:17rem;
     padding-right: 10px;
