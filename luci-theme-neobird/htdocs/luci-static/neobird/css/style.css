@@ -115,7 +115,7 @@ html, body {
     padding: 0px;
     height: 100%;
     font-family: -apple-system, 'Microsoft Yahei' !important;
-    font-size: 0.92rem;
+    font-size: 0.90rem;
     line-height: 150%;
     background-color: var(--bg);
     color:var(--textColor);
@@ -159,7 +159,7 @@ select,
 input {
     color: var(--inputtextColor);
     padding: 5px 10px;
-    font-size: 0.92rem;
+    font-size: 0.90rem;
     font-family: -apple-system, 'Microsoft Yahei', sans-serif, Helvetica, Arial, sans-serif;
     border: var(--inputBorder);
     background-color: var(--inputbgColor);
@@ -1236,7 +1236,7 @@ td#__status-ifc-signal img[src*="/luci-static/resources/icons/bridge.png"] {
     color: #fff;
     outline: 0;
     text-decoration: none;
-    background-color: rgb(106,101,214);
+    background-color: rgb(138,67,34);
 }
 
 .cbi-button:hover,
@@ -1719,7 +1719,7 @@ width:50px !important;
 .ifacebox {
     border: #1096db 1px solid;
     border-radius: 5px;
-    font-size:0.87rem;
+    font-size:0.90rem;
     font-weight:normal;
 }
 .ifacebox-head {
@@ -2572,7 +2572,7 @@ body.lang_pl.node-main-login .cbi-value-title {
         color: #fff; 
         display: block; 
         padding: 0 !important;
-        font-size: 0.87rem;
+        font-size: 0.90rem;
         border-radius: 10px !important;
         box-shadow: none ;
         background-image: none;
