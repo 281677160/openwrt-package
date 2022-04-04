@@ -15,12 +15,11 @@
     --mainbg: #fff;
     --bgwhite: #fff;
     --activeColor: #2b644b;
-    --activeBottom: #8ecdb2 2px solid;
-    --textColor: rgb(88 71 71);
+    --activeBottom: #2b644b 2px solid;
+    --textColor: rgb(88,71,71);
     --borderColor: rgba(0,0,0,.15);
-    --navbgColor: rgba(197 197 197 / 50%);
-    --navBorder: 1px solid #f2f2f2;
-    --sectionbgColor: #fff;
+    --navbgColor: rgba(197,197,197 .7);
+    --navBorder: 1px solid #f2f2f2;    --sectionbgColor: #fff;
     --sectionbgColor2: #fff;
     --sectionShaddow: 3px 3px 3px rgba(0,0,0,.05);
     --sectionBorder: none;
@@ -40,7 +39,7 @@
     --badgebgColor: #f7f7f7;
     --badgeBorder: #e4eaec 1px solid;
     --progressbarColor: #c8c8c8;
-    --progressbar: #588370;
+    --progressbar: #2b644b;
     --progressbartxtColor: #fff;
     --logo: url('/luci-static/neobird/images/logo.png');
     --mlogo: url('/luci-static/neobird/images/mlogo.png');
@@ -52,7 +51,7 @@
     --bgwhite: #000;
     --textColor: #fefefe;
     --activeColor: #2b644b;
-    --activeBottom: #8ecdb2 2px solid;
+    --activeBottom: #2b644b 2px solid;
     --borderColor: #2C2C3A;
     --navbgColor: hsla(0, 0%, 7%, .8);
     --navBorder: 1px solid #1c1c1e;
@@ -76,7 +75,7 @@
     --badgebgColor: #fefefe;
     --badgeBorder: #3d3d40 1px solid;
     --progressbarColor: #6d6d6d;
-    --progressbar: #588370;
+    --progressbar: #2b644b;
     --progressbartxtColor: #fefefe;
     --logo: url('/luci-static/neobird/images/logod.png');
     --mlogo: url('/luci-static/neobird/images/mlogod.png');
@@ -115,7 +114,7 @@ html, body {
     padding: 0px;
     height: 100%;
     font-family: -apple-system, 'Microsoft Yahei' !important;
-    font-size: 0.92rem;
+    font-size: 0.89rem;
     line-height: 150%;
     background-color: var(--bg);
     color:var(--textColor);
@@ -159,7 +158,7 @@ select,
 input {
     color: var(--inputtextColor);
     padding: 5px 10px;
-    font-size: 0.90rem;
+    font-size: 0.89rem;
     font-family: -apple-system, 'Microsoft Yahei', sans-serif, Helvetica, Arial, sans-serif;
     border: var(--inputBorder);
     background-color: var(--inputbgColor);
@@ -217,7 +216,7 @@ img[src*="/images/logo.png"]
     background-image: var(--logo);
     background-size: 220px;
     background-repeat: no-repeat;
-    padding: 0 0 0 250px;
+    padding: 0 0 0 242px;
     width: 0;
     background-position-x: 10px;
     background-position-y: 10px;
@@ -648,7 +647,7 @@ header > .container > .brand {
     /*color: white;*/
     color:rgb(111,42,142);
     cursor: default;
-    /*background: #51c291;*/
+    /*background: #2b644b;*/
     display:block;
     width:17rem;
     padding-right: 10px;
@@ -736,7 +735,7 @@ p#shadowsocksr_status {
     font-size: 14px;
     line-height: 1.42857143;
     color: #fff;
-    background-color: #4da7c1;
+    background-color: #5bc0de;
     border-color: #46b8da;
     margin-top: 2rem;
     text-decoration: inherit;
@@ -755,6 +754,7 @@ p#shadowsocksr_status {
     display: block;
     border-radius: 6px;
     cursor: pointer;
+    font-weight: bold;
     font-size: 1.1rem;
 }
 
@@ -1340,7 +1340,7 @@ form.inline + form.inline,
     white-space: nowrap;
     height: 2.5rem;
     line-height: 2.5rem;
-    font-size: 0.86rem;
+    font-size: 0.89rem;
 }
 
 .cbi-tabmenu > li > a {
@@ -1350,7 +1350,7 @@ form.inline + form.inline,
     white-space: nowrap;
     height: 2.5rem;
     line-height: 2.5rem;
-    font-size: 0.86rem;
+    font-size: 0.89rem;
     margin: 0 10px;
 }
 
@@ -1443,10 +1443,9 @@ div > .cbi-value:nth-of-type(2n) {
 .cbi-value-title {
     word-wrap: break-word;
     display: table-cell;
-    width: 20%;
+    width: 35%;
     float: left; 
     padding: 13px 10px 5px 3px;
-    text-align: right;
 }
 
 .cbi-value {
@@ -1509,7 +1508,7 @@ div > .cbi-value:nth-of-type(2n) {
 }
 
 .cbi-map-descr h3 {
-    font-size: 0.92rem;
+    font-size: 0.89rem;
     font-weight: normal;
     color: #666;
 }
@@ -1549,7 +1548,7 @@ div > .cbi-value:nth-of-type(2n) {
 }
 
 .cbi-page-actions {
-    text-align: right;
+    text-align: center;
 }
 
 /* input */
@@ -1719,7 +1718,7 @@ width:50px !important;
 .ifacebox {
     border: #1096db 1px solid;
     border-radius: 5px;
-    font-size:0.90rem;
+    font-size:0.89rem;
     font-weight:normal;
 }
 .ifacebox-head {
@@ -2143,12 +2142,9 @@ header > .container > .pull-right > * {
 .node-system-packages .cbi-section {
     border-radius: 0 0 10px 10px;
 }
-
-
 #cbi-ipkgconf .cbi-section {
     border-radius: 0 0 10px 10px;
 }
-
 **/
 
 
@@ -2439,7 +2435,6 @@ body.lang_pl.node-main-login .cbi-value-title {
         padding: 0;
         margin: 0;
         margin-bottom: .25rem;
-        text-align: left;
     }
     
     .cbi-section-node {
@@ -2572,7 +2567,7 @@ body.lang_pl.node-main-login .cbi-value-title {
         color: #fff; 
         display: block; 
         padding: 0 !important;
-        font-size: 0.90rem;
+        font-size: 0.89rem;
         border-radius: 10px !important;
         box-shadow: none ;
         background-image: none;
