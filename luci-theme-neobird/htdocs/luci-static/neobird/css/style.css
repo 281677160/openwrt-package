@@ -11,14 +11,14 @@
  */
 
 :root {
-    --bg: #f1f4f5;
+    --bg: #e5e5e5;
     --mainbg: #fff;
     --bgwhite: #fff;
-    --activeColor: #51c291;
-    --activeBottom: #51c291 2px solid;
-    --textColor: rgb(132,119,116);
+    --activeColor: #2b644b;
+    --activeBottom: #8ecdb2 2px solid;
+    --textColor: rgb(88 71 71);
     --borderColor: rgba(0,0,0,.15);
-    --navbgColor: rgba(255, 255, 255, .7);
+    --navbgColor: rgba(197 197 197 / 50%);
     --navBorder: 1px solid #f2f2f2;
     --sectionbgColor: #fff;
     --sectionbgColor2: #fff;
@@ -40,7 +40,7 @@
     --badgebgColor: #f7f7f7;
     --badgeBorder: #e4eaec 1px solid;
     --progressbarColor: #c8c8c8;
-    --progressbar: #51c291;
+    --progressbar: #588370;
     --progressbartxtColor: #fff;
     --logo: url('/luci-static/neobird/images/logo.png');
     --mlogo: url('/luci-static/neobird/images/mlogo.png');
@@ -51,8 +51,8 @@
     --bg: #000;
     --bgwhite: #000;
     --textColor: #fefefe;
-    --activeColor: #51c291;
-    --activeBottom: #51c291 2px solid;
+    --activeColor: #2b644b;
+    --activeBottom: #8ecdb2 2px solid;
     --borderColor: #2C2C3A;
     --navbgColor: hsla(0, 0%, 7%, .8);
     --navBorder: 1px solid #1c1c1e;
@@ -76,7 +76,7 @@
     --badgebgColor: #fefefe;
     --badgeBorder: #3d3d40 1px solid;
     --progressbarColor: #6d6d6d;
-    --progressbar: #51c291;
+    --progressbar: #588370;
     --progressbartxtColor: #fefefe;
     --logo: url('/luci-static/neobird/images/logod.png');
     --mlogo: url('/luci-static/neobird/images/mlogod.png');
@@ -115,7 +115,7 @@ html, body {
     padding: 0px;
     height: 100%;
     font-family: -apple-system, 'Microsoft Yahei' !important;
-    font-size: 0.92rem;
+    font-size: 0.90rem;
     line-height: 150%;
     background-color: var(--bg);
     color:var(--textColor);
@@ -159,7 +159,7 @@ select,
 input {
     color: var(--inputtextColor);
     padding: 5px 10px;
-    font-size: 0.92rem;
+    font-size: 0.90rem;
     font-family: -apple-system, 'Microsoft Yahei', sans-serif, Helvetica, Arial, sans-serif;
     border: var(--inputBorder);
     background-color: var(--inputbgColor);
@@ -736,7 +736,7 @@ p#shadowsocksr_status {
     font-size: 14px;
     line-height: 1.42857143;
     color: #fff;
-    background-color: #5bc0de;
+    background-color: #4da7c1;
     border-color: #46b8da;
     margin-top: 2rem;
     text-decoration: inherit;
@@ -755,7 +755,6 @@ p#shadowsocksr_status {
     display: block;
     border-radius: 6px;
     cursor: pointer;
-    font-weight: bold;
     font-size: 1.1rem;
 }
 
@@ -1237,7 +1236,7 @@ td#__status-ifc-signal img[src*="/luci-static/resources/icons/bridge.png"] {
     color: #fff;
     outline: 0;
     text-decoration: none;
-    background-color: rgb(106,101,214);
+    background-color: rgb(138,67,34);
 }
 
 .cbi-button:hover,
@@ -1341,7 +1340,7 @@ form.inline + form.inline,
     white-space: nowrap;
     height: 2.5rem;
     line-height: 2.5rem;
-    font-size: 0.92rem;
+    font-size: 0.86rem;
 }
 
 .cbi-tabmenu > li > a {
@@ -1351,7 +1350,7 @@ form.inline + form.inline,
     white-space: nowrap;
     height: 2.5rem;
     line-height: 2.5rem;
-    font-size: 0.92rem;
+    font-size: 0.86rem;
     margin: 0 10px;
 }
 
@@ -1444,9 +1443,10 @@ div > .cbi-value:nth-of-type(2n) {
 .cbi-value-title {
     word-wrap: break-word;
     display: table-cell;
-    width: 35%;
+    width: 20%;
     float: left; 
     padding: 13px 10px 5px 3px;
+    text-align: right;
 }
 
 .cbi-value {
@@ -1549,7 +1549,7 @@ div > .cbi-value:nth-of-type(2n) {
 }
 
 .cbi-page-actions {
-    text-align: center;
+    text-align: right;
 }
 
 /* input */
@@ -1719,7 +1719,7 @@ width:50px !important;
 .ifacebox {
     border: #1096db 1px solid;
     border-radius: 5px;
-    font-size:0.92rem;
+    font-size:0.90rem;
     font-weight:normal;
 }
 .ifacebox-head {
@@ -2439,6 +2439,7 @@ body.lang_pl.node-main-login .cbi-value-title {
         padding: 0;
         margin: 0;
         margin-bottom: .25rem;
+        text-align: left;
     }
     
     .cbi-section-node {
@@ -2571,7 +2572,7 @@ body.lang_pl.node-main-login .cbi-value-title {
         color: #fff; 
         display: block; 
         padding: 0 !important;
-        font-size: 0.92rem;
+        font-size: 0.90rem;
         border-radius: 10px !important;
         box-shadow: none ;
         background-image: none;
