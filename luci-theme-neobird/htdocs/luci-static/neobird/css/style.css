@@ -14,7 +14,7 @@
     --bg: #e5e5e5;
     --mainbg: #fff;
     --bgwhite: #fff;
-    --activeColor: #588370;
+    --activeColor: #2b644b;
     --activeBottom: #8ecdb2 2px solid;
     --textColor: rgb(88 71 71);
     --borderColor: rgba(0,0,0,.15);
@@ -51,7 +51,7 @@
     --bg: #000;
     --bgwhite: #000;
     --textColor: #fefefe;
-    --activeColor: #588370;
+    --activeColor: #2b644b;
     --activeBottom: #8ecdb2 2px solid;
     --borderColor: #2C2C3A;
     --navbgColor: hsla(0, 0%, 7%, .8);
