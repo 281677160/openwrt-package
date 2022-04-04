@@ -18,7 +18,7 @@
     --activeBottom: #8ecdb2 2px solid;
     --textColor: rgb(88 71 71);
     --borderColor: rgba(0,0,0,.15);
-    --navbgColor: rgba(255, 255, 255, .7);
+    --navbgColor: rgba(197 197 197 / 50%);
     --navBorder: 1px solid #f2f2f2;
     --sectionbgColor: #fff;
     --sectionbgColor2: #fff;
@@ -736,7 +736,7 @@ p#shadowsocksr_status {
     font-size: 14px;
     line-height: 1.42857143;
     color: #fff;
-    background-color: #5bc0de;
+    background-color: #4da7c1;
     border-color: #46b8da;
     margin-top: 2rem;
     text-decoration: inherit;
