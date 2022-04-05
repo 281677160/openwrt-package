@@ -90,37 +90,29 @@ tls:
   private_key_path: ""
 filters:
 - enabled: true
-  url: https://cdn.jsdelivr.net/gh/privacy-protection-tools/anti-AD@master/anti-ad-easylist.txt
-  name: 'CHN: anti-AD'
-  id: 1625932095
-- enabled: true
   url: https://adguardteam.github.io/AdGuardSDNSFilter/Filters/filter.txt
   name: AdGuard DNS filter
-  id: 1625932096
+  id: 1
 - enabled: true
   url: https://adaway.org/hosts.txt
   name: AdAway Default Blocklist
-  id: 1625932097
+  id: 2
 - enabled: true
   url: http://sub.adtchrome.com/adt-chinalist-easylist.txt
-  name: adt-chinalist-easylist
-  id: 1628477050
+  name: 广告终结者使用的拦截规则，基于ChinaList+EasyList修正维护
+  id: 1648615177
 - enabled: true
   url: https://easylist-downloads.adblockplus.org/easylistchina.txt
-  name: easylistchina
-  id: 1628477051
+  name: EasyList China-EasyList针对国内的补充规则
+  id: 1648615178
 - enabled: true
-  url: https://gitee.com/halflife/list/raw/master/ad.txt
-  name: halflife合并乘风
-  id: 1628477052
+  url: https://cdn.jsdelivr.net/gh/privacy-protection-tools/anti-AD@master/anti-ad-easylist.txt
+  name: anti-AD命中率最高列表
+  id: 1648615179
 - enabled: true
   url: https://raw.githubusercontent.com/BlueSkyXN/AdGuardHomeRules/master/all.txt
-  name: 去广告集合
-  id: 1628477053
-- enabled: true
-  url: https://raw.githubusercontent.com/jerryn70/GoodbyeAds/master/Hosts/GoodbyeAds-Ultra.txt
-  name: GoodbyeAds集合
-  id: 1628477054
+  name: 百万ADH广告拦截过滤规则
+  id: 1648615183
 whitelist_filters: []
 user_rules:
 - '@@||taobao.com^$important'
