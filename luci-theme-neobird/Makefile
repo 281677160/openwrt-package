@@ -5,10 +5,15 @@
 
 include $(TOPDIR)/rules.mk
 
-LUCI_TITLE:=Neobird Theme
-LUCI_DEPENDS:=
+PKG_NAME:=luci-theme-argon-18.06
 PKG_VERSION:=2.0
 PKG_RELEASE:=202202260758
+
+PKG_MAINTAINER:=jerrykuku <jerrykuku@qq.com>
+
+LUCI_TITLE:=Neobird Theme
+LUCI_PKGARCH:=all
+LUCI_DEPENDS:=
 
 include $(TOPDIR)/feeds/luci/luci.mk
 
