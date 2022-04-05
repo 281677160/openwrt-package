@@ -5,7 +5,7 @@
 
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=luci-theme-argon-18.06
+PKG_NAME:=luci-theme-neobird-pc
 PKG_VERSION:=2.0
 PKG_RELEASE:=202202260758
 
