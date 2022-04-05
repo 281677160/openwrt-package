@@ -1,7 +1,7 @@
 {
-"name":"Neobird",
-"short_name":"Neobird",
-"description":"Neobird for OpenWRT by 2smile.",
+"name":"Neobird-pc",
+"short_name":"Neobird-pc",
+"description":"Neobird-pc for OpenWRT by 2smile.",
 "start_url":"/",
 "scope": "/",
 "orientation":"portrait",
