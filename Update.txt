@@ -1,5 +1,4 @@
 adguardhome
-app-store-ui
 cdnspeedtest
 cpulimit
 cpulimit-ng
@@ -69,6 +68,7 @@ luci-theme-atmaterial_new
 luci-theme-darkmatter
 luci-theme-infinityfreedom
 luci-theme-neobird
+luci-theme-neobird2
 luci-theme-opentomcat
 luci-theme-rosy
 mentohust
