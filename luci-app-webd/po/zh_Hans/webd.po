@@ -76,5 +76,5 @@ msgstr "删除或移动文件"
 msgid "Show hidden files"
 msgstr "显示隐藏文件"
 
-msgid "Play Media"
-msgstr "网页播放媒体"
+msgid "Play media"
+msgstr "播放媒体"
