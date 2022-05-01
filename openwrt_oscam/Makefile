@@ -7,16 +7,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME := oscam
-PKG_REV := 696c99c
-PKG_VERSION := 2021-07-28_$(PKG_REV)
+PKG_REV := c5b2e65
+PKG_VERSION := r11704_$(PKG_REV)
 PKG_RELEASE := 1
 
 PKG_SOURCE_PROTO:= git
-#PKG_SOURCE_PROTO := svn
 PKG_SOURCE_VERSION := $(PKG_REV)
 PKG_SOURCE_URL := https://github.com/nx111/oscam.git
-#PKG_SOURCE_URL := http://www.streamboard.tv/svn/oscam/trunk
-#PKG_SOURCE_URL := http://www.oscam.cc/svn/oscam-mirror/trunk
 
 PKG_LICENSE := GPL-3.0
 PKG_LICENSE_FILE := COPYING
