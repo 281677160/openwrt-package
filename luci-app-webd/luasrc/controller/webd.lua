@@ -5,7 +5,7 @@ function index()
 		return
 	end
 
-	entry({"admin", "nas", "webd"},cbi("webd"),_("Webd Netdisk"),99)
+	entry({"admin", "nas", "webd"}, cbi("webd"), _("Webd Netdisk"),99)
 	entry({"admin", "nas", "webd", "status"}, call("act_status")).leaf = true
 end
 
