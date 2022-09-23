@@ -13,9 +13,7 @@ local function online_data()
 		local ln = fd()
 		if ln == nil then break end
 		local name,ip,mac,dev = ln:match("^(%S+) (%S+) (%S+) (%S+)")
-		if name == "" or name == "*" then 
-			name = luci.sys.exec(string.format("nmblookup -A %s | grep 'ACTIVE' | head -n1 |  awk -F ' ' '{print $1}' 2>/dev/null", ip))	
-		end
+
 		if mac and ip and name and dev then
 			rv[#rv+1] = {
 				hostname = name,
