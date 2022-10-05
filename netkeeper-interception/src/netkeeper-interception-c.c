@@ -11,8 +11,8 @@ static unsigned char savepwd[MAXSECRETLEN] = {0};
 
 int pap_modifyaccount()
 {
-	uint8_t len_user;
-	uint8_t len_passwd;
+	u_int8_t len_user;
+	u_int8_t len_passwd;
 	FILE *dF = fopen ("/var/Last_AuthReq", "r");
 	if(dF){
 		fread(&len_user,1,1,dF);
