@@ -2,10 +2,10 @@ msgid ""
 msgstr "Content-Type: text/plain; charset=UTF-8\n"
 
 msgid "Inital Setup"
-msgstr "设置向导"
+msgstr "设置"
 
 msgid "Inital Router Setup"
-msgstr "路由器设置向导"
+msgstr "路由器设置"
 
 msgid "Network protocol mode selection"
 msgstr "网络协议模式选择"
@@ -32,7 +32,7 @@ msgid "interface<font color=\"red\">(*)</font>"
 msgstr "接口<font color=\"red\">(*)</font>"
 
 msgid "Quick network setup wizard. If you need more settings, please enter network - interface to set.</br>"
-msgstr "快速网络设置向导，如果需要更多的设置请进入 网络-接口 中设置.</br>"
+msgstr "快速网络设置，如果需要更多的设置请进入 网络-接口 中设置.</br>"
 
 msgid "The network card is automatically set, and the physical interfaces other than the specified WAN interface are automatically bound as LAN ports, and all side routes are bound as LAN ports.</br>"
 msgstr "自动设置网卡，除指定WAN口物理接口之外的物理接口自动绑定为LAN口，旁路由全绑定为LAN口</br>"
