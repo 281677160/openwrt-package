@@ -4,11 +4,29 @@ s = m:section(TypedSection, "base")
 s.addremove = false
 s.anonymous = true
 
+local function check_file(e)
+	return luci.sys.exec('ls "%s" 2> /dev/null' % e) ~= "" and true or false
+end
+
 enable = s:option(Flag, "enable", translate("Enable"))
 enable.default = 0
 
 enable_fullcone_nat = s:option(Flag, "enable_fullcone_nat", translate("FullCone NAT"))
 enable_fullcone_nat.default = 0
+
+if check_file("/tmp/natter_nat_type") then
+	natter_nat_type_tcp = luci.sys.exec ("grep TCP /tmp/natter_nat_type")
+	natter_nat_type_udp = luci.sys.exec ("grep UDP /tmp/natter_nat_type")
+	nat_check = s:option (Button, "nat_check", translate("Check NAT Status"), translate("") .. "<br><br>" .. natter_nat_type_tcp .. "<br><br>" .. natter_nat_type_udp)
+else
+	nat_check = s:option (Button, "nat_check", translate("Check NAT Status"))
+end
+
+nat_check.inputtitle = translate("Exec")
+nat_check.write = function()
+	luci.sys.call ("sh /usr/share/luci-app-natter/natcheck.sh > /tmp/natter_nat_type")
+	luci.http.redirect(luci.dispatcher.build_url("admin", "network", "natter", "base"))
+end
 
 local_ip = s:option(Value, "local_ip", translate("Local IP Address"), translate("Natter Listening Address"))
 local_ip.default = "0.0.0.0"
