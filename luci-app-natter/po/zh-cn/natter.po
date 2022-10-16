@@ -106,3 +106,9 @@ msgstr "清除日志"
 msgid "<%:Delete Logs%>"
 msgstr "清除日志"
 
+msgid "Check NAT Status"
+msgstr "NAT 类型检测"
+
+msgid "Exec"
+msgstr "执行"
+
