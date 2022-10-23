@@ -4,7 +4,7 @@ require("luci.util")
 
 local m, s ,o
 
-m = Map("netdata", translate("NetData"), translate("Netdata is high-fidelity infrastructure monitoring and troubleshooting.Open-source, free, preconfigured, opinionated, and always real-time.")..translate("</br>For specific usage, see:")..translate("<a href=\'https://github.com/sirpdboy/luci-app-netdata.git' target=\'_blank\'>GitHub @https://github.com/sirpdboy/luci-app-netdata </a>") )
+m = Map("netdata", translate("NetData"), translate("Netdata is high-fidelity infrastructure monitoring and troubleshooting.Open-source, free, preconfigured, opinionated, and always real-time.")..translate("</br>")..translate("<a href=\'https://github.com/sirpdboy/luci-app-netdata.git' target=\'_blank\'> </a>") )
 s = m:section(TypedSection, "netdata", translate("Global Settings"))
 s.addremove=false
 s.anonymous=true
