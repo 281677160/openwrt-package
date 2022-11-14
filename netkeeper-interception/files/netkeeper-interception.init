@@ -30,13 +30,13 @@ start_interception() {
 		fi
 	fi
 	if [ ! -f /tmp/Last_AuthReq ]; then
-                logger "/tmp/Last_AuthReq Not Found,Try to restore Netkeeper AuthReq"
-                if [ -f /etc/netkeeper-interception/AuthReq ]; then
-                        cp -f /etc/netkeeper-interception/AuthReq /tmp/Last_AuthReq
-                else
-                        touch -f /tmp/Last_AuthReq
-                fi
-        fi
+		logger "/tmp/Last_AuthReq Not Found,Try to restore Netkeeper AuthReq"
+		if [ -f /etc/netkeeper-interception/AuthReq ]; then
+			cp -f /etc/netkeeper-interception/AuthReq /tmp/Last_AuthReq
+		else
+			touch -f /tmp/Last_AuthReq
+		fi
+	fi
 }
 
 start_service() {
@@ -55,4 +55,9 @@ start_service() {
 stop_service() {
 	service_stop "$PPPOE_SERVER_EXEC"
 	rm -f $SERVICE_PID_FILE
+}
+
+service_triggers()
+{
+	procd_add_reload_trigger "netkeeper-interception"
 }
