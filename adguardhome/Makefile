@@ -6,11 +6,11 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=adguardhome
-PKG_VERSION:=0.108.0-b.4
-PKG_RELEASE:=1
+PKG_VERSION:=0.107.13
+PKG_RELEASE:=65
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=89d9b03dfec8a5f1406507d45e582e852e748859
+PKG_SOURCE_VERSION:=77d04d44eb080500f79e1329f943decb976d1817
 PKG_SOURCE_URL:=https://github.com/AdguardTeam/AdGuardHome
 PKG_MIRROR_HASH:=skip
 
@@ -47,8 +47,8 @@ define Package/adguardhome
 endef
 
 define Package/adguardhome/conffiles
+/etc/adguardhome.yaml
 /etc/config/adguardhome
-/etc/config/adguardhome.yaml
 endef
 
 define Package/adguardhome/description
