@@ -1,7 +1,12 @@
 name: API
 on:
   workflow_dispatch:
-
+    inputs:
+      again-fork:
+        description: '[fork-actions]改成[fork],再按[Run workflow]按钮启动,开启同步上游仓库'
+        required: false
+        default: 'fork'
+        
   schedule:
    - cron: 35 4 * * *
 
@@ -12,17 +17,8 @@ jobs:
   build:
     name: API
     runs-on: ubuntu-22.04
-    if: ${{ github.event.repository.owner.id }} == ${{ github.event.sender.id }}
     
     steps:
-    - name: 密匙检测（密匙为空则退出）
-      run: |
-        if [[ -z "${{ secrets.REPO_TOKEN }}" ]]; then
-          echo "您没有设置仓库密匙，请按教程设置好密匙再来"
-          echo "REPO_TOKEN密匙制作教程：https://git.io/jm.md"
-          exit 1
-        fi
-    
     - name: 准备结束
       uses: actions/checkout@v3
       
