@@ -9,7 +9,6 @@ cpulimit-ng
 eqos-master-wiwiz
 feed-netkeeper
 gost
-install.sh
 iptvhelper
 luci-app-adbyby-plus
 luci-app-adguardhome
