@@ -1,0 +1,93 @@
+From eb655a005f3f5719c32049e9d3954ab082818164 Mon Sep 17 00:00:00 2001
+From: foxxorcat <foxxorcat@foxmail.com>
+Date: Tue, 14 Feb 2023 16:31:28 +0800
+Subject: [PATCH] fix(aliyunpan):device ID is the same, the private key is
+ different
+
+---
+ drivers/aliyundrive/driver.go |  9 +++++----
+ drivers/aliyundrive/meta.go   |  2 +-
+ drivers/aliyundrive/util.go   | 15 ++++++++++++---
+ 3 files changed, 18 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/aliyundrive/driver.go b/drivers/aliyundrive/driver.go
+index 9297b5a9dd..e30007cf39 100644
+--- a/drivers/aliyundrive/driver.go
++++ b/drivers/aliyundrive/driver.go
+@@ -23,6 +23,7 @@ import (
+ 	"github.com/alist-org/alist/v3/pkg/cron"
+ 	"github.com/alist-org/alist/v3/pkg/utils"
+ 	"github.com/go-resty/resty/v2"
++	"github.com/google/uuid"
+ 	log "github.com/sirupsen/logrus"
+ )
+ 
+@@ -71,12 +72,12 @@ func (d *AliDrive) Init(ctx context.Context) error {
+ 	})
+ 
+ 	// init deviceID
+-	if len(d.DeviceID) < 64 {
+-		d.DeviceID = utils.GetSHA256Encode(d.DeviceID)
++	if len(d.DeviceID) != 64 {
++		d.DeviceID = utils.GetSHA256Encode(uuid.NewString())
+ 	}
+ 
+ 	// init privateKey
+-	d.privateKey, _ = NewPrivateKey()
++	d.privateKey, _ = NewPrivateKeyFromHex(d.DeviceID)
+ 
+ 	// init signature
+ 	d.sign()
+@@ -92,7 +93,7 @@ func (d *AliDrive) Init(ctx context.Context) error {
+ 			d.createSession()
+ 		}
+ 	})
+-	return err
++	return nil
+ }
+ 
+ func (d *AliDrive) Drop(ctx context.Context) error {
+diff --git a/drivers/aliyundrive/meta.go b/drivers/aliyundrive/meta.go
+index cc19d7500c..e185c84f8b 100644
+--- a/drivers/aliyundrive/meta.go
++++ b/drivers/aliyundrive/meta.go
+@@ -8,7 +8,7 @@ import (
+ type Addition struct {
+ 	driver.RootID
+ 	RefreshToken   string `json:"refresh_token" required:"true"`
+-	DeviceID       string `json:"device_id" required:"true"`
++	DeviceID       string `json:"device_id"`
+ 	OrderBy        string `json:"order_by" type:"select" options:"name,size,updated_at,created_at"`
+ 	OrderDirection string `json:"order_direction" type:"select" options:"ASC,DESC"`
+ 	RapidUpload    bool   `json:"rapid_upload"`
+diff --git a/drivers/aliyundrive/util.go b/drivers/aliyundrive/util.go
+index 37588f03cf..283bb3d5fe 100644
+--- a/drivers/aliyundrive/util.go
++++ b/drivers/aliyundrive/util.go
+@@ -94,14 +94,23 @@ func (d *AliDrive) request(url, method string, callback base.ReqCallback, resp i
+ 		return nil, err, e
+ 	}
+ 	if e.Code != "" {
+-		if e.Code == "AccessTokenInvalid" {
++		switch e.Code {
++		case "AccessTokenInvalid":
+ 			err = d.refreshToken()
+ 			if err != nil {
+ 				return nil, err, e
+ 			}
+-			return d.request(url, method, callback, resp)
++		case "DeviceSessionSignatureInvalid":
++			d.nonce = 0
++			d.sign()
++			err = d.createSession()
++			if err != nil {
++				return nil, err, e
++			}
++		default:
++			return nil, errors.New(e.Message), e
+ 		}
+-		return nil, errors.New(e.Message), e
++		return d.request(url, method, callback, resp)
+ 	} else if res.IsError() {
+ 		return nil, errors.New("bad status code " + res.Status()), e
+ 	}
