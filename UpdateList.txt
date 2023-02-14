@@ -4,7 +4,6 @@ adguardhome
 alist
 eqos-master-wiwiz
 feed-netkeeper
-install.sh
 luci-app-adguardhome
 luci-app-advanced
 luci-app-alist
