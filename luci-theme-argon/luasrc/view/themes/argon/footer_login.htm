@@ -1,4 +1,3 @@
-
 <%#
 	Argon is a clean HTML5 theme for LuCI. It is based on luci-theme-material Argon Template
 
@@ -21,7 +20,9 @@
 </div>
 <footer>
 	<div>
-	     <a class="luci-link" href="/cgi-bin/luci/admin/status/overview"> <%= ver.distversion %></a> 
+		<a class="luci-link" href="https://github.com/openwrt/luci">Powered by <%= ver.luciname %> (<%= ver.luciversion %>)</a> /
+						<a href="https://github.com/jerrykuku/luci-theme-argon">ArgonTheme <%# vPKG_VERSION %></a> /
+						<%= ver.distversion %>
 	</div>
 </footer>
 </div>

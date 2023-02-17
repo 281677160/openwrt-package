@@ -42,7 +42,7 @@
 	end
 
 
-	local imageTypes = " jpg png gif "
+	local imageTypes = " jpg png gif webp "
 	local videoTypes = " mp4 webm "
 	local allTypes = imageTypes .. videoTypes
 	local function fetchMedia(path,themeDir)
@@ -129,7 +129,7 @@
 		<div class="login-form">
 			<!-- Logo Start -->
 			<a class="brand" href="/"><img src="<%=media%>/img/argon.svg" class="icon">
-				<span class="brand-text"><%=striptags( (boardinfo.hostname or "?") .. ( (node and node.title) and ' - ' .. translate(node.title) or '')) %></span>
+				<span class="brand-text"><%=striptags( (boardinfo.hostname or "?") ) %></span>
 			</a>
 			<!-- Logo End -->
 			<!-- Login Form Start -->
