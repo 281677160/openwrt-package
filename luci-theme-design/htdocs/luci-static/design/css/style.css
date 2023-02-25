@@ -3224,3 +3224,15 @@ form[action="/cgi-bin/luci/admin/network/wireless_join"] input[class="cbi-button
 .node-services-appfilter .cbi-section.cbi-tblsection {
     overflow: auto;
 }
+
+/* update node-system-commands style */
+.node-system-commands h3 {
+    text-transform: unset;
+}
+.node-system-commands .commandbox {
+    margin: 10px;
+}
+.node-system-commands .commandbox p {
+    word-break:keep-all;
+    white-space:nowrap;
+}
