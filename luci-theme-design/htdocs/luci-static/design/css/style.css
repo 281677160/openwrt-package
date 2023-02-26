@@ -48,7 +48,8 @@
     --alertColor: #000000;
     --alertBackground: rgb(230 230 230);
     --scrollbarColor:#d0d0d0;
-    --ifaceboxBorderColor: #b8b8b8bd
+    --ifaceboxBorderColor: #b8b8b8bd;
+    --ifaceboxFontColor: #1a1a1a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -89,7 +90,8 @@
     --alertColor: #ffffff;
     --alertBackground: rgb(30 30 30);
     --scrollbarColor:#222;
-    --ifaceboxBorderColor: #636363bd
+    --ifaceboxBorderColor: #636363bd;
+    --ifaceboxFontColor: #1a1a1a;
   }
 }
 
@@ -118,6 +120,15 @@
     font-family: 'Cocon-Regular-Font';
     src : url('../fonts/Cocon-Regular-Font.otf') format('opentype');
 }
+
+::-webkit-scrollbar {
+    width: 4px;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbarColor) ;
+    border-radius: 2px;
+}
+
 div{
     font-family: 'HYk2gj';
 }
@@ -361,17 +372,20 @@ svg {
 } */
 
 /* fix .cbi-section .cbi-section */
-
 .cbi-section .cbi-section {
     margin: 10px;
 }
 
 /* fix node-services-vssr */
-
 .node-services-vssr .status-bar {
     bottom:calc(50px + constant(safe-area-inset-bottom));
     bottom:calc(50px + env(safe-area-inset-bottom));
     /* display: none; */
+    background-color: var(--navbgColor);
+}
+.node-services-vssr .container {
+    padding-bottom:calc(50px + constant(safe-area-inset-bottom));
+    padding-bottom:calc(50px + env(safe-area-inset-bottom));
 }
 
 .node-services-vssr .ssr-button {
@@ -738,14 +752,14 @@ img[src*="/luci-static/resources/icons/loading.gif"] {
 }
 
 .ifacebox-body img {
-    background-size: 22px 22px;
-    padding: 0 0 0 22px;
-    width:22px !important;
-    height:22px !important;
-    padding: 0 0 0 22px !important;
+    background-size: 20px 20px;
+    padding: 0 0 0 20px;
+    width:20px !important;
+    height:20px !important;
+    padding: 0 0 0 20px !important;
 }
 .ifacebox-head {
-    background-color: #337ab7 !important;
+    /* background-color: #337ab7 !important; */
     border-radius: 4px 4px 0 0;
 }
 
@@ -1478,6 +1492,7 @@ fieldset > table > tbody > tr:nth-of-type(odd) {
 #memtotal > div > div {
     background-color: var(--progressbar) !important;
     color: var(--progressbartxtColor) !important;
+    border-radius: 3px;
 }
 
 #swaptotal div div,
@@ -2452,12 +2467,12 @@ header > .container > .pull-right > * {
 
 .node-system-packages .cbi-section-node .cbi-value-last > div  {
     border: none !important;
+    border-radius: 3px;
 }
-
-
 
 .node-system-packages .cbi-section-node .cbi-value-last > div > div  {
     border: none !important;
+    border-radius: 3px;
 }
 
 .node-system-packages .cbi-section-node .cbi-value-last:nth-last-child(1)  {
@@ -3235,4 +3250,9 @@ form[action="/cgi-bin/luci/admin/network/wireless_join"] input[class="cbi-button
 .node-system-commands .commandbox p {
     word-break:keep-all;
     white-space:nowrap;
+}
+
+.node-network-network .ifacebox strong{
+    color: var(--ifaceboxFontColor);
+    padding: 5px;
 }
