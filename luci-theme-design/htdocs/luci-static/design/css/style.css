@@ -3245,7 +3245,7 @@ form[action="/cgi-bin/luci/admin/network/wireless_join"] input[class="cbi-button
     text-transform: unset;
 }
 .node-system-commands .commandbox {
-    margin: 10px;
+    width: auto;
 }
 .node-system-commands .commandbox p {
     word-break:keep-all;
