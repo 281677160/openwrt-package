@@ -3221,7 +3221,8 @@ body.lang_pl.node-main-login .cbi-value-title {
 }
 
 /* fix node-network-network */
-.node-network-network div[onclick*="document.getElementById('cbid.network."] {
+.node-network-network div[onclick*="document.getElementById('cbid.network."],
+#cbi-network div[onclick*="document.getElementById('cbid.network."] {
     background-color: unset !important;
 }
 
