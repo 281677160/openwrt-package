@@ -3318,3 +3318,9 @@ form[action="/cgi-bin/luci/admin/network/wireless_join"] input[class="cbi-button
 .node-nas-qbittorrent p#qBittorrent_status input {
     line-height: unset;
 }
+
+/* fix node-system-diskman dialog-format-active */
+.node-system-diskman.dialog-format-active #dialog_format .dialog_box {
+    background: var(--alertBackground);
+    border-radius: 5px;
+}
