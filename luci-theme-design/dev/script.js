@@ -179,6 +179,7 @@
                 width: "0"
             }, "fast");
             $(".main-right").css("overflow-y", "auto");
+            $("header>.container>.brand").css("padding", "0 67px")
             showSide = false;
         } else {
             $(".darkMask").stop(true).fadeIn("fast");
@@ -188,6 +189,7 @@
             $(".main-right").css("overflow-y", "hidden");
             $(".showSide").css("display", "none");
             $("header").css("box-shadow", "17rem 2px 4px rgb(0 0 0 / 8%)")
+            $("header>.container>.brand").css("padding", "0 0")
             showSide = true;
         }
     });
@@ -202,6 +204,7 @@
             $(".main-right").css("overflow-y", "auto");
             $(".showSide").css("display", "");
             $("header").css("box-shadow", "0 2px 4px rgb(0 0 0 / 8%)")
+            $("header>.container>.brand").css("padding", "0 67px")
         }
     });
 
@@ -211,13 +214,16 @@
             $(".main-left").css("width", "");
             $(".darkMask").stop(true);
             $(".darkMask").css("display", "none");
-            showSide = false;
             $("header").css("box-shadow", "17rem 2px 4px rgb(0 0 0 / 8%)")
+            $("header>.container>.brand").css("padding", "0 0")
+            showSide = false;
         } else {
             $("header").css("box-shadow", "0 2px 4px rgb(0 0 0 / 8%)")
+            $("header>.container>.brand").css("padding", "0 67px")
         }
         if (showSide) {
             $("header").css("box-shadow", "17rem 2px 4px rgb(0 0 0 / 8%)")
+            $("header>.container>.brand").css("padding", "0 0")
         }
     });
 
