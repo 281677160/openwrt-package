@@ -58,6 +58,7 @@
      * @returns {boolean} success?
      */
     function getCurrentNodeByUrl() {
+        const urlReg = new RegExp(nodeUrl + "$")
         var ret = false;
         if (!$('body').hasClass('logged-in')) {
             luciLocation = ["Main", "Login"];
@@ -72,7 +73,7 @@
                 var that = $(this);
                 var href = that.attr("href");
 
-                if (new RegExp(nodeUrl + "$").test(href)) {
+                if (urlReg.test(href)) {
                     ulNode.click();
                     ulNode.next(".slide-menu").stop(true, true);
                     lastNode = that.parent();
@@ -172,6 +173,7 @@
      * Sidebar expand
      */
     var showSide = false;
+
     $(".showSide").click(function () {
         if (showSide) {
             $(".darkMask").stop(true).fadeOut("fast");
@@ -179,24 +181,23 @@
                 width: "0"
             }, "fast");
             $(".main-right").css("overflow-y", "auto");
-            $("header>.container>.brand").css("padding", "0 67px")
+            $("header>.container>.brand").css("padding", "0 4.5rem")
             showSide = false;
         } else {
             $(".darkMask").stop(true).fadeIn("fast");
             $(".main-left").stop(true).animate({
-                width: "17rem"
+                width: "18rem"
             }, "fast");
             $(".main-right").css("overflow-y", "hidden");
             $(".showSide").css("display", "none");
-            $("header").css("box-shadow", "17rem 2px 4px rgb(0 0 0 / 8%)")
-            $("header>.container>.brand").css("padding", "0 0")
+            $("header").css("box-shadow", "18rem 2px 4px rgb(0 0 0 / 8%)")
+            $("header>.container>.brand").css("padding", '0rem')
             showSide = true;
         }
     });
 
     $(".darkMask").click(function () {
         if (showSide) {
-            showSide = false;
             $(".darkMask").stop(true).fadeOut("fast");
             $(".main-left").stop(true).animate({
                 width: "0"
@@ -204,29 +205,30 @@
             $(".main-right").css("overflow-y", "auto");
             $(".showSide").css("display", "");
             $("header").css("box-shadow", "0 2px 4px rgb(0 0 0 / 8%)")
-            $("header>.container>.brand").css("padding", "0 67px")
+            $("header>.container>.brand").css("padding", "0 4.5rem")
+            showSide = false;
         }
     });
 
     $(window).resize(function () {
         if ($(window).width() > 992) {
+            showSide = false;
             $(".showSide").css("display", "");
             $(".main-left").css("width", "");
             $(".darkMask").stop(true);
             $(".darkMask").css("display", "none");
-            $("header").css("box-shadow", "17rem 2px 4px rgb(0 0 0 / 8%)")
-            $("header>.container>.brand").css("padding", "0 0")
-            showSide = false;
+            $("header").css("box-shadow", "18rem 2px 4px rgb(0 0 0 / 8%)")
+            $("header>.container>.brand").css("padding", '0rem')
         } else {
             $("header").css("box-shadow", "0 2px 4px rgb(0 0 0 / 8%)")
-            $("header>.container>.brand").css("padding", "0 67px")
+            $("header>.container>.brand").css("padding", "0 4.5rem")
         }
         if (showSide) {
-            $("header").css("box-shadow", "17rem 2px 4px rgb(0 0 0 / 8%)")
-            $("header>.container>.brand").css("padding", "0 0")
+            $("header").css("box-shadow", "18rem 2px 4px rgb(0 0 0 / 8%)")
+            $("header>.container>.brand").css("padding", '0rem')
         }
     });
-
+   
     /**
      * fix legend position
      */
