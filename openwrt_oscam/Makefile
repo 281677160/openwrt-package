@@ -7,14 +7,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME := oscam
-PKG_REV := 33e2d6
-PKG_VERSION := r11518-$(PKG_REV)
+PKG_REV := c5b2e65
+PKG_VERSION := r11704_$(PKG_REV)
 PKG_RELEASE := 1
 
 PKG_SOURCE_PROTO:= git
 PKG_SOURCE_VERSION := $(PKG_REV)
 PKG_SOURCE_URL := https://github.com/nx111/oscam.git
-PKG_MIRROR_HASH := 6873d24637f14ec695e32a8a91f17bd8ef38d615a55fb76e6440f6a37da906e3
 
 PKG_LICENSE := GPL-3.0
 PKG_LICENSE_FILE := COPYING
@@ -32,7 +31,10 @@ define Package/oscam
   CATEGORY := Network
   TITLE := Open Source Conditional Access Modul
   URL := http://www.streamboard.tv/oscam
-  DEPENDS := +OSCAM_USE_LIBCRYPTO:libopenssl +OSCAM_USE_LIBUSB:libusb-1.0 +OSCAM_USE_PCSC:pcscd
+  DEPENDS := +usbutils +kmod-usb-serial +kmod-usb-serial-ch341 +kmod-usb-serial-pl2303 +kmod-usb-serial-ftdi \
+   +OSCAM_USE_LIBCRYPTO:libopenssl \
+   +OSCAM_USE_LIBUSB:libusb-1.0 \
+   +OSCAM_USE_PCSC:pcscd +ccid +libpcsclite
 endef
 
 define Package/list-smargo
@@ -141,10 +143,6 @@ define Package/oscam/install
 
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/oscam.init $(1)/etc/init.d/oscam
-
-	$(INSTALL_DIR) $(1)/usr/share/oscam
-	$(INSTALL_BIN) ./files/oscam-watchdog.sh $(1)/usr/share/oscam/oscam-watchdog.sh
-
 endef
 
 define Package/list-smargo/install
