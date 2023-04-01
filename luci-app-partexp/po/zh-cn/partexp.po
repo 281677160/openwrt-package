@@ -1,15 +1,5 @@
 msgid ""
 msgstr ""
-"openwrt/luciapplicationsacl/zh_Hans/>\n"
-"Language: zh_Hans\n"
-"Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-
-
-
-
-msgid ""
-msgstr ""
 "Copyright (C) 2022 sirpdboy  herboy2008@gmail.com  https://github.com/sirpdboy/luci-app-partexp"
 "This is free software, licensed under the GNU General Public License v3."
 
