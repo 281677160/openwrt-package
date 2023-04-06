@@ -224,11 +224,11 @@ input[type='file'] {
 input[type='checkbox'] {
     height: 1.2rem;
     width: 1.2rem;
-    
 }
 input[type='radio'] {
     height: 1.2rem;
     width: 1.2rem;
+    box-shadow: var(--bg);
 }
 
 select[multiple="multiple"] {
@@ -1542,9 +1542,11 @@ table {
     border: 0px solid #eee;
 }
 
-table tr th:empty {
+/* fix qwrt network share table style */
+/* table tr th:empty {
     display: none;
-}
+} */
+
 strong {
     font-weight: bold;
     padding: 2px;
@@ -1562,6 +1564,12 @@ strong {
  }
 #lb_load01_cur {
 
+}
+
+/* fixed DHCPv6 lease table host names incorrectly displayed */
+#lease6_status_table > tbody > .cbi-section-table-row.cbi-rowstyle-1 div,
+#lease6_status_table > tbody > .cbi-section-table-row.cbi-rowstyle-2 div{
+  min-width:100%;
 }
 
 table > tbody > tr > td, table > tbody > tr > th, table > tfoot > tr > td, table > tfoot > tr > th, table > thead > tr > td, table > thead > tr > th {
@@ -1691,6 +1699,13 @@ fieldset > table > tbody > tr:nth-of-type(odd) {
     white-space: nowrap;
 } */
 
+/* node-network-network ul list overflow */
+#cbi-network .cbi-value-field ul,
+#cbi-wireless .cbi-value-field ul {
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
 div [id*="cbi-network-"] [id*="-__status"] table {
     width: auto;
 }
@@ -1698,7 +1713,7 @@ div [id*="cbi-network-"] [id*="-__status"] table {
 div [id*="cbi-network-"] [id*="-__status"] table td {
     width: 0;
     padding: 0;
-
+    white-space: normal;
 }
 div [id*="cbi-network-"] [id*="-__status"] table td small {
     width: auto;
@@ -3360,4 +3375,16 @@ form[action="/cgi-bin/luci/admin/network/wireless_join"] input[class="cbi-button
 .node-services-adguardhome input[onclick*="window.open('http://'+window.location.hostname+':"] {
     line-height: 0;
 }
-
+/* adapt to mt798x series closed source wireless driver page */
+/* open source wireless style */
+.node-network-wifi .cbi-section-table tr .cbi-value-field,
+.node-network-wireless .cbi-section-table tr .cbi-value-field {
+    width: unset !important;
+    text-align: right;
+}
+.node-network-wifi table, td, th {
+    border-top: unset !important;
+}
+.node-network-wifi .cbi-section-table td[colspan="2"]  {
+    padding-left: unset !important
+}
