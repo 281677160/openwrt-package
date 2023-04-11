@@ -852,7 +852,6 @@ img[src*="/luci-static/resources/icons/loading.gif"] {
 
 .ifacebox-body img {
     background-size: 20px 20px;
-    padding: 0 0 0 20px;
     width:20px !important;
     height:20px !important;
     padding: 0 0 0 20px !important;
@@ -1797,8 +1796,8 @@ div [id*="cbi-wireless"] [id*="-__status"] table {
 
 div [id*="cbi-network-"] [id*="-__status"] table td,
 div [id*="cbi-wireless"] [id*="-__status"] table td {
-    width: 0;
-    padding: 0;
+    width: 0 !important;
+    padding: 0 !important;
 }
 div [id*="cbi-network-"] [id*="-__status"] table td small,
 div [id*="cbi-wireless"] [id*="-__status"] table td small {
@@ -3142,6 +3141,33 @@ body.lang_pl.node-main-login .cbi-value-title {
     /* network and wireless table status icon */
     div [id*="cbi-network-"] [id*="-__status"] table td,
     div [id*="cbi-wireless"] [id*="-__status"] table td {
+        white-space: normal;
+    }
+    
+    .node-system-leds .cbi-section em,
+    .node-network-network .cbi-section-table tr,
+    .node-network-network .cbi-section-table td {
+        display: block;
+    }
+    .node-network-network .cbi-section-table td {
+        width: 100%!important;
+        text-align: center!important;
+        white-space: normal;
+    }
+    .node-network-network .cbi-section-table .cbi-section-table-titles .cbi-section-table-cell {
+        flex: 1!important
+    }
+    .node-network-network .cbi-section-table .cbi-section-table-titles th:nth-child(2) {
+        text-align: center !important;
+    }
+    .node-network-network .cbi-section-table .cbi-section-table-titles {
+        display: flex
+    }
+    .node-network-network .cbi-button {
+        min-width: 60px !important;
+    }
+    .node-network-wireless fieldset:nth-child(1) table > tbody > tr > td,
+    .node-network-wireless fieldset:nth-child(2) table > tbody > tr > td {
         white-space: normal;
     }
 }
