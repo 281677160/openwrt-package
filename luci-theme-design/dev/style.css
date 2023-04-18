@@ -1825,6 +1825,9 @@ div [id*="cbi-wireless"] [id*="-__status"] table td small {
 .node-network-wifi .cbi-section-table .cbi-section-table-row td[colspan="8"] {
     text-align: center !important;
 }
+.node-network-wireless #iw-assoclist .cbi-section-table-row td div {
+    max-width: unset !important;
+}
 .node-network-wifi table, td, th {
     border-top: unset !important;
 }
