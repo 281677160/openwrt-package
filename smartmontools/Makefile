@@ -6,14 +6,15 @@
 #
 
 include $(TOPDIR)/rules.mk
+include $(INCLUDE_DIR)/uclibc++.mk
 
 PKG_NAME:=smartmontools
-PKG_VERSION:=7.3
-PKG_RELEASE:=2
+PKG_VERSION:=7.2
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=@SF/smartmontools
-PKG_HASH:=a544f8808d0c58cfb0e7424ca1841cb858a974922b035d505d4e4c248be3a22b
+PKG_HASH:=5cd98a27e6393168bc6aaea070d9e1cd551b0f898c52f66b2ff2e5d274118cd6
 
 PKG_MAINTAINER:=Maxim Storchak <m.storchak@gmail.com>
 PKG_LICENSE:=GPL-2.0-or-later
@@ -21,7 +22,6 @@ PKG_LICENSE_FILES:=COPYING
 
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
-PKG_BUILD_FLAGS:=lto
 
 include $(INCLUDE_DIR)/package.mk
 
@@ -34,7 +34,7 @@ endef
 
 define Package/smartmontools
   $(call Package/smartmontools/Default)
-  DEPENDS:=+libstdcpp
+  DEPENDS:=$(CXX_DEPENDS)
   TITLE+= Tool
 endef
 
@@ -47,7 +47,7 @@ endef
 
 define Package/smartd
   $(call Package/smartmontools/Default)
-  DEPENDS:=+libstdcpp
+  DEPENDS:=$(CXX_DEPENDS)
   TITLE+= Daemon
 endef
 
@@ -79,7 +79,14 @@ define Package/smartd-mail/description
   A script for mailing about SMART issues
 endef
 
-TARGET_CXXFLAGS +=-fno-rtti
+ifeq ($(CONFIG_USE_UCLIBCXX),y)
+TARGET_LDFLAGS +=-nodefaultlibs
+else
+CONFIGURE_VARS += with_cxx11_regex=yes
+endif
+TARGET_LDFLAGS += -flto
+
+TARGET_CXXFLAGS +=-fno-rtti -flto
 MAKE_FLAGS +=BUILD_INFO='"(localbuild)"'
 
 CONFIGURE_ARGS += \
@@ -90,7 +97,6 @@ CONFIGURE_ARGS += \
 
 #lower file size vs. CONFIGURE_ARGS
 CONFIGURE_VARS += \
-	with_cxx11_regex=yes \
 	with_smartdplugindir=no \
 	with_systemdenvfile=no \
 	with_systemdsystemunitdir=no \

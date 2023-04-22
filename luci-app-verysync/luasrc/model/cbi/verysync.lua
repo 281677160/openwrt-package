@@ -21,7 +21,4 @@ o.placeholder = "8886"
 o.default = "8886"
 o.rmempty = false
 
-o = s:option(Value, "profile", translate("Store configuration files in the Path"))
-o.default = '/etc/verysync/'
-
 return m

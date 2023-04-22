@@ -1,0 +1,132 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+
+boot() {
+	XBOOT=1 start
+	SSID=$(uci get wireless.@wifi-iface[0].ssid 2>/dev/null)
+	KEY=$(uci get wireless.@wifi-iface[0].key 2>/dev/null)
+	IPADDR=$(uci get network.lan.ipaddr 2>/dev/null)
+	NETMASK=$(uci get network.lan.netmask 2>/dev/null)
+
+	if [ "$(uci get wizard.default.wifi_ssid 2>/dev/null)" = "$SSID" ] && [ "$(uci get wizard.default.lan_ipaddr 2>/dev/null)" = "$IPADDR" ]; then
+		:
+	else
+		uci set wizard.default=wizard
+		uci set wizard.default.wifi_ssid="$SSID"
+		uci set wizard.default.wifi_key="$KEY"
+		uci set wizard.default.lan_ipaddr="$IPADDR"
+		uci set wizard.default.lan_netmask="$NETMASK"
+		uci commit wizard
+	fi
+}
+
+add_wizard() {
+	[ "x$XBOOT" = "x1" ] && return 0
+	local cfg="$1"
+	local wan_proto wan_ipaddr wan_netmask wan_gateway wan_dns wan_pppoe_user wan_pppoe_pass
+	local wifi_ssid wifi_key
+	local lan_ipaddr lan_netmask
+	local device ifname
+
+	config_get wan_proto "$cfg" wan_proto dhcp
+
+	device=$(uci get network.wan.device 2>/dev/null)
+	ifname=$(uci get network.wan.ifname 2>/dev/null)
+	case "${wan_proto}" in
+		dhcp)
+			uci delete network.wan
+			uci set network.wan=interface
+			test -n "$device" && uci set network.wan.device="$device"
+			test -n "$ifname" && uci set network.wan.ifname="$ifname"
+			uci set network.wan.proto='dhcp'
+			uci set network.wan.metric='40'
+
+			config_get wan_dns "$cfg" wan_dns
+			test -n "${wan_dns}" && {
+				uci set network.wan.peerdns='0'
+				uci set network.wan.dns="${wan_dns}"
+			}
+		;;
+		static)
+			config_get wan_ipaddr "$cfg" wan_ipaddr
+			config_get wan_netmask "$cfg" wan_netmask
+			config_get wan_gateway "$cfg" wan_gateway
+			test -n "${wan_ipaddr}" && test -n "${wan_netmask}" && {
+				uci delete network.wan
+				uci set network.wan=interface
+				uci set network.wan.proto='static'
+				uci set network.wan.force_link='0'
+				test -n "$device" && uci set network.wan.device="$device"
+				test -n "$ifname" && uci set network.wan.ifname="$ifname"
+				uci set network.wan.metric='40'
+				uci set network.wan.ipaddr="${wan_ipaddr}"
+				uci set network.wan.netmask="${wan_netmask}"
+				uci set network.wan.gateway="${wan_gateway}"
+
+				config_get wan_dns "$cfg" wan_dns
+				test -n "${wan_dns}" && {
+					uci set network.wan.peerdns='0'
+					uci set network.wan.dns="${wan_dns}"
+				}
+			}
+		;;
+		pppoe)
+			config_get wan_pppoe_user "$cfg" wan_pppoe_user
+			config_get wan_pppoe_pass "$cfg" wan_pppoe_pass
+			uci delete network.wan
+			uci set network.wan=interface
+			uci set network.wan.proto='pppoe'
+			test -n "$device" && uci set network.wan.device="$device"
+			test -n "$ifname" && uci set network.wan.ifname="$ifname"
+			uci set network.wan.metric='40'
+			uci set network.wan.username="${wan_pppoe_user}"
+			uci set network.wan.password="${wan_pppoe_pass}"
+			uci set network.wan.keepalive='5 5'
+			uci set network.wan.mtu='1492'
+			uci set network.wan.ipv6='auto'
+
+			config_get wan_dns "$cfg" wan_dns
+			test -n "${wan_dns}" && {
+				uci set network.wan.peerdns='0'
+				uci set network.wan.dns="${wan_dns}"
+			}
+		;;
+	esac
+
+	config_get lan_ipaddr "$cfg" lan_ipaddr
+	config_get lan_netmask "$cfg" lan_netmask
+	test -n "${lan_ipaddr}" && test -n "${lan_netmask}" && {
+		uci set network.lan.ipaddr="${lan_ipaddr}"
+		uci set network.lan.netmask="${lan_netmask}"
+	}
+
+	config_get wifi_ssid "$cfg" wifi_ssid
+	config_get wifi_key "$cfg" wifi_key
+
+	test -n "${wifi_ssid}" && test -n "${wifi_key}" && {
+		for idx in `seq 0 64`; do
+			uci get wireless.@wifi-iface[$idx] 2>/dev/null || break
+			[ "$(uci get wireless.@wifi-iface[$idx].mode 2>/dev/null)" = "ap" ] && {
+				uci set wireless.@wifi-iface[$idx].ssid="${wifi_ssid}"
+				uci set wireless.@wifi-iface[$idx].key="${wifi_key}"
+				uci set wireless.@wifi-iface[$idx].encryption='psk2'
+			}
+		done
+	}
+
+	uci commit network
+	uci commit wireless
+	(sleep 15
+	 /etc/init.d/network reload
+	 /etc/init.d/dnsmasq reload)&
+}
+
+start() {
+	config_load wizard
+	config_foreach add_wizard wizard
+}
+
+restart() {
+	XRELOAD=1 start
+}
