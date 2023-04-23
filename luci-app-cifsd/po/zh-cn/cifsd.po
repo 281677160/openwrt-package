@@ -10,7 +10,7 @@ msgstr ""
 "X-Generator: Poedit 2.2.4\n"
 "Last-Translator: Richard Yu <yurichard3839@gmail.com>\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"Language: zh_Hans\n"
+"Language: zh_CN\n"
 
 #: applications/luci-app-cifsd/htdocs/luci-static/resources/view/cifsd.js:72
 msgid "Allow guests"
