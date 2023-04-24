@@ -1,4 +1,4 @@
-# The bandwidth unit is Kbit/s
+# The bandwidth unit is Mbit/s
 config eqos
 	option enabled      0
 	option download     100
