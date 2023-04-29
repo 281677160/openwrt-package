@@ -1,7 +1,7 @@
 #!/bin/sh /etc/rc.common
 
 #
-# Copyright (C) 2021-2022  sirpdboy  <herboy2008@gmail.com> https://github.com/sirpdboy/luci-app-partexp
+# Copyright (C) 2021-2022  sirpdboy  <herboy2008@gmail.com> ./luci-app-partexp
 
 # This is free software, licensed under the Apache License, Version 2.0 .
 #

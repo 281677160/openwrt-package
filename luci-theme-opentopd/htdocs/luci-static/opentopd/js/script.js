@@ -3,7 +3,7 @@
 * luci-theme-opentopd
 *   Copyright 2019-2021 sirpdboy <sirpdboy@qq.com>
 *	Have a bug? Please create an issue here on GitHub!
-*	https://github.com/sirpdboy/luci-theme-opentopd/issues
+*	./luci-theme-opentopd/issues
 *	
 *	luci-theme-material:
 *	Copyright 2015 Lutty Yang

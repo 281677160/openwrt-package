@@ -1,6 +1,6 @@
 --[[
 LuCI - Lua Configuration Interface
- Copyright (C) 2022  sirpdboy <herboy2008@gmail.com> https://github.com/sirpdboy/luci-app-partexp
+ Copyright (C) 2022  sirpdboy <herboy2008@gmail.com> ./luci-app-partexp
 ]]--
 local fs   = require "nixio.fs"
 local util = require "nixio.util"
@@ -32,7 +32,7 @@ end
 
 local m,t,e
 m = Map("partexp", "<font color='green'>" .. translate("One click partition expansion mounting tool") .."</font>",
-translate( "Automatically format and mount the target device partition. If there are multiple partitions, it is recommended to manually delete all partitions before using this tool.<br/>For specific usage, see:") ..translate("<a href=\'https://github.com/sirpdboy/luci-app-partexp.git' target=\'_blank\'>GitHub @sirpdboy</a>") )
+translate( "Automatically format and mount the target device partition. If there are multiple partitions, it is recommended to manually delete all partitions before using this tool.<br/>") ..translate("<a href=\'./luci-app-partexp.git' target=\'_blank\'></a>") )
 
 t=m:section(TypedSection,"global")
 t.anonymous=true
