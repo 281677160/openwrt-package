@@ -1,5 +1,3 @@
-Update.txt
-UpdateList.txt
 chinadns-ng
 dns2socks
 dns2tcp
