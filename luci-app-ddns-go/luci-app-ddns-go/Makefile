@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-only
 #
-# Copyright (C) 2021-2022  sirpdboy  <herboy2008@gmail.com> https://github.com/sirpdboy/luci-app-ddns-go 
+# Copyright (C) 2021-2022  sirpdboy  <herboy2008@gmail.com> ./luci-app-ddns-go 
 # 
 # This is free software, licensed under the Apache License, Version 2.0 .
 #

@@ -2,7 +2,7 @@ msgid ""
 msgstr "Content-Type: text/plain; charset=UTF-8\n"
 
 msgid "Design Config"
-msgstr "Design设置"
+msgstr "Design 主题设置"
 
 msgid "Here you can set the mode of the theme and change the proxy tool icon in the navigation bar. [Recommend Chrome]"
 msgstr "这里可以设置主题的模式和更换导航栏的代理工具图标。[建议使用 Chrome]"

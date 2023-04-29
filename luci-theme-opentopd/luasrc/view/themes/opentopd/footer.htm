@@ -2,7 +2,7 @@
 	luci-theme-opentopd
     Copyright 2019-2021 sirpdboy <sirpdboy@qq.com>
 
-	https://github.com/sirpdboy/luci-theme-opentopd/issues
+	./luci-theme-opentopd/issues
 
 	luci-theme-material: 
 	Copyright 2015 Lutty Yang <lutty@wcan.in>
@@ -20,6 +20,8 @@
                 </div>
                 <footer class="mobile-hide">
 
+		<a class="luci-link" href="https://github.com/openwrt/luci">Powered by <%= ver.luciname %>
+			(<%= ver.luciversion %>)</a> /
 		<%= ver.distversion %>
                     <% if #categories > 1 then %>
                     <ul class="breadcrumb pull-right" id="modemenu">
