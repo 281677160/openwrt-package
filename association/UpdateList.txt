@@ -1,5 +1,3 @@
-Update.txt
-UpdateList.txt
 Wiwiz-PinPinWiFi
 adguardhome
 alist
