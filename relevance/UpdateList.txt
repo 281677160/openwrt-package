@@ -1,5 +1,3 @@
-Update.txt
-UpdateList.txt
 brook
 chinadns-ng
 dns2socks
