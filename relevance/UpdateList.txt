@@ -8,6 +8,7 @@ luci-theme-argon-light-mod
 luci-theme-bootstrap-mod
 luci-theme-darkmatter
 luci-theme-design
+luci-theme-freifunk-generic
 luci-theme-ifit
-luci-theme-opentopd
 smartdns
+trunk
