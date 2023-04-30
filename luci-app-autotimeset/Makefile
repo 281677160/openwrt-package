@@ -1,4 +1,4 @@
-# Copyright (C) 2019-2021  sirpdboy  ./luci-app-autotimeset
+# Copyright (C) 2019-2021  sirpdboy  https://github.com/sirpdboy/luci-app-autotimeset
 # 
 # This is free software, licensed under the Apache License, Version 2.0 .
 #

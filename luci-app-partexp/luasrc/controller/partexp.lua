@@ -1,6 +1,6 @@
 --[[
 LuCI - Lua Configuration Partition Expansion
- Copyright (C) 2022  sirpdboy <herboy2008@gmail.com> ./luci-app-partexp
+ Copyright (C) 2022  sirpdboy <herboy2008@gmail.com> https://github.com/sirpdboy/luci-app-partexp
 ]]--
 require "luci.util"
 local name = 'partexp'

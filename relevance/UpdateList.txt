@@ -12,6 +12,7 @@ feed-netkeeper
 filebrowser
 gost
 gowebdav
+install.sh
 iptvhelper
 lua-maxminddb
 luci-app-adguardhome
