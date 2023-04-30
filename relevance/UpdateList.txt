@@ -1,10 +1,12 @@
+luci-app-argon-config
 luci-app-design-config
 luci-app-smartdns
-luci-theme-Butterfly
 luci-theme-Butterfly-dark
+luci-theme-Butterfly
 luci-theme-Light
 luci-theme-argon-dark-mod
 luci-theme-argon-light-mod
+luci-theme-argon
 luci-theme-bootstrap-mod
 luci-theme-darkmatter
 luci-theme-design
