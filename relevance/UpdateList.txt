@@ -4,6 +4,7 @@ alist
 app-lucky
 feed-netkeeper
 gost
+install.sh
 luci-app-adguardhome
 luci-app-advanced
 luci-app-alist
@@ -13,7 +14,6 @@ luci-app-cifsd
 luci-app-cloudflarespeedtest
 luci-app-ddns-go
 luci-app-ddnsto
-luci-app-design-config
 luci-app-gost
 luci-app-ikoolproxy
 luci-app-istorex
@@ -28,7 +28,6 @@ luci-app-poweroff
 luci-app-pushbot
 luci-app-quickstart
 luci-app-shutdown
-luci-app-smartdns
 luci-app-store
 luci-app-supervisord
 luci-app-switch-lan-play
@@ -41,9 +40,6 @@ luci-app-wizard
 luci-app-wolplus
 luci-lib-iform
 luci-proto-netkeeper
-luci-theme-Light
-luci-theme-design
-luci-theme-opentopd
 lucky
 mosdns
 mosdnszz
@@ -54,7 +50,6 @@ natter
 netkeeper
 netkeeper-interception
 network
-smartdns
 switch-lan-play
 v2dat
 v2ray-geodata

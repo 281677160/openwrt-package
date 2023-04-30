@@ -1,4 +1,4 @@
-# Copyright (C) 2019  sirpdboy <./luci-app-advanced/>
+# Copyright (C) 2019  sirpdboy <https://github.com/sirpdboy/luci-app-advanced/>
 # 
 #
 #

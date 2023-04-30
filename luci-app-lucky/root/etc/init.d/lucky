@@ -1,6 +1,6 @@
 #!/bin/sh /etc/rc.common
 #
-# Copyright (C) 2021-2022  sirpdboy  <herboy2008@gmail.com> ./luci-app-lucky
+# Copyright (C) 2021-2022  sirpdboy  <herboy2008@gmail.com> https://github.com/sirpdboy/luci-app-lucky
 
 # This file is part of lucky .
 #
