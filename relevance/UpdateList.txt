@@ -4,7 +4,6 @@ alist
 app-lucky
 feed-netkeeper
 gost
-install.sh
 luci-app-adguardhome
 luci-app-advanced
 luci-app-alist
@@ -44,11 +43,11 @@ lucky
 mosdns
 mosdnszz
 multimedia
-nas-packages
 nas-packages-luci
+nas-packages
 natter
-netkeeper
 netkeeper-interception
+netkeeper
 network
 switch-lan-play
 v2dat
