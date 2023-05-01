@@ -34,8 +34,8 @@
 %>
                 </div>
                 <footer class="mobile-hide" style="text-align:center">
-                    <a href="/cgi-bin/luci/admin/status/overview">Powered by LeoJo <%= ver.luciname %> (<%= ver.luciversion %>)</a> /
-                    <a href="https://github.com/openwrt/openwrt/"><%= ver.distversion %></a> /
+                    <a href="/cgi-bin/luci/admin/status/overview"> (<%= ver.luciversion %>)</a> /
+                    
                     <% if #categories > 1 then %>
                     <ul class="breadcrumb pull-right" id="modemenu">
                         <% for i, r in ipairs(categories) do %>
