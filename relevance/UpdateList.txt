@@ -72,6 +72,7 @@ luci-app-vlmcsd
 luci-app-vssr
 luci-app-webd
 luci-app-wifidog
+luci-app-wizard
 luci-app-wolplus
 luci-lib-iform
 luci-proto-netkeeper
