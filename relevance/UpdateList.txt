@@ -35,7 +35,6 @@ luci-app-timecontrol
 luci-app-ttnode
 luci-app-webd
 luci-app-wifidog
-luci-app-wizard
 luci-app-wolplus
 luci-lib-iform
 luci-proto-netkeeper
