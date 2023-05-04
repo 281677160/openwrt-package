@@ -44,6 +44,7 @@ luci-app-msd_lite
 luci-app-natter
 luci-app-netdata
 luci-app-netkeeper-interception
+luci-app-netwizard
 luci-app-nginx-pingos
 luci-app-oaf
 luci-app-oled
@@ -72,7 +73,6 @@ luci-app-vlmcsd
 luci-app-vssr
 luci-app-webd
 luci-app-wifidog
-luci-app-wizard
 luci-app-wolplus
 luci-lib-iform
 luci-proto-netkeeper
