@@ -31,7 +31,6 @@ luci-app-store
 luci-app-supervisord
 luci-app-switch-lan-play
 luci-app-tencentddns
-luci-app-timecontrol
 luci-app-ttnode
 luci-app-webd
 luci-app-wifidog
