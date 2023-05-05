@@ -26,6 +26,7 @@ luci-app-istorex
 luci-app-linkease
 luci-app-lucky
 luci-app-mosdns
+luci-app-msd_lite
 luci-app-natter
 luci-app-netwizard
 luci-app-nginx-manager
@@ -48,6 +49,7 @@ luci-lib-iform
 lucky
 mosdns
 mosdnszz
+msd_lite
 multimedia
 nas-packages-luci
 nas-packages
