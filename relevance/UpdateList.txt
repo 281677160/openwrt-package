@@ -4,7 +4,6 @@ alist
 alist2
 aliyundrive-fuse
 aliyundrive-webdav
-amlogi
 app-lucky
 ardhome
 gost
@@ -13,8 +12,10 @@ luci-app-adguardhome
 luci-app-advanced
 luci-app-alist
 luci-app-aliyundrive-webdav
-luci-app-aml
+luci-app-amlogic
+luci-app-autoipsetadder
 luci-app-autotimeset
+luci-app-cifsd
 luci-app-cloudflarespeedtest
 luci-app-cupsd
 luci-app-ddns-go
