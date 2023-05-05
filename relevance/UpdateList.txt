@@ -107,6 +107,7 @@ smartmontools
 socat
 switch-lan-play
 syncthing
+ucl
 udp2raw
 upx-static
 upx
