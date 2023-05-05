@@ -10,6 +10,7 @@ app-lucky
 ardhome
 assets
 cdnspeedtest
+clud
 cpulimit-ng
 cpulimit
 filebrowser
@@ -22,8 +23,10 @@ luci-app-advanced
 luci-app-aliddns
 luci-app-alist
 luci-app-amlogic
+luci-app-autoipsetadder
 luci-app-autotimeset
 luci-app-clash
+luci-app-cloudflarespeedtest
 luci-app-control-timewol
 luci-app-control-webrestriction
 luci-app-control-weburl
