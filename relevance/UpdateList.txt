@@ -11,6 +11,7 @@ ardhome
 assets
 cdnspeedtest
 cpulimit-ng
+cpulimit
 filebrowser
 gost
 gowebdav
@@ -23,7 +24,6 @@ luci-app-alist
 luci-app-amlogic
 luci-app-autotimeset
 luci-app-clash
-luci-app-cloudflarespeedtest
 luci-app-control-timewol
 luci-app-control-webrestriction
 luci-app-control-weburl
@@ -71,6 +71,7 @@ luci-app-tencentddns
 luci-app-timecontrol
 luci-app-ttnode
 luci-app-udp2raw
+luci-app-unblockmusic
 luci-app-unblockneteasemusic
 luci-app-vlmcsd
 luci-app-vssr
