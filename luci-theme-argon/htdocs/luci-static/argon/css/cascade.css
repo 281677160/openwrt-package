@@ -128,7 +128,7 @@ body {
   margin: 0px;
   padding: 0px;
   height: 100%;
-  font-size: 16px;
+  font-size: rem;
   font-family: "Google Sans", "Microsoft Yahei", "WenQuanYi Micro Hei", "sans-serif", "Helvetica Neue", "Helvetica", "Hiragino Sans GB";
   font-family: var(--font-family-sans-serif);
 }
@@ -600,7 +600,7 @@ footer a {
   padding: 0.5rem 0rem 0.5rem 0;
   text-decoration: none;
   white-space: nowrap;
-  color: #4c4c4c;
+  color: #535659;
   color: var(--menubar-text-color);
   transition: all 0.2s;
   font-size: 0.875rem;
