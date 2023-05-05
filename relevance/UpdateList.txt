@@ -1,4 +1,5 @@
 Rclone-OpenWrt
+UnblockNeteaseMusic-Go
 UnblockNeteaseMusic
 Wiwiz-PinPinWiFi
 adguardhome
@@ -13,6 +14,7 @@ feed-netkeeper
 filebrowser
 gost
 gowebdav
+iptvhelper
 lua-maxminddb
 luci-app-adguardhome
 luci-app-advanced
@@ -24,11 +26,13 @@ luci-app-autotimeset
 luci-app-clash
 luci-app-cloudflarespeedtest
 luci-app-control-timewol
+luci-app-control-webrestriction
 luci-app-control-weburl
 luci-app-cpulimit
 luci-app-ddns-go
 luci-app-ddnsto
 luci-app-diskman
+luci-app-fileassistant
 luci-app-filebrowser
 luci-app-gost
 luci-app-gowebdav
@@ -54,6 +58,7 @@ luci-app-quickstart
 luci-app-rclone
 luci-app-shutdown
 luci-app-smartinfo
+luci-app-socat
 luci-app-ssr-mudb-server
 luci-app-store
 luci-app-supervisord
@@ -97,3 +102,4 @@ udp2raw
 v2dat
 v2ray-geodata
 vlmcsd
+webd
