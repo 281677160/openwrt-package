@@ -11,6 +11,7 @@ luci-app-amlogic
 luci-app-autotimeset
 luci-app-cifsd
 luci-app-cloudflarespeedtest
+luci-app-ddns-go
 luci-app-ddnsto
 luci-app-gost
 luci-app-ikoolproxy
