@@ -1,10 +1,8 @@
 UnblockNeteaseMusic-Go
-UnblockNeteaseMusic
 Wiwiz-PinPinWiFi
 adguardhome
 alist
 app-lucky
-assets
 cdnspeedtest
 cpulimit-ng
 cpulimit
@@ -17,7 +15,6 @@ lua-maxminddb
 luci-app-adguardhome
 luci-app-advanced
 luci-app-aliddns
-luci-app-alist
 luci-app-amlogic
 luci-app-autoipsetadder
 luci-app-autotimeset
@@ -25,7 +22,6 @@ luci-app-clash
 luci-app-cloudflarespeedtest
 luci-app-control-timewol
 luci-app-control-webrestriction
-luci-app-control-weburl
 luci-app-cpulimit
 luci-app-ddns-go
 luci-app-ddnsto
@@ -52,12 +48,9 @@ luci-app-onliner
 luci-app-oscam
 luci-app-partexp
 luci-app-poweroff
-luci-app-pppoe-server
 luci-app-quickstart
-luci-app-rclone
 luci-app-shutdown
 luci-app-smartinfo
-luci-app-socat
 luci-app-ssr-mudb-server
 luci-app-store
 luci-app-supervisord
@@ -77,7 +70,6 @@ luci-app-wolplus
 luci-lib-iform
 luci-proto-netkeeper
 lucky
-mentohust
 mosdns
 mosdnszz
 msd_lite
@@ -92,13 +84,9 @@ network
 openwrt-subconverter
 openwrt-tmate
 oscam
-rclone-ng
-rclone-webui-react
-rclone
 smartmontools
 socat
 switch-lan-play
-syncthing
 udp2raw
 v2dat
 v2ray-geodata
