@@ -3,7 +3,7 @@ adguardhome
 alist
 alist2
 app-lucky
-feed-netkeeper
+ardhome
 gost
 larespeedtest
 luci-app-adguardhome
@@ -22,8 +22,8 @@ luci-app-linkease
 luci-app-lucky
 luci-app-mosdns
 luci-app-natter
-luci-app-netkeeper-interception
 luci-app-netwizard
+luci-app-oled
 luci-app-onliner
 luci-app-partexp
 luci-app-poweroff
@@ -40,7 +40,6 @@ luci-app-webd
 luci-app-wifidog
 luci-app-wolplus
 luci-lib-iform
-luci-proto-netkeeper
 lucky
 mosdns
 mosdnszz
@@ -48,9 +47,8 @@ multimedia
 nas-packages-luci
 nas-packages
 natter
-netkeeper-interception
-netkeeper
 network
+packr
 switch-lan-play
 upx-static
 v2dat
