@@ -27,6 +27,7 @@ luci-app-clash
 luci-app-cloudflarespeedtest
 luci-app-control-timewol
 luci-app-control-webrestriction
+luci-app-control-weburl
 luci-app-cpulimit
 luci-app-ddns-go
 luci-app-ddnsto
@@ -97,7 +98,6 @@ rclone-webui-react
 rclone
 smartmontools
 switch-lan-play
-syncthing
 udp2raw
 upx-static
 v2dat
