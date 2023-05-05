@@ -2,6 +2,9 @@ Wiwiz-PinPinWiFi
 adguardhome
 alist
 alist2
+aliyundrive-fuse
+aliyundrive-webdav
+amlogi
 app-lucky
 ardhome
 gost
@@ -9,10 +12,11 @@ larespeedtest
 luci-app-adguardhome
 luci-app-advanced
 luci-app-alist
-luci-app-amlogic
+luci-app-aliyundrive-webdav
+luci-app-aml
 luci-app-autotimeset
-luci-app-cifsd
 luci-app-cloudflarespeedtest
+luci-app-cupsd
 luci-app-ddns-go
 luci-app-ddnsto
 luci-app-gost
@@ -23,7 +27,7 @@ luci-app-lucky
 luci-app-mosdns
 luci-app-natter
 luci-app-netwizard
-luci-app-oled
+luci-app-nginx-manager
 luci-app-onliner
 luci-app-partexp
 luci-app-poweroff
