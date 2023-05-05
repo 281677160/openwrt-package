@@ -27,7 +27,6 @@ luci-app-clash
 luci-app-cloudflarespeedtest
 luci-app-control-timewol
 luci-app-control-webrestriction
-luci-app-control-weburl
 luci-app-cpulimit
 luci-app-ddns-go
 luci-app-ddnsto
@@ -70,6 +69,7 @@ luci-app-tencentddns
 luci-app-timecontrol
 luci-app-ttnode
 luci-app-udp2raw
+luci-app-unblockmusic
 luci-app-unblockneteasemusic
 luci-app-vlmcsd
 luci-app-vssr
