@@ -1,6 +1,9 @@
+feed-netkeeper
 luci-app-argon-config
 luci-app-design-config
+luci-app-netkeeper-interception
 luci-app-smartdns
+luci-proto-netkeeper
 luci-theme-Butterfly-dark
 luci-theme-Butterfly
 luci-theme-Light
@@ -12,4 +15,6 @@ luci-theme-darkmatter
 luci-theme-design
 luci-theme-ifit
 luci-theme-opentopd
+netkeeper-interception
+netkeeper
 smartdns
