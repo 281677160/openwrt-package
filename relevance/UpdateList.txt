@@ -6,6 +6,8 @@ aliyundrive-fuse
 aliyundrive-webdav
 app-lucky
 ardhome
+ddns-scripts_aliyun
+ddns-scripts_dnspod
 gost
 larespeedtest
 luci-app-adguardhome
