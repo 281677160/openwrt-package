@@ -13,6 +13,8 @@ cdnspeedtest
 clud
 cpulimit-ng
 cpulimit
+ddns-scripts_aliyun
+ddns-scripts_dnspod
 filebrowser
 gost
 gowebdav
