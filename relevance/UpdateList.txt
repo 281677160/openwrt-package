@@ -1,6 +1,5 @@
 Wiwiz-PinPinWiFi
 adguardhome
-alist
 app-lucky
 gost
 luci-app-adguardhome
@@ -46,6 +45,7 @@ nas-packages-luci
 nas-packages
 natter
 network
+switch-lan-play
 v2dat
 v2ray-geodata
 webd
