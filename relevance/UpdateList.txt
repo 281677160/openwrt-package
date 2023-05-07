@@ -5,7 +5,6 @@ adguardhome
 alist
 app-lucky
 assets
-cdnspeedtest
 cpulimit-ng
 cpulimit
 filebrowser
@@ -42,6 +41,7 @@ luci-app-mosdns
 luci-app-msd_lite
 luci-app-natter
 luci-app-netdata
+luci-app-netwizard
 luci-app-nginx-pingos
 luci-app-oaf
 luci-app-oled
@@ -70,7 +70,6 @@ luci-app-vlmcsd
 luci-app-vssr
 luci-app-webd
 luci-app-wifidog
-luci-app-wizard
 luci-app-wolplus
 luci-lib-iform
 lucky
@@ -87,6 +86,9 @@ network
 openwrt-subconverter
 openwrt-tmate
 oscam
+r8101
+r8125
+r8168
 rclone-ng
 rclone-webui-react
 rclone
@@ -94,7 +96,9 @@ smartmontools
 socat
 switch-lan-play
 syncthing
+ucl
 udp2raw
+upx
 v2dat
 v2ray-geodata
 vlmcsd
