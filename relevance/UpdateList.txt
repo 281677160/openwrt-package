@@ -102,6 +102,9 @@ openwrt-tmate
 oscam
 packr
 parted
+r8101
+r8125
+r8168
 rclone-ng
 rclone-webui-react
 rclone
