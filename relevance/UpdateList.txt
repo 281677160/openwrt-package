@@ -9,7 +9,6 @@ cdnspeedtest
 cpulimit-ng
 cpulimit
 filebrowser
-gost
 gowebdav
 iptvhelper
 lua-maxminddb
@@ -64,7 +63,6 @@ luci-app-syncthing
 luci-app-tencentddns
 luci-app-timecontrol
 luci-app-ttnode
-luci-app-udp2raw
 luci-app-unblockmusic
 luci-app-unblockneteasemusic
 luci-app-vlmcsd
@@ -103,4 +101,3 @@ upx
 v2dat
 v2ray-geodata
 vlmcsd
-webd
