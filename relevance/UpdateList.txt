@@ -5,6 +5,7 @@ adguardhome
 alist
 app-lucky
 assets
+cdnspeedtest
 cpulimit-ng
 cpulimit
 filebrowser
