@@ -14,6 +14,7 @@ luci-theme-bootstrap-mod
 luci-theme-darkmatter
 luci-theme-design
 luci-theme-ifit
+luci-theme-kucat
 luci-theme-opentopd
 netkeeper-interception
 netkeeper
