@@ -1,12 +1,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=syncthing
-PKG_VERSION:=1.19.2
+PKG_VERSION:=1.20.4
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=syncthing-source-v$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/syncthing/syncthing/releases/download/v$(PKG_VERSION)
-PKG_HASH:=dcf93ef2fea1150b5b2e27d1c5e8e4853bd440b766a8355309af1607be08ce80
+PKG_HASH:=c153b785d737eac133bb4137588aa0bf9e1e7fb31fdbc8d656a99b4d879b54b9
 
 PKG_BUILD_DIR=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)/$(PKG_NAME)
 
@@ -44,8 +44,8 @@ define Package/syncthing
 endef
 
 define Package/syncthing/conffiles
-#/etc/config/syncthing
-#/etc/syncthing
+/etc/config/syncthing
+/etc/syncthing
 endef
 
 define Package/syncthing/description
@@ -58,7 +58,7 @@ endef
 define Package/syncthing/install
 	$(call GoPackage/Package/Install/Bin,$(1))
 
-#	$(CP) ./files/* $(1)/
+	$(CP) ./files/* $(1)/
 endef
 
 $(eval $(call GoBinPackage,syncthing))
