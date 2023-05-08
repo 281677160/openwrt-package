@@ -1,20 +1,13 @@
-OpenAppFilter
-Rclone-OpenWrt
 UnblockNeteaseMusic-Go
 UnblockNeteaseMusic
 Wiwiz-PinPinWiFi
 adguardhome
 alist
-alist2
 app-lucky
-ardhome
 assets
 cdnspeedtest
-clud
 cpulimit-ng
 cpulimit
-ddns-scripts_aliyun
-ddns-scripts_dnspod
 filebrowser
 gost
 gowebdav
@@ -33,7 +26,6 @@ luci-app-control-timewol
 luci-app-control-webrestriction
 luci-app-control-weburl
 luci-app-cpulimit
-luci-app-cupsd
 luci-app-ddns-go
 luci-app-ddnsto
 luci-app-diskman
@@ -41,7 +33,6 @@ luci-app-fileassistant
 luci-app-filebrowser
 luci-app-gost
 luci-app-gowebdav
-luci-app-ikoolproxy
 luci-app-iptvhelper
 luci-app-istorex
 luci-app-linkease
@@ -52,7 +43,6 @@ luci-app-msd_lite
 luci-app-natter
 luci-app-netdata
 luci-app-netwizard
-luci-app-nginx-manager
 luci-app-nginx-pingos
 luci-app-oaf
 luci-app-oled
@@ -61,7 +51,6 @@ luci-app-oscam
 luci-app-partexp
 luci-app-poweroff
 luci-app-pppoe-server
-luci-app-pushbot
 luci-app-quickstart
 luci-app-rclone
 luci-app-shutdown
@@ -95,13 +84,9 @@ nas-packages
 natter
 netdata
 network
-oaf
-open-app-filter
 openwrt-subconverter
 openwrt-tmate
 oscam
-packr
-parted
 r8101
 r8125
 r8168
@@ -114,7 +99,6 @@ switch-lan-play
 syncthing
 ucl
 udp2raw
-upx-static
 upx
 v2dat
 v2ray-geodata
