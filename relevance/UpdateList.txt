@@ -9,6 +9,7 @@ ardhome
 ddns-scripts_aliyun
 ddns-scripts_dnspod
 gost
+kcptun
 larespeedtest
 luci-app-adguardhome
 luci-app-advanced
@@ -58,6 +59,7 @@ nas-packages
 natter
 network
 packr
+shadowsocks-libev
 switch-lan-play
 upx-static
 v2dat
