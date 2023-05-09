@@ -1003,6 +1003,8 @@ select {
 /*textarea*/
 .cbi-input-textarea {
   width: 100%;
+  border: 1;
+  outline: none;
   min-height: 14rem;
   padding: 0.8rem;
   font-size: 0.8rem;
@@ -2544,11 +2546,11 @@ td > .ifacebadge {
 /*textarea*/
 .cbi-input-textarea {
   width: 100%;
-  border: 1;
+  border: 0;
   outline: none;
   min-height: 14rem;
   padding: 0.8rem;
-  font-size: 1.7rem;
+  font-size: 0.8rem;
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   color: black;
 }
