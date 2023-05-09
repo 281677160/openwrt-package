@@ -1945,10 +1945,10 @@ div > .table > .tbody > .tr:nth-of-type(2n) {
 }
 .warning,
 .warning * {
-  background-color: #fb6340;
-  background-color: var(--warning);
-  color: #fff;
-  animation: warning-background-color-breathe 1.5s ease-in-out infinite !important;
+  background-color: #ffd600;
+  background-color: #ffd600;
+  color: #fb6340;
+  /* animation: warning-background-color-breathe 1.5s cubic-bezier(0.55, 0.09, 0.68, 0.53) infinite !important; */
 }
 .notice {
   background-color: #5e72e4 !important;
@@ -1972,7 +1972,7 @@ div > .table > .tbody > .tr:nth-of-type(2n) {
   min-width: inherit;
   overflow: auto;
   border-radius: 0.3rem;
-  background-color: #FFF;
+  background-color: #ffd600;
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.16), 0 0 2px 0 rgba(0, 0, 0, 0.12);
 }
 .errorbox {
