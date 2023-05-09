@@ -37,6 +37,7 @@ luci-app-poweroff
 luci-app-pushbot
 luci-app-quickstart
 luci-app-shutdown
+luci-app-smartinfo
 luci-app-store
 luci-app-supervisord
 luci-app-switch-lan-play
