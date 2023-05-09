@@ -64,7 +64,6 @@ luci-app-pushbot
 luci-app-quickstart
 luci-app-rclone
 luci-app-shutdown
-luci-app-smartinfo
 luci-app-socat
 luci-app-ssr-mudb-server
 luci-app-store
