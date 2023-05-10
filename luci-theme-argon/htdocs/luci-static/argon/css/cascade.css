@@ -856,8 +856,8 @@ footer a {
   -webkit-appearance: none;
   text-transform: uppercase;
   height: auto;
-  color: rgba(0, 0, 0, 0.87);
-  background-color: #F0F0F0;
+  color: #f9f9f9;
+  background-color: #fb6340 !important;
   transition: all 0.2s ease-in-out;
   display: inline-block;
   padding: 0.75rem 0.8rem;
