@@ -313,12 +313,7 @@ local function processData(szType, content, groupName)
         result.alias = groupName .. UrlDecode(alias)
         result.type = 'trojan'
         result.server = host[1]
-        if content:find('allowInsecure=1') then
-            result.insecure = '1'
-        else
-            result.insecure = '0'
-        end
-        
+        result.insecure = '0'
         if host[2]:find('?') then
             local query = split(host[2], '?')
             result.server_port = query[1]
