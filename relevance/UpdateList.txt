@@ -9,6 +9,7 @@ ardhome
 gost
 kcptun
 larespeedtest
+lua-maxminddb
 luci-app-adguardhome
 luci-app-advanced
 luci-app-alist
@@ -44,6 +45,7 @@ luci-app-switch-lan-play
 luci-app-tencentddns
 luci-app-timecontrol
 luci-app-ttnode
+luci-app-vssr
 luci-app-webd
 luci-app-wifidog
 luci-app-wolplus
