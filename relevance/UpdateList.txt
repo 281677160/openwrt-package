@@ -1,3 +1,4 @@
+3ginfo
 Wiwiz-PinPinWiFi
 adguardhome
 alist
@@ -6,10 +7,12 @@ aliyundrive-fuse
 aliyundrive-webdav
 app-lucky
 ardhome
+chinadns-ng
 gost
 kcptun
 larespeedtest
 lua-maxminddb
+luci-app-3ginfo
 luci-app-adguardhome
 luci-app-advanced
 luci-app-alist
@@ -17,6 +20,7 @@ luci-app-aliyundrive-webdav
 luci-app-amlogic
 luci-app-autoipsetadder
 luci-app-autotimeset
+luci-app-chinadns-ng
 luci-app-cifsd
 luci-app-cloudflarespeedtest
 luci-app-cupsd
@@ -32,6 +36,7 @@ luci-app-msd_lite
 luci-app-natter
 luci-app-netwizard
 luci-app-nginx-manager
+luci-app-nodogsplash
 luci-app-onliner
 luci-app-partexp
 luci-app-poweroff
@@ -42,6 +47,7 @@ luci-app-smartinfo
 luci-app-store
 luci-app-supervisord
 luci-app-switch-lan-play
+luci-app-tcpdump
 luci-app-tencentddns
 luci-app-timecontrol
 luci-app-ttnode
