@@ -1,3 +1,4 @@
+3ginfo
 OpenAppFilter
 Rclone-OpenWrt
 UnblockNeteaseMusic-Go
@@ -10,6 +11,7 @@ app-lucky
 ardhome
 assets
 cdnspeedtest
+chinadns-ng
 clud
 cpulimit-ng
 cpulimit
@@ -19,6 +21,7 @@ gowebdav
 iptvhelper
 kcptun
 lua-maxminddb
+luci-app-3ginfo
 luci-app-adguardhome
 luci-app-advanced
 luci-app-aliddns
@@ -26,6 +29,7 @@ luci-app-alist
 luci-app-amlogic
 luci-app-autoipsetadder
 luci-app-autotimeset
+luci-app-chinadns-ng
 luci-app-clash
 luci-app-cloudflarespeedtest
 luci-app-control-timewol
@@ -53,6 +57,7 @@ luci-app-netdata
 luci-app-netwizard
 luci-app-nginx-manager
 luci-app-nginx-pingos
+luci-app-nodogsplash
 luci-app-oaf
 luci-app-oled
 luci-app-onliner
@@ -71,6 +76,7 @@ luci-app-store
 luci-app-supervisord
 luci-app-switch-lan-play
 luci-app-syncthing
+luci-app-tcpdump
 luci-app-tencentddns
 luci-app-timecontrol
 luci-app-ttnode
