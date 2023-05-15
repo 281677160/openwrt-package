@@ -48,10 +48,6 @@ body {
                     color: #adb5bd;
                 }
 
-                .border {
-                    border-bottom: 1px var(--dark-primary) solid;
-                }
-
                 input {
                     background-color: transparent !important;
                     color: #adb5bd;
@@ -85,9 +81,6 @@ body {
 
     footer {
         color: #adb5bd;
-        a {
-            color: #adb5bd;
-        }
     }
 
 }
@@ -110,17 +103,12 @@ header::after {
         .nav {
             .slide {
                 .slide-menu {
-
-                    a::after {
-                        background-color: var(--dark-primary) !important;
-                    }
-
                     .active {
                         a {
-                            color: #fff !important;
+                            color: #cccccc;
 
                             &::after {
-                                background-color: var(--dark-primary) !important;
+                                background-color: #cccccc !important;
                             }
                         }
                     }
@@ -139,7 +127,7 @@ header::after {
                 .menu.active {
                     background-color: #483d8b !important;
                     background-color: var(--dark-primary) !important;
-                    color: #fff !important;
+                    color: #cccccc !important;
 
                     a::after {
                         background-color: #cccccc !important;
@@ -155,7 +143,7 @@ header::after {
                 a:hover {
                     background-color: #483d8b !important;
                     background-color: var(--dark-primary) !important;
-                    color: #fff !important;
+                    color: #cccccc !important;
 
 
                 }
@@ -188,10 +176,13 @@ h3 {
     background: #333333;
 }
 
-a:-webkit-any-link:not(.main-left a):not(li a):not(.brand):not(.login-container footer .ftc a) {
-    color: var(--dark_webkit-any-link) !important;
-    text-shadow: 1px 1px 2px #000 !important;
+a:-webkit-any-link {
+    color: -webkit-link;
+    cursor: pointer;
+    color: #483d8b;
+    color: var(--dark-primary);
 }
+
 
 input:-webkit-autofill {
     background-color: #3c3c3c !important;
@@ -207,10 +198,13 @@ input:-webkit-autofill {
     border-color: var(--dark-primary) !important;
 }
 
+
 .cbi-section em {
-    color: var(--dark_webkit-any-link);
-    text-shadow: 1px 1px 2px #000;
+    color: #483d8b;
+    color: var(--dark-primary);
 }
+
+
 
 header.bg-primary {
     background-color: #1e1e1e !important;
@@ -328,7 +322,9 @@ table>thead>tr>th {
 }
 
 abbr {
-    color: #8898aa;
+    color: #483d8b;
+    color: var(--dark-primary);
+
 }
 
 div>table>tbody>tr:nth-of-type(2n),
@@ -423,26 +419,25 @@ th h6, td h6 {
     background-color: #252526;
 }
 
-.tabs>li:hover,
-.tabs>li[class~="active"],
-.cbi-tabmenu>li:hover,
-.cbi-tabmenu>li[class~="cbi-tab"] {
-    border-bottom: .18751rem solid var(--dark-primary);
-    background-color: #3c3c3c;
-}
-
-.tabs>li>a,
-.cbi-tabmenu>li>a {
-    color: #ccc !important;
-}
-
-.cbi-tabmenu>li>a:hover,
-.cbi-tabmenu>li:hover>a,
-.cbi-tabmenu>.cbi-tab>a,
-.tabs>li>a:hover,
-.tabs>li:hover>a,
 .tabs>li[class~="active"]>a {
-    color: #fff !important;
+    color: #ccc;
+}
+
+.tabs>li[class~="active"],
+.tabs>li:hover {
+    border-bottom: 0.18751rem solid #483d8b;
+    border-bottom: 0.18751rem solid var(--dark-primary);
+    color: #ccc;
+    background-color: #181819;
+}
+
+.cbi-tabmenu>li>a,
+.tabs>li>a {
+    color: #ccc;
+
+    &:hover {
+        color: #ccc;
+    }
 }
 
 .cbi-tabmenu>li {
@@ -453,12 +448,20 @@ th h6, td h6 {
     border-bottom: 0px solid #ddd !important;
 }
 
-.cbi-tab-descr {
+.cbi-tabmenu li[class~="cbi-tab"] a {
     color: #ccc;
 }
 
-.cbi-tabcontainer>.cbi-value:nth-of-type(2n),
-.cbi-tabcontainer>.cbi-value:nth-of-type(2n)>textarea {
+.cbi-tabmenu>li:hover {
+    color: #ccc;
+    background: #2d2d2d;
+}
+
+.cbi-tabmenu>li[class~="cbi-tab"] {
+    background-color: #181819;
+}
+
+.cbi-tabcontainer>.cbi-value:nth-of-type(2n) {
     background-color: #252526;
 }
 
@@ -509,11 +512,12 @@ select {
     color: #ccc;
 }
 
-/*textarea for dark mode*/
-textarea {
+.cbi-input-textarea {
     background-color: #1e1e1e;
     color: #ccc;
 }
+
+
 
 .cbi-section-remove:nth-of-type(2n),
 .cbi-section-node:nth-of-type(2n) {
