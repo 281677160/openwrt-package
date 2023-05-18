@@ -128,7 +128,7 @@ body {
   margin: 0px;
   padding: 0px;
   height: 100%;
-  font-size: 16px;
+  font-size: rem;
   font-family: "Google Sans", "Microsoft Yahei", "WenQuanYi Micro Hei", "sans-serif", "Helvetica Neue", "Helvetica", "Hiragino Sans GB";
   font-family: var(--font-family-sans-serif);
 }
@@ -1012,7 +1012,7 @@ select {
 }
 /*textarea*/
 textarea {
-  border: none !important;
+  /* border: fuchsia; */
   outline: none;
   min-height: 14rem !important;
   padding: 0.8rem !important;
@@ -1785,14 +1785,14 @@ select {
   background-image: none;
   border: 1px solid #ccc;
 }
-select,
+.btn,select,
 input {
   font-size: 0.875rem;
   transition: all 0.15s ease-in-out;
   line-height: 1.5;
   padding: 0.625rem 0.75rem;
   color: #8898aa;
-  border: 1px solid #dee2e6;
+  border: 1px solid #ddd;
   border-radius: 0.25rem;
   background-color: #fff;
   background-clip: padding-box;
@@ -1960,7 +1960,7 @@ div > .table > .tbody > .tr:nth-of-type(2n) {
   background-color: #fb6340;
   background-color: var(--warning);
   color: #fff;
-  animation: warning-background-color-breathe 1.5s ease-in-out infinite !important;
+  /* animation: warning-background-color-breathe 1.5s ease-in-out infinite !important; */
 }
 .notice {
   background-color: #5e72e4 !important;
@@ -1984,7 +1984,7 @@ div > .table > .tbody > .tr:nth-of-type(2n) {
   min-width: inherit;
   overflow: auto;
   border-radius: 0.3rem;
-  background-color: #FFF;
+  background-color: #fb6340;
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.16), 0 0 2px 0 rgba(0, 0, 0, 0.12);
 }
 .errorbox {
@@ -2088,7 +2088,7 @@ table > tbody > tr > td,
 table > tfoot > tr > td,
 table > thead > tr > td {
   font-size: 0.875rem;
-  color: #525f7f;
+  color: #3c3c3c;
   line-height: 1.4em;
   vertical-align: middle !important;
   padding: 0.8rem 1.5rem;
