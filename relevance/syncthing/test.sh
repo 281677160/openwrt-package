@@ -1,6 +1,3 @@
 #!/bin/sh
 
-PKG=$1
-ver=$2
-
-"$PKG" --version | grep "$ver"
+syncthing --version | grep "$2"
