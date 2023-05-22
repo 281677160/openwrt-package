@@ -158,14 +158,9 @@ body {
 a:link,
 a:visited,
 a:active {
-  color: var(--default);
-  text-decoration: none;
-}
-a:-webkit-any-link:not(.main-left a):not(li a):not(.brand):not(.login-container footer .ftc a) {
-  color: -webkit-link;
-  cursor: pointer;
+  color: #5e72e4;
   color: var(--primary);
-  text-shadow: 1px 1px 2px #ccc;
+  text-decoration: none;
 }
 a:hover {
   text-decoration: underline;
@@ -288,28 +283,19 @@ li {
   display: flex;
   -webkit-box-align: center;
   align-items: center;
-  margin: 50px auto 15px auto;
+  margin: 50px auto 100px 50px;
   color: #525461;
   color: var(--default);
 }
 .login-page .login-container .login-form .brand .icon {
   width: 50px;
   height: auto;
+  margin-right: 25px;
 }
-.login-page .login-container .login-form .brand-text {
-  font-size: 1.8rem;
+.login-page .login-container .login-form .brand .brand-text {
+  font-size: 1.25rem;
   font-weight: 700;
-  margin-bottom: 85px;
   font-family: "TypoGraphica";
-  width: 420px;
-  padding: 0 0.5rem 0 0.5rem;
-  text-align: center;
-  word-break: break-word;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
 }
 .login-page .login-container .login-form .brand:hover {
   text-decoration: none;
@@ -510,9 +496,13 @@ header .fill .container .brand {
 footer {
   text-align: right;
   padding: 1rem;
+  color: #aaa;
+  color: var(--footer-color);
   font-size: 0.8rem;
 }
 footer a {
+  color: #aaa;
+  color: var(--footer-color);
   text-decoration: none;
 }
 /***********************
@@ -610,7 +600,7 @@ footer a {
   padding: 0.5rem 0rem 0.5rem 0;
   text-decoration: none;
   white-space: nowrap;
-  color: #4c4c4c;
+  color: #535659;
   color: var(--menubar-text-color);
   transition: all 0.2s;
   font-size: 0.875rem;
@@ -1011,14 +1001,12 @@ select {
   text-align: center;
 }
 /*textarea*/
-textarea {
-  /* border: fuchsia; */
-  outline: none;
-  min-height: 14rem !important;
-  padding: 0.8rem !important;
-  background-color: #fff;
-  font-family: var(--font-family-monospace) !important;
-  font-size: inherit;
+.cbi-input-textarea {
+  width: 100%;
+  min-height: 14rem;
+  padding: 0.8rem;
+  font-size: 0.8rem;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   color: black;
 }
 /* change */
@@ -1759,7 +1747,7 @@ body.lang_pl.node-main-login .cbi-value-title {
 }
 .cbi-rowstyle-2 .cbi-button-up,
 .cbi-rowstyle-2 .cbi-button-down {
-  background-color: var(--lighter);
+  background-color: #FFF !important;
 }
 .cbi-button-up,
 .cbi-button-down,
@@ -1785,14 +1773,14 @@ select {
   background-image: none;
   border: 1px solid #ccc;
 }
-.btn,select,
+select,
 input {
   font-size: 0.875rem;
   transition: all 0.15s ease-in-out;
   line-height: 1.5;
   padding: 0.625rem 0.75rem;
   color: #8898aa;
-  border: 1px solid #ddd;
+  border: 1px solid #dee2e6;
   border-radius: 0.25rem;
   background-color: #fff;
   background-clip: padding-box;
@@ -1960,7 +1948,7 @@ div > .table > .tbody > .tr:nth-of-type(2n) {
   background-color: #fb6340;
   background-color: var(--warning);
   color: #fff;
-  /* animation: warning-background-color-breathe 1.5s ease-in-out infinite !important; */
+  animation: warning-background-color-breathe 1.5s ease-in-out infinite !important;
 }
 .notice {
   background-color: #5e72e4 !important;
@@ -1984,7 +1972,7 @@ div > .table > .tbody > .tr:nth-of-type(2n) {
   min-width: inherit;
   overflow: auto;
   border-radius: 0.3rem;
-  background-color: #fb6340;
+  background-color: #FFF;
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.16), 0 0 2px 0 rgba(0, 0, 0, 0.12);
 }
 .errorbox {
@@ -2088,7 +2076,7 @@ table > tbody > tr > td,
 table > tfoot > tr > td,
 table > thead > tr > td {
   font-size: 0.875rem;
-  color: #3c3c3c;
+  color: #525f7f;
   line-height: 1.4em;
   vertical-align: middle !important;
   padding: 0.8rem 1.5rem;
@@ -2455,8 +2443,7 @@ select[multiple="multiple"] {
 .cbi-section-node .cbi-value {
   padding: 0.5rem 1rem 0.5rem 1rem !important;
 }
-.cbi-tabcontainer > .cbi-value:nth-of-type(2n),
-.cbi-tabcontainer > .cbi-value:nth-of-type(2n)>textarea {
+.cbi-tabcontainer > .cbi-value:nth-of-type(2n) {
   background-color: #f9f9f9;
 }
 .cbi-value-field,
@@ -2554,11 +2541,23 @@ td > .ifacebadge {
   float: right;
   margin: 0 0.3rem;
 }
+/*textarea*/
+.cbi-input-textarea {
+  width: 100%;
+  border: 0;
+  outline: none;
+  min-height: 14rem;
+  padding: 0.8rem;
+  font-size: 0.8rem;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: black;
+}
 #syslog {
   width: 100%;
   min-height: 15rem;
   padding: 1rem;
   line-height: 1.4em;
+  font-size: small;
   color: #1e1e1e;
   border-radius: 0;
   background-color: #fff;
@@ -2834,8 +2833,7 @@ input[name="nslookup"] {
   padding: 0.75rem 1.5rem;
   font-size: 0.7rem;
   font-weight: 600;
-  color: var(--primary);
-  text-shadow: 1px 1px 2px #ccc;
+  color: #525f7f;
   text-align: center;
 }
 .cbi-section h4 {
@@ -2935,6 +2933,9 @@ input[name="nslookup"] {
   }
   fieldset {
     padding: 0;
+  }
+  .cbi-input-textarea {
+    font-size: small;
   }
   .node-status-iptables > .main fieldset li > a {
     padding: 0.3rem 0.6rem;
