@@ -6,7 +6,7 @@
 include $(TOPDIR)/rules.mk
 
 LUCI_TITLE:=LuCI Support for Netkeeper-Interception
-LUCI_DEPENDS:=+netkeeper-interception +luci-proto-netkeeper
+LUCI_DEPENDS:=+luci-compat +netkeeper-interception +luci-proto-netkeeper
 LUCI_PKGARCH:=all
 PKG_VERSION:=0.1
 PKG_RELEASE:=1
