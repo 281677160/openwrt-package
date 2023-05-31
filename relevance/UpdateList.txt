@@ -163,7 +163,6 @@ open-app-filter
 openwrt-subconverter
 openwrt-tmate
 oscam
-packr
 parted
 qBittorrent-static
 qBittorrent
