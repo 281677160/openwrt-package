@@ -18,6 +18,7 @@ cpulimit
 filebrowser
 gost
 gowebdav
+iptvhelper
 kcptun
 lua-maxminddb
 luci-app-3ginfo
@@ -44,6 +45,7 @@ luci-app-filebrowser
 luci-app-gost
 luci-app-gowebdav
 luci-app-ikoolproxy
+luci-app-iptvhelper
 luci-app-istorex
 luci-app-linkease
 luci-app-lucky
