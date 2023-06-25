@@ -24,7 +24,6 @@ luci-app-chinadns-ng
 luci-app-cifsd
 luci-app-cloudflarespeedtest
 luci-app-cupsd
-luci-app-ddns-go
 luci-app-ddnsto
 luci-app-gost
 luci-app-ikoolproxy
