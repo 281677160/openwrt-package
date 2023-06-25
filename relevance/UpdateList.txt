@@ -37,7 +37,6 @@ luci-app-control-webrestriction
 luci-app-control-weburl
 luci-app-cpulimit
 luci-app-cupsd
-luci-app-ddns-go
 luci-app-ddnsto
 luci-app-diskman
 luci-app-fileassistant
