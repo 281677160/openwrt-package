@@ -40,7 +40,6 @@ luci-app-clash
 luci-app-cloudflarespeedtest
 luci-app-cpulimit
 luci-app-cupsd
-luci-app-ddns-go
 luci-app-ddnsto
 luci-app-dockerman
 luci-app-filebrowser
