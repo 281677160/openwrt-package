@@ -8,6 +8,7 @@ aliyundrive-webdav
 app-lucky
 ardhome
 chinadns-ng
+ddns-go
 gost
 kcptun
 larespeedtest
@@ -24,6 +25,7 @@ luci-app-chinadns-ng
 luci-app-cifsd
 luci-app-cloudflarespeedtest
 luci-app-cupsd
+luci-app-ddns-go
 luci-app-ddnsto
 luci-app-gost
 luci-app-ikoolproxy
