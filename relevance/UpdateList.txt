@@ -17,9 +17,9 @@ simple-obfs
 sing-box
 ssocks
 tcping
-trojan
 trojan-go
 trojan-plus
+trojan
 v2ray-core
 v2ray-geodata
 v2ray-plugin

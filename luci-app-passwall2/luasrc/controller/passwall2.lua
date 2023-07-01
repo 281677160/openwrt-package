@@ -7,10 +7,6 @@ local ucic = luci.model.uci.cursor()
 local http = require "luci.http"
 local util = require "luci.util"
 local i18n = require "luci.i18n"
-local brook = require("luci.passwall2.brook")
-local v2ray = require("luci.passwall2.v2ray")
-local xray = require("luci.passwall2.xray")
-local hysteria = require("luci.passwall2.hysteria")
 
 function index()
 	appname = require "luci.passwall2.api".appname
@@ -30,6 +26,9 @@ function index()
 	entry({"admin", "services", appname, "node_subscribe"}, cbi(appname .. "/client/node_subscribe"), _("Node Subscribe"), 3).dependent = true
 	entry({"admin", "services", appname, "auto_switch"}, cbi(appname .. "/client/auto_switch"), _("Auto Switch"), 4).leaf = true
 	entry({"admin", "services", appname, "other"}, cbi(appname .. "/client/other", {autoapply = true}), _("Other Settings"), 92).leaf = true
+	if nixio.fs.access("/usr/sbin/haproxy") then
+		entry({"admin", "services", appname, "haproxy"}, cbi(appname .. "/client/haproxy"), _("Load Balancing"), 93).leaf = true
+	end
 	entry({"admin", "services", appname, "app_update"}, cbi(appname .. "/client/app_update"), _("App Update"), 95).leaf = true
 	entry({"admin", "services", appname, "rule"}, cbi(appname .. "/client/rule"), _("Rule Manage"), 96).leaf = true
 	entry({"admin", "services", appname, "node_subscribe_config"}, cbi(appname .. "/client/node_subscribe_config")).leaf = true
@@ -56,6 +55,7 @@ function index()
 	entry({"admin", "services", appname, "get_log"}, call("get_log")).leaf = true
 	entry({"admin", "services", appname, "clear_log"}, call("clear_log")).leaf = true
 	entry({"admin", "services", appname, "status"}, call("status")).leaf = true
+	entry({"admin", "services", appname, "haproxy_status"}, call("haproxy_status")).leaf = true
 	entry({"admin", "services", appname, "socks_status"}, call("socks_status")).leaf = true
 	entry({"admin", "services", appname, "connect_status"}, call("connect_status")).leaf = true
 	entry({"admin", "services", appname, "ping_node"}, call("ping_node")).leaf = true
@@ -65,14 +65,14 @@ function index()
 	entry({"admin", "services", appname, "clear_all_nodes"}, call("clear_all_nodes")).leaf = true
 	entry({"admin", "services", appname, "delete_select_nodes"}, call("delete_select_nodes")).leaf = true
 	entry({"admin", "services", appname, "update_rules"}, call("update_rules")).leaf = true
-	entry({"admin", "services", appname, "brook_check"}, call("brook_check")).leaf = true
-	entry({"admin", "services", appname, "brook_update"}, call("brook_update")).leaf = true
-	entry({"admin", "services", appname, "v2ray_check"}, call("v2ray_check")).leaf = true
-	entry({"admin", "services", appname, "v2ray_update"}, call("v2ray_update")).leaf = true
-	entry({"admin", "services", appname, "xray_check"}, call("xray_check")).leaf = true
-	entry({"admin", "services", appname, "xray_update"}, call("xray_update")).leaf = true
-	entry({"admin", "services", appname, "hysteria_check"}, call("hysteria_check")).leaf = true
-	entry({"admin", "services", appname, "hysteria_update"}, call("hysteria_update")).leaf = true
+
+	--[[Components update]]
+	local coms = require "luci.passwall2.com"
+	local com
+	for com, _ in pairs(coms) do
+		entry({"admin", "services", appname, "check_" .. com}, call("com_check", com)).leaf = true
+		entry({"admin", "services", appname, "update_" .. com}, call("com_update", com)).leaf = true
+	end
 end
 
 local function http_write_json(content)
@@ -179,6 +179,12 @@ function status()
 	luci.http.write_json(e)
 end
 
+function haproxy_status()
+	local e = luci.sys.call(string.format("top -bn1 | grep -v grep | grep '%s/bin/' | grep haproxy >/dev/null", appname)) == 0
+	luci.http.prepare_content("application/json")
+	luci.http.write_json(e)
+end
+
 function socks_status()
 	local e = {}
 	local index = luci.http.formvalue("index")
@@ -265,7 +271,7 @@ end
 
 function copy_node()
 	local section = luci.http.formvalue("section")
-	local uuid = api.gen_uuid()
+	local uuid = api.gen_short_uuid()
 	ucic:section(appname, "nodes", uuid)
 	for k, v in pairs(ucic:get_all(appname, section)) do
 		local filter = k:find("%.")
@@ -289,6 +295,9 @@ function clear_all_nodes()
 	ucic:set(appname, '@global[0]', "node", "nil")
 	ucic:set_list(appname, "@auto_switch[0]", "node", {})
 	ucic:foreach(appname, "socks", function(t)
+		ucic:delete(appname, t[".name"])
+	end)
+	ucic:foreach(appname, "haproxy_config", function(t)
 		ucic:delete(appname, t[".name"])
 	end)
 	ucic:foreach(appname, "acl_rule", function(t)
@@ -317,6 +326,11 @@ function delete_select_nodes()
 		end
 		ucic:foreach(appname, "socks", function(t)
 			if t["node"] == w then
+				ucic:delete(appname, t[".name"])
+			end
+		end)
+		ucic:foreach(appname, "haproxy_config", function(t)
+			if t["lbss"] == w then
 				ucic:delete(appname, t[".name"])
 			end
 		end)
@@ -363,75 +377,23 @@ function server_clear_log()
 	luci.sys.call("echo '' > /tmp/log/passwall2_server.log")
 end
 
-function brook_check()
-	local json = brook.to_check("")
+function com_check(comname)
+	local json = api.to_check("", comname)
 	http_write_json(json)
 end
 
-function brook_update()
-	local json = nil
-	local task = http.formvalue("task")
-	if task == "move" then
-		json = brook.to_move(http.formvalue("file"))
-	else
-		json = brook.to_download(http.formvalue("url"), http.formvalue("size"))
-	end
-
-	http_write_json(json)
-end
-
-function v2ray_check()
-	local json = v2ray.to_check("")
-	http_write_json(json)
-end
-
-function v2ray_update()
+function com_update(comname)
 	local json = nil
 	local task = http.formvalue("task")
 	if task == "extract" then
-		json = v2ray.to_extract(http.formvalue("file"), http.formvalue("subfix"))
+		json = api.to_extract(comname, http.formvalue("file"), http.formvalue("subfix"))
 	elseif task == "move" then
-		json = v2ray.to_move(http.formvalue("file"))
+		json = api.to_move(comname, http.formvalue("file"))
 	else
-		json = v2ray.to_download(http.formvalue("url"), http.formvalue("size"))
+		json = api.to_download(comname, http.formvalue("url"), http.formvalue("size"))
 	end
 
 	http_write_json(json)
 end
 
-function xray_check()
-	local json = xray.to_check("")
-	http_write_json(json)
-end
-
-function xray_update()
-	local json = nil
-	local task = http.formvalue("task")
-	if task == "extract" then
-		json = xray.to_extract(http.formvalue("file"), http.formvalue("subfix"))
-	elseif task == "move" then
-		json = xray.to_move(http.formvalue("file"))
-	else
-		json = xray.to_download(http.formvalue("url"), http.formvalue("size"))
-	end
-
-	http_write_json(json)
-end
-
-function hysteria_check()
-	local json = hysteria.to_check("")
-	http_write_json(json)
-end
-
-function hysteria_update()
-	local json = nil
-	local task = http.formvalue("task")
-	if task == "move" then
-		json = hysteria.to_move(http.formvalue("file"))
-	else
-		json = hysteria.to_download(http.formvalue("url"), http.formvalue("size"))
-	end
-
-	http_write_json(json)
-end
 

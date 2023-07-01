@@ -5,12 +5,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=brook
-PKG_VERSION:=20230404.5.1
+PKG_VERSION:=20230606
 PKG_RELEASE:=$(AUTORELEASE)
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/txthinking/brook/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=c05bf50ce56f1fe0644e38e6d152b62203552f0f16548369e8e857e98efa6403
+PKG_HASH:=4490f203973b59e5bbaa4cbfb8835232f9671dac1b82ab4de882d32a2ad6b612
 
 PKG_MAINTAINER:=Tianling Shen <cnsztl@immortalwrt.org>
 PKG_LICENSE:=GPL-3.0
@@ -19,6 +19,7 @@ PKG_LICENSE_FILES:=LICENSE
 PKG_BUILD_DEPENDS:=golang/host
 PKG_BUILD_PARALLEL:=1
 PKG_USE_MIPS16:=0
+PKG_BUILD_FLAGS:=no-mips16
 
 GO_PKG:=github.com/txthinking/brook
 GO_PKG_BUILD_PKG:=$(GO_PKG)/cli/brook

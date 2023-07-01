@@ -31,6 +31,9 @@ msgstr "节点列表"
 msgid "Other Settings"
 msgstr "高级设置"
 
+msgid "Load Balancing"
+msgstr "负载均衡"
+
 msgid "Enter interface"
 msgstr "进入界面"
 
@@ -75,6 +78,9 @@ msgstr "清除"
 
 msgid "Main switch"
 msgstr "主开关"
+
+msgid "Node"
+msgstr "节点"
 
 msgid "Edit Current Node"
 msgstr "编辑当前节点"
@@ -280,6 +286,18 @@ msgstr "V2ray 负载均衡"
 msgid "Balancing Strategy"
 msgstr "负载均衡策略"
 
+msgid "Use Custome Probe URL"
+msgstr "使用自定义探测网址"
+
+msgid "By default the built-in probe URL will be used, enable this option to use a custom probe URL."
+msgstr "默认使用内置的探测网址，启用此选项以使用自定义探测网址。"
+
+msgid "Probe URL"
+msgstr "探测网址"
+
+msgid "The URL used to detect the connection status."
+msgstr "用于检测连接状态的网址。"
+
 msgid "Probe Interval"
 msgstr "探测间隔"
 
@@ -298,6 +316,12 @@ msgstr "V2ray 分流"
 msgid "Preproxy"
 msgstr "前置代理"
 
+msgid "Preproxy Node"
+msgstr "前置代理节点"
+
+msgid "Set the node to be used as a pre-proxy. Each rule (including <code>Default</code>) has a separate switch that controls whether this rule uses the pre-proxy or not."
+msgstr "设置用作前置代理的节点。每条规则（包括<code>默认</code>）都有独立开关控制本规则是否使用前置代理。"
+
 msgid "Direct Connection"
 msgstr "直连"
 
@@ -307,14 +331,14 @@ msgstr "黑洞"
 msgid "Default Preproxy"
 msgstr "默认前置代理"
 
+msgid "There are no available nodes, please add or subscribe nodes first."
+msgstr "没有可用节点，请先添加或订阅节点。"
+
 msgid "No shunt rules? Click me to go to add."
 msgstr "没有分流规则？点我前往去添加。"
 
 msgid "When using, localhost will connect this node first and then use this node to connect the default node."
 msgstr "当使用时，本机将首先连接到此节点，然后再使用此节点连接到默认节点落地。"
-
-msgid "dialerProxy"
-msgstr "底层传输方式的链式转发"
 
 msgid "Domain Strategy"
 msgstr "域名解析策略"
@@ -607,8 +631,68 @@ msgstr "通过关键字删除备用节点列表的节点"
 msgid "Please enter the node keyword, pay attention to distinguish between spaces, uppercase and lowercase."
 msgstr "请输入节点关键字，注意区分空格、大写和小写。"
 
-msgid "Manually update"
-msgstr "手动更新"
+msgid "Enable Load Balancing"
+msgstr "开启负载均衡"
+
+msgid "Console Username"
+msgstr "控制台账号"
+
+msgid "Console Password"
+msgstr "控制台密码"
+
+msgid "Console Port"
+msgstr "控制台端口"
+
+msgid "In the browser input routing IP plus port access, such as:192.168.1.1:1188"
+msgstr "在浏览器输入路由IP加端口访问，如：192.168.1.1:1188"
+
+msgid "Haproxy Port"
+msgstr "负载均衡端口"
+
+msgid "Health Check Type"
+msgstr "健康检查类型"
+
+msgid "Inner implement"
+msgstr "内置实现"
+
+msgid "Health Check Inter"
+msgstr "健康检查节点间隔时间"
+
+msgid "When the availability test is used, the load balancing node will be converted into a Socks node. when node list set customizing, must be a Socks node, otherwise the health check will be invalid."
+msgstr "当使用可用性测试时，负载均衡节点将转换成Socks节点。下面的节点列表自定义时必须为Socks节点，否则健康检查将无效。"
+
+msgid "Add a node, Export Of Multi WAN Only support Multi Wan. Load specific gravity range 1-256. Multiple primary servers can be load balanced, standby will only be enabled when the primary server is offline! Multiple groups can be set, Haproxy port same one for each group."
+msgstr "添加节点，指定出口功能是为多WAN用户准备的。负载比重范围1-256。多个主服务器可以负载均衡，备用只有在主服务器离线时才会启用！可以设置多个组，负载均衡端口相同则为一组。"
+
+msgid "Note that the node configuration parameters for load balancing must be consistent when use TCP health check type, otherwise it cannot be used normally!"
+msgstr "注意，当使用TCP健康检查时负载均衡的节点配置参数必须一致，否则无法正常使用！"
+
+msgid "Node Address"
+msgstr "节点地址"
+
+msgid "Node Port"
+msgstr "节点端口"
+
+msgid "Node Weight"
+msgstr "负载比重"
+
+msgid "Export Of Multi WAN"
+msgstr "多WAN指定出口"
+
+msgid "Main"
+msgstr "主要"
+
+msgid "Mode"
+msgstr "模式"
+
+msgid "Primary"
+msgstr "主要"
+
+msgid "Standby"
+msgstr "备用"
+
+msgid "Check update"
+msgstr "检查更新"
 
 msgid "Enable custom URL"
 msgstr "启用自定义规则地址"
@@ -1003,11 +1087,8 @@ msgstr "账号密码"
 msgid "Username and Password must be used together!"
 msgstr "账号和密码必须同时使用！"
 
-msgid "Node Number"
-msgstr "节点数量"
-
-msgid "You can only set up a maximum of %s nodes for the time being, Used for access control."
-msgstr "目前最多只能设置%s个节点，用于给访问控制使用。"
+msgid "Firewall tools"
+msgstr "防火墙工具"
 
 msgid "IPv6 TProxy"
 msgstr "IPv6透明代理(TProxy)"
