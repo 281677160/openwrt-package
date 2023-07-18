@@ -20,6 +20,7 @@ tcping
 trojan-go
 trojan-plus
 trojan
+tuic-client
 v2ray-core
 v2ray-geodata
 v2ray-plugin
