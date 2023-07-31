@@ -36,6 +36,7 @@ luci-app-aliyundrive-webdav
 luci-app-amlogic
 luci-app-autoipsetadder
 luci-app-autotimeset
+luci-app-chatgpt
 luci-app-chinadns-ng
 luci-app-clash
 luci-app-cloudflarespeedtest
@@ -103,7 +104,6 @@ open-app-filter
 openwrt-subconverter
 openwrt-tmate
 oscam
-package
 packr
 pdnsd-alt
 rclone-ng
