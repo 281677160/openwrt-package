@@ -73,6 +73,7 @@ luci-app-ddns-go
 luci-app-ddnsto
 luci-app-diskman
 luci-app-dockerman
+luci-app-eqosplus
 luci-app-fileassistant
 luci-app-filebrowser
 luci-app-filetransfer
@@ -164,6 +165,7 @@ open-app-filter
 openwrt-subconverter
 openwrt-tmate
 oscam
+package
 packr
 parted
 qBittorrent-static
