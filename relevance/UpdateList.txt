@@ -27,6 +27,7 @@ luci-app-cloudflarespeedtest
 luci-app-cupsd
 luci-app-ddns-go
 luci-app-ddnsto
+luci-app-eqosplus
 luci-app-gost
 luci-app-ikoolproxy
 luci-app-istorex
@@ -66,6 +67,7 @@ nas-packages-luci
 nas-packages
 natter
 network
+package
 packr
 shadowsocks-libev
 switch-lan-play
