@@ -44,6 +44,7 @@ luci-app-cupsd
 luci-app-ddns-go
 luci-app-ddnsto
 luci-app-dockerman
+luci-app-eqosplus
 luci-app-filebrowser
 luci-app-gost
 luci-app-gowebdav
@@ -102,6 +103,7 @@ open-app-filter
 openwrt-subconverter
 openwrt-tmate
 oscam
+package
 packr
 pdnsd-alt
 rclone-ng
