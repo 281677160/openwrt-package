@@ -1,8 +1,6 @@
 3ginfo
 Wiwiz-PinPinWiFi
 adguardhome
-aliyundrive-fuse
-aliyundrive-webdav
 app-lucky
 ardhome
 chinadns-ng
@@ -14,7 +12,6 @@ lua-maxminddb
 luci-app-3ginfo
 luci-app-adguardhome
 luci-app-advanced
-luci-app-aliyundrive-webdav
 luci-app-amlogic
 luci-app-autoipsetadder
 luci-app-autotimeset
