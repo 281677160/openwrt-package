@@ -45,7 +45,7 @@ get_config() {
     config_get geo_update_day_time $1 geo_update_day_time 2
     config_get geo_update_week_time $1 geo_update_week_time "*"
     config_get listen_port $1 listen_port 5335
-    config_get log_file $1 logfile "/tmp/mosdns.log"
+    config_get log_file $1 logfile "/var/log/mosdns.log"
     config_get log_level $1 log_level "info"
     config_get maximum_ttl_custom $1 maximum_ttl 0
     config_get minimal_ttl_custom $1 minimal_ttl 0
@@ -62,13 +62,14 @@ get_config() {
     config_get enable_http3_remote $1 enable_http3_remote 0
     config_get enable_ecs_remote $1 enable_ecs_remote 0
     config_get dns_leak $1 dns_leak 0
+    config_get cloudflare $1 cloudflare 0
 }
 
 init_yaml() {
     TMPDIR=$(mktemp -d) || exit 1
-    adlist=$($MOSDNS_SCRIPT ad)
     [ $enable_pipeline -eq 1 ] && enable_pipeline=true || enable_pipeline=false
     [ $insecure_skip_verify -eq 1 ] && insecure_skip_verify=true || insecure_skip_verify=false
+    # HTTP/3
     [ $enable_http3_local -eq 1 ] && enable_http3_local=true || enable_http3_local=false
     [ $enable_http3_remote -eq 1 ] && enable_http3_remote=true || enable_http3_remote=false
     if [ $enable_http3_local = true ]; then
@@ -79,6 +80,7 @@ init_yaml() {
             [ -n "$address" ] && echo ${domain#*://} $address >> $RULE_HOSTS
         done
     fi
+    # Write parameters
     [ "$custom_local_dns" -eq 1 ] && \
     local_dns=$($MOSDNS_SCRIPT dns | awk '{for(i=1;i<=NF;i++)printf "%s- addr: \"%s\"\n%s  bootstrap: '${bootstrap_dns}'\n%s  enable_pipeline: '${enable_pipeline}'\n%s  max_conns: '${max_conns}'\n%s  insecure_skip_verify: '${insecure_skip_verify}'\n%s  idle_timeout: '${idle_timeout}'\n%s  enable_http3: '${enable_http3_local}'\n",s,$i,s,s,s,s,s,s}' s='        ') || \
     local_dns=$($MOSDNS_SCRIPT dns | awk '{for(i=1;i<=NF;i++)printf "%s- addr: \"%s\"\n",s,$i,s}' s='        ')
@@ -89,20 +91,37 @@ init_yaml() {
     s,minimal_ttl_custom,$minimal_ttl_custom,g; \
     s,maximum_ttl_custom,$maximum_ttl_custom,g; \
     s,concurrent_num,$concurrent,g;s,api_port,$listen_port_api,g; \
-    s,adblock,$adlist,g;s,remote_dns_pipeline,$enable_pipeline,g" $DEFAULT_CONF > $CONF
+    s,remote_dns_pipeline,$enable_pipeline,g" $DEFAULT_CONF > $CONF
+    # Adlist
+    adlist=$($MOSDNS_SCRIPT adlist)
+    echo "${adlist}" > $TMPDIR/adlist_files.txt
+    sed -i -e '/ADBLOCK_LIST/{r '$TMPDIR/adlist_files.txt -e';d}' $CONF
+    # DNS
     echo "${local_dns}" > $TMPDIR/local_dns.txt
     echo "${remote_dns}" > $TMPDIR/remote_dns.txt
     sed -i -e '/- addr: local_dns/{r '$TMPDIR/local_dns.txt -e';d};/- addr: remote_dns/{r '$TMPDIR/remote_dns.txt -e';d}' $CONF
+    # Cache dump
     [ "$dump_file" -eq 1 ] && sed -i "/lazy_cache_ttl/a\      dump_file: $DUMP_FILE\n      dump_interval: $dump_interval" $CONF
     [ "$dump_file" -eq 1 ] && [ ! -f $DUMP_FILE ] && cp -a $DUMP_FILE_DEFAULT $DUMP_FILE
     [ "$dump_file" -eq 0 ] && \cp -a $DUMP_FILE_DEFAULT $DUMP_FILE
+    # ECS
     if [ "$enable_ecs_remote" -eq 1 ]; then
         ecs_remote=$(sh $MOSDNS_SCRIPT ecs_remote)
         sed -i "s,ecs_remote,$ecs_remote,g" $CONF
     else
         sed -i "/ecs_remote/d;" $CONF
     fi
+    # DNS Leak
     [ $dns_leak -eq 1 ] && sed -i "s,primary: query_is_local_ip,primary: query_is_remote,g" $CONF
+    # Cloudflare IP
+    if [ $cloudflare -eq 1 ]; then
+        cloudflare_ip=$(sh $MOSDNS_SCRIPT cloudflare)
+        sed -i "s/CLOUDFLARE_IP/$cloudflare_ip/g" $CONF
+    else
+        sed -i '/\$cloudflare_cidr\|CLOUDFLARE_IP/d' $CONF
+    fi
+    # disable lazy_cache plugin when cache_size is 0
+    [ $cache_size -eq 0 ] && sed -i -E ':l;N;/exec: \$lazy_cache/s/(\n[^\n]*){6}$//;bl' $CONF
     rm -rf $TMPDIR
 }
 
@@ -184,11 +203,22 @@ start_service() {
     [ "$redirect" -ne 1 ] && [ -f "/etc/mosdns/redirect.lock" ] && restore_setting
     [ "$redirect" -eq 1 ] && redirect_setting
     reload_dnsmasq
+    # Update Adlist
     update_list=0
-    [ "$adblock" -eq 1 ] && [ "$ad_source" != "geosite.dat" ] && {
-        [ -s "/etc/mosdns/rule/adlist.txt" ] && [ -f "/etc/mosdns/rule/.ad_source" ] && url_adlist=$(cat /etc/mosdns/rule/.ad_source) || update_list=1
-        [ "$ad_source" != "$url_adlist" ] && update_list=1
-    }
+    if [ "$adblock" -eq 1 ]; then
+        if [ -f "/etc/mosdns/rule/.ad_source" ]; then
+            for url in $ad_source;
+            do
+                [ "$url" = "geosite.dat" ] && continue
+		        if [ $(grep -c "$url" "/etc/mosdns/rule/.ad_source") -eq 0 ]; then
+                    update_list=1
+                    break
+                fi
+	        done
+        else
+            update_list=1
+        fi
+    fi
     [ "$update_list" -eq 1 ] && $MOSDNS_SCRIPT adlist_update &> /dev/null &
 }
 
