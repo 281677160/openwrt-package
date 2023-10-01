@@ -106,6 +106,12 @@ msgstr "混淆参数（可选）"
 msgid "Authentication type"
 msgstr "验证类型"
 
+msgid "Enable Port Hopping"
+msgstr "启用端口跃迁"
+
+msgid "Port Range"
+msgstr "端口范围值"
+
 msgid "Authentication payload"
 msgstr "验证载荷"
 
@@ -903,3 +909,6 @@ msgstr "设置监听套接字为双栈"
 
 msgid "Maximum packet size the socks5 server can receive from external"
 msgstr "socks5服务器可以从外部接收的最大数据包大小（单位：字节）"
+
+msgid "Disable ChinaDNS-NG"
+msgstr "直通模式（禁用ChinaDNS-NG）"
