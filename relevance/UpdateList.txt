@@ -9,6 +9,7 @@ luci-app-ssr-plus
 microsocks
 naiveproxy
 redsocks2
+shadow-tls
 shadowsocks-rust
 shadowsocksr-libev
 simple-obfs
