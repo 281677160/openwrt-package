@@ -43,7 +43,6 @@ k3screenctrl
 kcptun
 kerman
 libcryptopp
-libnetwork
 lua-maxminddb
 luci-app-3ginfo
 luci-app-accesscontrol
