@@ -23,7 +23,6 @@ function vmess_vless()
 				users = {
 					{
 						id = server.vmess_id,
-						alterId = (server.v2ray_protocol == "vmess" or not server.v2ray_protocol) and tonumber(server.alter_id) or nil,
 						security = (server.v2ray_protocol == "vmess" or not server.v2ray_protocol) and server.security or nil,
 						encryption = (server.v2ray_protocol == "vless") and server.vless_encryption or nil,
 						flow = ((server.tls == '1') or (server.reality == '1')) and server.tls_flow or nil
@@ -291,7 +290,7 @@ local hysteria = {
 	transport = {
 		type = server.transport_protocol,
 		udp = { 
-			hopInterval = tonumber(server.hopinterval) and tonumber(server.hopinterval) .. "s" or nil
+			hopInterval = tonumber(server.hopinterval) and tonumber(server.hopinterval) .. "s" or "30s"
 		}
 	},
 --[[			

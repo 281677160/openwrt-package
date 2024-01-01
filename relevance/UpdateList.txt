@@ -7,6 +7,7 @@ ipt2socks
 lua-neturl
 luci-app-ssr-plus
 microsocks
+mosdns
 naiveproxy
 redsocks2
 shadow-tls
