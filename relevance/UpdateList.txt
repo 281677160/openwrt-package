@@ -164,6 +164,7 @@ openwrt-tmate
 oscam
 packr
 parted
+pcre2
 qBittorrent-static
 qBittorrent
 qtbase
