@@ -18,7 +18,6 @@ tcping
 trojan
 tuic-client
 v2ray-core
-v2ray-geodata
 v2ray-plugin
 v2raya
 xray-core
