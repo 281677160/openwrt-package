@@ -104,6 +104,7 @@ pdnsd-alt
 rclone-ng
 rclone-webui-react
 rclone
+rust
 shadowsocks-libev
 smartmontools
 socat
