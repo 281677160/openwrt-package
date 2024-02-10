@@ -10,7 +10,6 @@ antfs
 app-lucky
 ardhome
 assets
-automount
 autosamba
 cdnspeedtest
 chinadns-ng
