@@ -174,7 +174,6 @@ rclone-ng
 rclone-webui-react
 rclone
 runc
-rust
 shadowsocks-libev
 smartmontools
 socat
