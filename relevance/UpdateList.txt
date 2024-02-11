@@ -5,6 +5,8 @@ Wiwiz-PinPinWiFi
 adguardhome
 alist
 alist2
+aliyundrive-fuse
+aliyundrive-webdav
 antfs-mount
 antfs
 app-lucky
@@ -29,6 +31,7 @@ luci-app-adguardhome
 luci-app-advanced
 luci-app-aliddns
 luci-app-alist
+luci-app-aliyundrive-webdav
 luci-app-amlogic
 luci-app-autoipsetadder
 luci-app-autotimeset
