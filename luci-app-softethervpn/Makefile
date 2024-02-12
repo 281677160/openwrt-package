@@ -1,24 +1,16 @@
+# Copyright (C) 2018-2019 Lienol
 #
-# Copyright (C) 2018 chenhw2 <https://github.com/chenhw2/>
-#
-# See /LICENSE for more information.
+# This is free software, licensed under the Apache License, Version 2.0 .
 #
 
 include $(TOPDIR)/rules.mk
 
-LUCI_TITLE:=LuCI Support for aliddns
-LUCI_DESCRIPTION:=LuCI Support for ALiDDNS.
-LUCI_DEPENDS:=+openssl-util +curl
+LUCI_TITLE:=LuCI support for SoftEtherVPN
+LUCI_DEPENDS:=+zlib +libpthread +librt +libreadline +libncurses +libiconv-full +kmod-tun +libopenssl +softethervpn5-bridge +softethervpn5-client +softethervpn5-server
 LUCI_PKGARCH:=all
-
-PKG_NAME:=luci-app-aliddns
-PKG_VERSION:=0.3.0
-PKG_RELEASE:=1
-
-PKG_LICENSE:=MIT
-PKG_LICENSE_FILES:=LICENSE
-PKG_MAINTAINER:=chenhw2 <https://github.com/chenhw2/>
 
 include $(TOPDIR)/feeds/luci/luci.mk
 
 # call BuildPackage - OpenWrt buildroot signature
+
+

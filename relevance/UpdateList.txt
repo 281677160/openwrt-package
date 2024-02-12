@@ -119,7 +119,6 @@ luci-app-shutdown
 luci-app-smartinfo
 luci-app-socat
 luci-app-softethervpn
-luci-app-softethervpn5
 luci-app-ssr-mudb-server
 luci-app-store
 luci-app-supervisord
@@ -178,7 +177,6 @@ shadowsocks-libev
 smartmontools
 socat
 softethervpn
-softethervpn5
 switch-lan-play
 syncthing
 tini
