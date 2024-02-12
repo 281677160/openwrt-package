@@ -60,7 +60,6 @@ nas-packages-luci
 nas-packages
 natter
 network
-packr
 shadowsocks-libev
 switch-lan-play
 upx-static
