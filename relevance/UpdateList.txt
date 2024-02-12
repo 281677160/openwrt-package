@@ -106,7 +106,6 @@ open-app-filter
 openwrt-subconverter
 openwrt-tmate
 oscam
-packr
 parted
 r8101
 r8125
