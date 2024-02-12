@@ -1,23 +1,17 @@
+# Copyright (C) 2020 Openwrt.org
 #
-# Copyright (C) 2018 chenhw2 <https://github.com/chenhw2/>
-#
-# See /LICENSE for more information.
+# This is free software, licensed under the Apache License, Version 2.0 .
 #
 
 include $(TOPDIR)/rules.mk
 
-LUCI_TITLE:=LuCI Support for aliddns
-LUCI_DESCRIPTION:=LuCI Support for ALiDDNS.
-LUCI_DEPENDS:=+openssl-util +curl
+LUCI_TITLE:=LuCI support for Adbyby
+LUCI_DEPENDS:=+adbyby +uclient-fetch +ipset +dnsmasq-full +dos2unix
 LUCI_PKGARCH:=all
 
-PKG_NAME:=luci-app-aliddns
-PKG_VERSION:=0.3.0
-PKG_RELEASE:=1
-
-PKG_LICENSE:=MIT
-PKG_LICENSE_FILES:=LICENSE
-PKG_MAINTAINER:=chenhw2 <https://github.com/chenhw2/>
+PKG_NAME:=luci-app-adbyby-plus
+PKG_VERSION:=2.0
+PKG_RELEASE:=76
 
 include $(TOPDIR)/feeds/luci/luci.mk
 
