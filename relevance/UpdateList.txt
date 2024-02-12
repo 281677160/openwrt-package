@@ -33,6 +33,7 @@ ddns-scripts_aliyun
 ddns-scripts_dnspod
 docker
 dockerd
+dos2unix
 dsmboot
 filebrowser
 frp
