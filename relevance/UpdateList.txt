@@ -101,7 +101,6 @@ open-app-filter
 openwrt-subconverter
 openwrt-tmate
 oscam
-packr
 pdnsd-alt
 rclone-ng
 rclone-webui-react
