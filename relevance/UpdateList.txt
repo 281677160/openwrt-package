@@ -12,7 +12,6 @@ antfs
 app-lucky
 ardhome
 assets
-autosamba
 cdnspeedtest
 chinadns-ng
 clud
@@ -24,7 +23,6 @@ gost
 gowebdav
 iptvhelper
 kcptun
-kerman
 lua-maxminddb
 luci-app-3ginfo
 luci-app-adguardhome
@@ -43,7 +41,6 @@ luci-app-cpulimit
 luci-app-cupsd
 luci-app-ddns-go
 luci-app-ddnsto
-luci-app-dockerman
 luci-app-eqosplus
 luci-app-filebrowser
 luci-app-gost
