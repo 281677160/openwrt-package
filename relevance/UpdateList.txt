@@ -23,6 +23,7 @@ gost
 gowebdav
 iptvhelper
 kcptun
+kerman
 lua-maxminddb
 luci-app-3ginfo
 luci-app-adguardhome

@@ -15,7 +15,7 @@ function index()
 		40).acl_depends = { "luci-app-dockerman" }
 
 	entry({"admin", "docker", "config"},cbi("dockerman/configuration"),_("Configuration"), 8).leaf=true
-
+	
 	-- local uci = (require "luci.model.uci").cursor()
 	-- if uci:get_bool("dockerd", "dockerman", "remote_endpoint") then
 	-- 	local host = uci:get("dockerd", "dockerman", "remote_host")
@@ -148,7 +148,7 @@ function remove_file(id)
 	local cmd_docker = luci.util.exec("command -v docker"):match("^.+docker") or nil
 	if not cmd_docker or cmd_docker:match("^%s+$") then
 		return
-	end
+	end 
 	local uci = (require "luci.model.uci").cursor()
 	local remote = uci:get_bool("dockerd", "dockerman", "remote_endpoint")
 	local socket_path = not remote and  uci:get("dockerd", "dockerman", "socket_path") or nil
@@ -230,10 +230,10 @@ local get_memory = function(d)
 
 	-- local limit = string.format("%.2f", tonumber(d["memory_stats"]["limit"]) / 1024 / 1024)
 	-- local usage = string.format("%.2f", (tonumber(d["memory_stats"]["usage"]) - tonumber(d["memory_stats"]["stats"]["total_cache"])) / 1024 / 1024)
-	-- return usage .. "MB / " .. limit.. "MB"
+	-- return usage .. "MB / " .. limit.. "MB" 
 
 	local limit =tonumber(d["memory_stats"]["limit"])
-	local usage = tonumber(d["memory_stats"]["usage"])
+	local usage = tonumber(d["memory_stats"]["usage"]) 
 	-- - tonumber(d["memory_stats"]["stats"]["total_cache"])
 
 	return usage, limit
