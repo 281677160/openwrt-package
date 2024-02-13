@@ -47,7 +47,6 @@ luci-app-switch-lan-play
 luci-app-tcpdump
 luci-app-tencentddns
 luci-app-ttnode
-luci-app-webd
 luci-app-wifidog
 luci-app-wolplus
 luci-lib-iform
@@ -65,4 +64,3 @@ switch-lan-play
 upx-static
 v2dat
 v2ray-geodata
-webd
