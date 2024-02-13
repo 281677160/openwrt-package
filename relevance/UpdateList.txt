@@ -78,7 +78,6 @@ luci-app-tencentddns
 luci-app-ttnode
 luci-app-udp2raw
 luci-app-unblockneteasemusic
-luci-app-webd
 luci-app-wifidog
 luci-app-wolplus
 luci-lib-iform
@@ -108,4 +107,3 @@ udp2raw
 upx-static
 v2dat
 v2ray-geodata
-webd
