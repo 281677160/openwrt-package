@@ -8,7 +8,7 @@ PKG_MAINTAINER:=<https://github.com/rufengsuixing/luci-app-adguardhome>
 
 LUCI_TITLE:=LuCI app for AdGuardHome
 LUCI_PKGARCH:=all
-LUCI_DEPENDS:=+ca-certs +curl +wget-ssl +PACKAGE_$(PKG_NAME)_INCLUDE_binary:adguardhome
+LUCI_DEPENDS:=+!wget-ssl&&!curl:wget-ssl +xz-utils +xz
 LUCI_DESCRIPTION:=LuCI support for AdGuardHome
 
 
@@ -30,6 +30,7 @@ endef
 define Package/luci-app-adguardhome/postinst
 #!/bin/sh
 	chmod 755 /usr/share/AdGuardHome/*
+	chmod +x /etc/init.d/AdGuardHome
 	/etc/init.d/AdGuardHome enable >/dev/null 2>&1
 	enable=$(uci get AdGuardHome.AdGuardHome.enabled 2>/dev/null)
 	if [ "$enable" == "1" ]; then
