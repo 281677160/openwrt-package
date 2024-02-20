@@ -52,7 +52,6 @@ luci-app-mentohust
 luci-app-mosdns
 luci-app-msd_lite
 luci-app-natter
-luci-app-netwizard
 luci-app-nginx-manager
 luci-app-nginx-pingos
 luci-app-nodogsplash
