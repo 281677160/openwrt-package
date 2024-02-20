@@ -94,7 +94,6 @@ luci-app-mosdns
 luci-app-msd_lite
 luci-app-mwan3helper
 luci-app-netdata
-luci-app-netwizard
 luci-app-nfs
 luci-app-nginx-manager
 luci-app-nginx-pingos
