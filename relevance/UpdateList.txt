@@ -20,6 +20,7 @@ automount
 autosamba
 baidupcs-web
 bcm27xx-eeprom
+bcm27xx-userland
 cdnspeedtest
 cgroupfs-mount
 chinadns-ng
