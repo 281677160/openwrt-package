@@ -51,7 +51,6 @@ luci-app-accesscontrol
 luci-app-adbyby-plus
 luci-app-adguardhome
 luci-app-advanced
-luci-app-aliddns
 luci-app-alist
 luci-app-aliyundrive-webdav
 luci-app-amlogic
