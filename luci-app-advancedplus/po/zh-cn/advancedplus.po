@@ -14,7 +14,6 @@ msgstr "Argon主题设置"
 msgid "Design Config"
 msgstr "Design主题设置"
 
-
 msgid "Advanced Setting"
 msgstr "高级设置"
 
@@ -116,6 +115,9 @@ msgstr "调出自己喜欢的颜色值工具(注意:HEX和RGB值区别)"
 
 msgid "Light"
 msgstr "亮色"
+
+msgid "Auto"
+msgstr "自动"
 
 msgid "Dark"
 msgstr "暗色"
@@ -258,6 +260,9 @@ msgstr "状态相关快捷键设置"
 msgid "Enable color matching"
 msgstr "启用配色方案"
 
+msgid "Using the Color palette"
+msgstr "使用颜色调色板"
+
 msgid "RoyalBlue"
 msgstr "皇家高端蓝"
 
@@ -267,11 +272,14 @@ msgstr "中海清爽绿"
 msgid "SandyBrown"
 msgstr "桑迪布朗黄"
 
+msgid "Black tea eye protection gray"
+msgstr "黑茶护眼灰"
+
 msgid "TomatoRed"
 msgstr "番茄别样红"
 
-msgid "Grayscale spatiotemporal"
-msgstr "灰度时空"
+msgid "Cool night time(gray and dark)"
+msgstr "炫酷黑夜时空(灰度暗)"
 
 msgid "White"
 msgstr "纯静白色"

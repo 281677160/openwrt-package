@@ -1,4 +1,34 @@
 local a, t, e
+local opacity_sets = {
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    20
+}
+
+local ts_sets = {
+    0,
+    0.05,
+    0.1,
+    0.2,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.7,
+    0.8,
+    0.9,
+    0.95,
+    1
+}
 a = Map("advancedplus")
 a.title = translate("KuCat Theme Config")
 a.description = translate("Set and manage features such as KuCat themed background wallpaper, main background color, partition background, transparency, blur, toolbar retraction and shortcut pointing.</br>")..
@@ -9,7 +39,7 @@ t.anonymous = true
 
 e = t:option(ListValue, 'background', translate('Wallpaper Source'),translate('Local wallpapers need to be uploaded on their own, and only the first update downloaded on the same day will be automatically downloaded.'))
 e:value('0', translate('Local wallpaper'))
---e:value('1', translate('Online Bing wallpaper'))
+e:value('1', translate('Auto download Iciba wallpaper'))
 e:value('2', translate('Auto download unsplash wallpaper'))
 e:value('3', translate('Auto download Bing wallpaper'))
 e:value('4', translate('Auto download Bird 4K wallpaper'))
@@ -67,10 +97,6 @@ e = t:option(Flag, "fontmode", translate("Care mode (large font)"))
 e.rmempty = false
 e.default = '0'
 
--- e = t:option(DummyValue, '', translate('Color palette'))
--- e.rawhtml = true
--- e.template = 'advancedplus/color_primary'
-
 t = a:section(TypedSection, "theme", translate("Color scheme list"))
 t.template = "cbi/tblsection"
 t.anonymous = true
@@ -83,6 +109,7 @@ e.rmempty = false
 e.default = '1'
 
 e = t:option(ListValue, 'mode', translate('Theme mode'))
+e:value('auto', translate('Auto'))
 e:value('light', translate('Light'))
 e:value('dark', translate('Dark'))
 e.default = 'light'
@@ -92,9 +119,11 @@ e:value("blue",translate("RoyalBlue"))
 e:value("green",translate("MediumSeaGreen"))
 e:value("orange",translate("SandyBrown"))
 e:value("red",translate("TomatoRed"))
-e:value("gray",translate("Grayscale spatiotemporal"))
+e:value("black",translate("Black tea eye protection gray"))
+e:value("gray",translate("Cool night time(gray and dark)"))
 e:value("bluets",translate("Cool Ocean Heart (transparent and bright)"))
 e.default='green'
+e.datatype = ufloat
 e.default='74,161,133'
 
 e = t:option(Flag, "bkuse", translate("Enable wallpaper"))
@@ -102,57 +131,34 @@ e.rmempty = false
 e.default = '1'
 
 e = t:option(Value, 'primary_rgbm_ts', translate('Wallpaper transparency'))
-e:value("0",translate("0"))
-e:value("0.1",translate("0.1"))
-e:value("0.2",translate("0.2"))
-e:value("0.3",translate("0.3"))
-e:value("0.4",translate("0.4"))
-e:value("0.5",translate("0.5"))
-e:value("0.6",translate("0.6"))
-e:value("0.7",translate("0.7"))
-e:value("0.8",translate("0.8"))
-e:value("0.9",translate("0.9"))
-e:value("0.95",translate("0.95"))
-e:value("1",translate("1"))
+for _, v in ipairs(ts_sets) do
+    e:value(v)
+end
+e.datatype = ufloat
+e.rmempty = false
+
 e.default='0.5'
 
 e = t:option(Value, 'primary_opacity', translate('Wallpaper blur radius'))
-e:value("0",translate("0"))
-e:value("1",translate("1"))
-e:value("2",translate("2"))
-e:value("3",translate("3"))
-e:value("4",translate("4"))
-e:value("5",translate("5"))
-e:value("6",translate("6"))
-e:value("7",translate("7"))
-e:value("8",translate("8"))
-e:value("9",translate("9"))
-e:value("10",translate("10"))
-e:value("20",translate("20"))
-e:value("30",translate("30"))
-e:value("50",translate("50"))
-e:value("80",translate("80"))
-e:value("100",translate("100"))
-e:value("200",translate("200"))
+for _, v in ipairs(opacity_sets) do
+    e:value(v)
+end
+e.datatype = ufloat
+e.rmempty = false
+
 e.default='10'
 
 e = t:option(Value, 'primary_rgbs', translate('Fence background(RGB)'))
 e.default='225,112,88'
+e.datatype = ufloat
 
 e = t:option(Value, 'primary_rgbs_ts', translate('Fence background transparency'))
-e:value("0",translate("0"))
-e:value("0.05",translate("0.05"))
-e:value("0.1",translate("0.1"))
-e:value("0.2",translate("0.2"))
-e:value("0.3",translate("0.3"))
-e:value("0.4",translate("0.4"))
-e:value("0.5",translate("0.5"))
-e:value("0.6",translate("0.6"))
-e:value("0.7",translate("0.7"))
-e:value("0.8",translate("0.8"))
-e:value("0.9",translate("0.9"))
-e:value("0.95",translate("0.95"))
-e:value("1",translate("1"))
+for _, v in ipairs(ts_sets) do
+    e:value(v)
+end
+e.datatype = ufloat
+e.rmempty = false
+
 e.default='0.3'
 
 a.apply_on_parse = true
