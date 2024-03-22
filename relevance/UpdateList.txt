@@ -20,7 +20,6 @@ cpulimit
 ddns-go
 filebrowser
 gost
-gowebdav
 iptvhelper
 kcptun
 kerman
@@ -45,7 +44,6 @@ luci-app-dockerman
 luci-app-eqosplus
 luci-app-filebrowser
 luci-app-gost
-luci-app-gowebdav
 luci-app-ikoolproxy
 luci-app-iptvhelper
 luci-app-istorex
