@@ -16,7 +16,6 @@ cpulimit
 ddns-go
 filebrowser
 gost
-gowebdav
 iptvhelper
 lua-maxminddb
 luci-app-3ginfo
@@ -41,7 +40,6 @@ luci-app-eqosplus
 luci-app-fileassistant
 luci-app-filebrowser
 luci-app-gost
-luci-app-gowebdav
 luci-app-ikoolproxy
 luci-app-iptvhelper
 luci-app-istorex
