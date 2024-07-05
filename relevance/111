@@ -2,11 +2,11 @@ http:
   pprof:
     port: 6060
     enabled: false
-  address: 0.0.0.0:3000
+  address: 0.0.0.0:8551
   session_ttl: 720h
 users:
-  - name: admin
-    password: $2a$10$hxbQQYUwPZ.O/.PaqNee8OsrabRXe1A/han0gXCp6CGdOtMy9ANs2
+  - name: root
+    password: $2a$10$jT0vGotjNPG4G79UusO16OnFTBMm.4ZRW/0YWyMEH470qGK1FYway
 auth_attempts: 5
 block_auth_min: 15
 http_proxy: ""
@@ -15,15 +15,19 @@ theme: auto
 dns:
   bind_hosts:
     - 0.0.0.0
-  port: 1745
+  port: 8553
   anonymize_client_ip: false
-  ratelimit: 20
+  ratelimit: 0
   ratelimit_subnet_len_ipv4: 24
   ratelimit_subnet_len_ipv6: 56
   ratelimit_whitelist: []
   refuse_any: true
   upstream_dns:
-    - https://dns10.quad9.net/dns-query
+    - https://doh.pub/dns-query
+    - https://dns.alidns.com/dns-query
+    - https://doh.360.cn
+    - 180.76.76.76
+    - 180.184.2.2
   upstream_dns_file: ""
   bootstrap_dns:
     - 9.9.9.10
@@ -31,7 +35,7 @@ dns:
     - 2620:fe::10
     - 2620:fe::fe:10
   fallback_dns: []
-  upstream_mode: load_balance
+  upstream_mode: parallel
   fastest_timeout: 1s
   allowed_clients: []
   disallowed_clients: []
@@ -67,6 +71,7 @@ dns:
   serve_http3: false
   use_http3_upstreams: false
   serve_plain_dns: true
+  hostsfile_enabled: true
 tls:
   enabled: false
   server_name: ""
@@ -83,12 +88,14 @@ tls:
   private_key_path: ""
   strict_sni_check: false
 querylog:
+  dir_path: ""
   ignored: []
   interval: 2160h
   size_memory: 1000
   enabled: true
   file_enabled: true
 statistics:
+  dir_path: ""
   ignored: []
   interval: 24h
   enabled: true
@@ -97,11 +104,35 @@ filters:
     url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt
     name: AdGuard DNS filter
     id: 1
-  - enabled: false
+  - enabled: true
     url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_2.txt
     name: AdAway Default Blocklist
     id: 2
-whitelist_filters: []
+  - enabled: true
+    url: https://raw.githubusercontent.com/BlueSkyXN/AdGuardHomeRules/master/all.txt
+    name: 百万ADH广告拦截过滤规则
+    id: 1716654772
+  - enabled: true
+    url: https://mirror.ghproxy.com/raw.githubusercontent.com/8680/GOODBYEADS/master/dns.txt
+    name: 自动更新DNS拦截规则
+    id: 1716654773
+  - enabled: true
+    url: https://raw.githubusercontent.com/217heidai/adblockfilters/main/rules/adblockdns.txt
+    name: DNS 拦截
+    id: 1716654774
+  - enabled: true
+    url: https://raw.githubusercontent.com/jdlingyu/ad-wars/master/hosts
+    name: 屏蔽一些中国视频网站的广告
+    id: 1716654775
+  - enabled: true
+    url: https://raw.githubusercontent.com/banbendalao/ADgk/master/kill-baidu-ad.txt
+    name: 百度搜索结果内屏蔽百家号
+    id: 1716654776
+whitelist_filters:
+  - enabled: true
+    url: https://raw.githubusercontent.com/8680/GOODBYEADS/master/allow.txt
+    name: 自动更新DNS 白名单
+    id: 1716654777
 user_rules: []
 dhcp:
   enabled: false
@@ -125,7 +156,7 @@ filtering:
   blocking_ipv6: ""
   blocked_services:
     schedule:
-      time_zone: UTC
+      time_zone: Local
     ids: []
   protection_disabled_until: null
   safe_search:
