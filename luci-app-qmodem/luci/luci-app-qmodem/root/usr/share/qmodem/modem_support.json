@@ -815,6 +815,19 @@
                     "rmnet"
                 ]
             },
+            "fn990a40": {
+                "manufacturer_id": "1bc7",
+                "manufacturer": "telit",
+                "platform": "qualcomm",
+                "data_interface": "usb",
+                "define_connect": "1",
+                "modes": [
+                    "mbim",
+                    "rndis",
+                    "qmi",
+                    "ecm"
+                ]
+            },
             "simcom_d8200g": {
                 "manufacturer_id": "1a0e",
                 "manufacturer": "simcom",
@@ -1247,6 +1260,16 @@
                     "mbim",
                     "rmnet"
                 ]
+            },
+            "fn990a40": {
+                "manufacturer": "telit",
+                "platform": "qualcomm",
+                "data_interface": "usb",
+                "define_connect": "1",
+                "modes": [
+                    "mbim",
+                    "qmi"
+                ]
             }
         },
         "device": {
@@ -1432,6 +1455,16 @@
                     ],
                     "product_id": [
                         "3c93"
+                    ]
+                }
+            },
+            "telit": {
+                "qualcomm": {
+                    "vendor_id": [
+                        "1bc7"
+                    ],
+                    "product_id": [
+                        "1075"
                     ]
                 }
             }

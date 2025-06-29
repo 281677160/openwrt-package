@@ -92,7 +92,7 @@ get_at_cfg(){
     # Determine language and select appropriate AT commands file
     lang=$(uci get luci.main.lang 2>/dev/null || echo "en")
     case "$lang" in
-        zh*|cn)
+        zh*|cn|auto)
             at_commands_file="/usr/share/qmodem/at_commands_zh.json"
             ;;
         *)
