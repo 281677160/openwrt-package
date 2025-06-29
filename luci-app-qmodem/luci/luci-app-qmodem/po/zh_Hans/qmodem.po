@@ -646,9 +646,6 @@ msgstr "制造商"
 msgid "Quectel"
 msgstr "移远"
 
-msgid "Simcom"
-msgstr "芯讯通（Simcom）"
-
 msgid "Sierra Wireless"
 msgstr "Sierra无线"
 
@@ -657,6 +654,12 @@ msgstr "广和通"
 
 msgid "Meig"
 msgstr "美格"
+
+msgid "Neoway"
+msgstr "有方"
+
+msgid "Telit"
+msgstr "泰利特"
 
 msgid "Platform"
 msgstr "平台"

@@ -850,6 +850,14 @@ at_dial()
                     ;;
             esac
             ;;
+        "telit")
+            case $platform in
+                "qualcomm")
+                    at_command="AT#ICMAUTOCONN=1,1"
+                    cgdcont_command="AT+CGDCONT=1,\"$pdp_type\",\"$apn\""
+                    ;;
+            esac
+            ;;
     esac
     m_debug "dialing vendor:$manufacturer;platform:$platform; $cgdcont_command ; $at_command"
     at "${at_port}" "${cgdcont_command}"
