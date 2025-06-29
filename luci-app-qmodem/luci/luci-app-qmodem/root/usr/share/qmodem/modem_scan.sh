@@ -9,8 +9,6 @@ debug_subject="modem_scan"
 source /lib/functions.sh
 source /usr/share/qmodem/modem_util.sh
 
-
-
 exec_post_init()
 {
     section_name=$1
@@ -384,13 +382,15 @@ get_modem_model()
     name_1=$(echo -e "$cgmm" |grep "+CGMM: " | awk -F': ' '{print $2}')
     name_2=$(echo -e "$cgmm_1" |grep "+CGMM: " | awk -F'"' '{print $2} '| cut -d ' ' -f 1)
     name_3=$(echo -e "$cgmm" | sed -n '2p')
-    name_4=$(echo -e "$cgmm" |grep "+CGMM: " | awk -F'"' '{print $2} '| cut -d ' ' -f 1)
+    name_4=$(echo -e "$cgmm" | sed -n '3p')
+    name_5=$(echo -e "$cgmm" |grep "+CGMM: " | awk -F'"' '{print $2} '| cut -d ' ' -f 1)
     modem_name=""
 
     [ -n "$name_1" ] && match_config "$name_1"
     [ -n "$name_2" ] && [ -z "$modem_name" ] && match_config "$name_2"
     [ -n "$name_3" ] && [ -z "$modem_name" ] && match_config "$name_3"
     [ -n "$name_4" ] && [ -z "$modem_name" ] && match_config "$name_4"
+    [ -n "$name_5" ] && [ -z "$modem_name" ] && match_config "$name_5"
     [ -z "$modem_name" ] && return 1
     return 0
 }

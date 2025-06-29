@@ -7,5 +7,6 @@
     "simcom" : "simcom.sh",
     "huawei" : "huawei.sh",
     "foxconn" : "foxconn.sh",
-    "neoway" : "neoway.sh"
+    "neoway" : "neoway.sh",
+    "telit" : "telit.sh"
 }

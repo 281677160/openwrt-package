@@ -1,8 +1,8 @@
 #!/bin/sh
-# Copyright (C) 2025 sfwtw
+# Copyright (C) 2025 sfwtw <sfwtw@qq.com>
 _Vendor="simcom"
 _Author="sfwtw"
-_Maintainer="sfwtw <unkown>"
+_Maintainer="sfwtw <sfwtw@qq.com>"
 source /usr/share/qmodem/generic.sh
 debug_subject="quectel_ctrl"
 #return raw data
@@ -35,7 +35,7 @@ get_mode()
     pcie_mode=$(echo "$pcie_cfg"|grep +CPCIEMODE: |cut -d':' -f2|xargs)
     if [ "$pcie_mode" = "EP" ] && [ "$mode_num" = "902B" ]; then
         mode_num="9001"
-	json_add_int disable_mode_btn 1
+    json_add_int disable_mode_btn 1
     fi
     case "$platform" in
         "qualcomm")
@@ -198,7 +198,7 @@ set_network_prefer_nr()
 get_voltage()
 {
     at_command="AT+CBC"
-	local voltage=$(at ${at_port} ${at_command} | grep "+CBC:" | sed 's/+CBC: //g' | sed 's/V//g' | sed 's/\r//g')
+    local voltage=$(at ${at_port} ${at_command} | grep "+CBC:" | sed 's/+CBC: //g' | sed 's/V//g' | sed 's/\r//g')
     [ -n "$voltage" ] && {
         add_plain_info_entry "voltage" "$voltage V" "Voltage" 
     }
@@ -214,9 +214,9 @@ get_temperature()
     local line=1
     QTEMP=$(at ${at_port} ${at_command} | grep "+CPMUTEMP:")
     temp=$(echo $QTEMP | awk -F': ' '{print $2}' | sed 's/\r//g')
-	if [ -n "$temp" ]; then
-		temp="${temp}$(printf "\xc2\xb0")C"
-	fi
+    if [ -n "$temp" ]; then
+        temp="${temp}$(printf "\xc2\xb0")C"
+    fi
     add_plain_info_entry "temperature" "$temp" "Temperature"
 }
 
@@ -255,15 +255,15 @@ sim_info()
     
     #SIM Slot（SIM卡卡槽）
     at_command="AT+SMSIMCFG?"
-	sim_slot=$(at $at_port $at_command | grep "+SMSIMCFG:" | awk -F',' '{print $2}' | sed 's/\r//g')
+    sim_slot=$(at $at_port $at_command | grep "+SMSIMCFG:" | awk -F',' '{print $2}' | sed 's/\r//g')
 
     #IMEI（国际移动设备识别码）
     at_command="AT+CGSN"
-	imei=$(at $at_port $at_command | sed -n '2p' | sed 's/\r//g')
+    imei=$(at $at_port $at_command | sed -n '2p' | sed 's/\r//g')
 
     #SIM Status（SIM状态）
     at_command="AT+CPIN?"
-	sim_status_flag=$(at $at_port $at_command | sed -n '2p')
+    sim_status_flag=$(at $at_port $at_command | sed -n '2p')
     sim_status=$(get_sim_status "$sim_status_flag")
 
     if [ "$sim_status" != "ready" ]; then
@@ -285,15 +285,15 @@ sim_info()
 
     #SIM Number（SIM卡号码，手机号）
     at_command="AT+CNUM"
-	sim_number=$(at $at_port $at_command | sed -n '2p' | awk -F'"' '{print $4}')
+    sim_number=$(at $at_port $at_command | sed -n '2p' | awk -F'"' '{print $4}')
 
     #IMSI（国际移动用户识别码）
     at_command="AT+CIMI"
-	imsi=$(at $at_port $at_command | sed -n '2p' | sed 's/\r//g')
+    imsi=$(at $at_port $at_command | sed -n '2p' | sed 's/\r//g')
 
     #ICCID（集成电路卡识别码）
     at_command="AT+ICCID"
-	iccid=$(at $at_port $at_command | grep -o "+ICCID:[ ]*[-0-9]\+" | grep -o "[-0-9]\{1,4\}")
+    iccid=$(at $at_port $at_command | grep -o "+ICCID:[ ]*[-0-9]\+" | grep -o "[-0-9]\{1,4\}")
     class="SIM Information"
     case "$sim_status" in
         "ready")
@@ -325,11 +325,8 @@ sim_info()
 #网络信息
 network_info()
 {
-    m_debug  "Quectel network info"
+    m_debug  "Simcom network info"
 
-    #Connect Status（连接状态）
-
-    #Network Type（网络类型）
     at_command="AT+CPSI?"
     network_type=$(at ${at_port} ${at_command} | grep "+CPSI:" | awk -F',' '{print $1}' | sed 's/+CPSI: //g')
 
@@ -339,29 +336,8 @@ network_info()
         network_type=$(get_rat ${rat_num})
     }
 
-    #CSQ（信号强度）
-    at_command="AT+CSQ"
-    response=$(at ${at_port} ${at_command} | grep "+CSQ:" | sed 's/+CSQ: //g' | sed 's/\r//g')
-
-    #RSSI（信号强度指示）
-    # rssi_num=$(echo $response | awk -F',' '{print $1}')
-    # rssi=$(get_rssi $rssi_num)
-    #Ber（信道误码率）
-    # ber=$(echo $response | awk -F',' '{print $2}')
-
-    #PER（信号强度）
-    # if [ -n "$csq" ]; then
-    #     per=$((csq * 100/31))"%"
-    # fi
-
     class="Network Information"
     add_plain_info_entry "Network Type" "$network_type" "Network Type"
-    add_plain_info_entry "CQI UL" "" "Channel Quality Indicator for Uplink"
-    add_plain_info_entry "CQI DL" "" "Channel Quality Indicator for Downlink"
-    add_plain_info_entry "AMBR UL" "" "Access Maximum Bit Rate for Uplink"
-    add_plain_info_entry "AMBR DL" "" "Access Maximum Bit Rate for Downlink"
-    add_plain_info_entry "Tx Rate" "" "Transmit Rate"
-    add_plain_info_entry "Rx Rate" "" "Receive Rate"
 }
 
 #获取频段
@@ -572,9 +548,9 @@ get_neighborcell_qualcomm(){
     modem_status_net=$(echo "$modem_status"|grep "+CPSI:"|awk -F',' '{print $1}'|awk -F':' '{print $2}'|xargs)
     modem_status_band=$(echo "$modem_status"|grep "+CPSI:"|awk -F',' '{print $7}'|awk -F'_' '{print $2}'|sed 's/BAND//g'|xargs)
     if [ $modem_status_net == "NR5G_SA" ];then
-    	scans=$(at $at_port "AT+CNWSEARCH=\"nr5g\"")
-    	sleep 10
-    	at $at_port "AT+CNWSEARCH=\"nr5g\",3" > /tmp/neighborcell
+        scans=$(at $at_port "AT+CNWSEARCH=\"nr5g\"")
+        sleep 10
+        at $at_port "AT+CNWSEARCH=\"nr5g\",3" > /tmp/neighborcell
     elif [ $modem_status_net == "LTE" ];then
         at $at_port "AT+CNWSEARCH=\"lte\",1" > /tmp/neighborcell
         sleep 5
@@ -610,7 +586,7 @@ get_neighborcell_qualcomm(){
     while read line; do
         if [ -n "$(echo $line | grep "+NR_NGH_CELL:")" ] || [ -n "$(echo $line | grep "+LTE_CELL:")" ]; then
             # CPSI: NR5G_SA,Online,460-01,0x6F4700,29869309958,95,NR5G_BAND78,627264,-800,-110,14
-	    
+        
             case $line in
                 *WCDMA*)
                     type="WCDMA"
@@ -626,8 +602,8 @@ get_neighborcell_qualcomm(){
                     pci=$(echo $line | awk -F',' '{print $7}')
                     rsrp=$(echo $line | awk -F',' '{print $8}')
                     rsrq=$(echo $line | awk -F',' '{print $9}')
-		    band=$(echo $line | awk -F',' '{print $5}')
-		    mnc=$(echo $line | awk -F',' '{print $2}')
+            band=$(echo $line | awk -F',' '{print $5}')
+            mnc=$(echo $line | awk -F',' '{print $2}')
                     ;;
                 *NR_NGH_CELL*)
                     type="NR"
@@ -635,12 +611,12 @@ get_neighborcell_qualcomm(){
                     pci=$(echo $line | awk -F',' '{print $2}')
                     rsrp=$(echo $line | awk -F',' '{print $3}')
                     rsrq=$(echo $line | awk -F',' '{print $4}')
-		    band=$modem_status_band
+            band=$modem_status_band
                     ;;
             esac
             json_select $type
             json_add_object ""
-	    json_add_string "mnc" "$mnc"
+        json_add_string "mnc" "$mnc"
             json_add_string "arfcn" "$arfcn"
             json_add_string "pci" "$pci"
             json_add_string "rscp" "$rscp"
@@ -727,7 +703,7 @@ get_bandwidth()
 
     local bandwidth
     case $network_type in
-		"LTE")
+        "LTE")
             case $bandwidth_num in
                 "0") bandwidth="1.4" ;;
                 "1") bandwidth="3" ;;
@@ -742,7 +718,7 @@ get_bandwidth()
                 "14") bandwidth="400" ;;
             esac
         ;;
-	esac
+    esac
     echo "$bandwidth"
 }
 
@@ -751,14 +727,14 @@ get_bandwidth()
 get_scs()
 {
     local scs
-	case $1 in
-		"0") scs="15" ;;
-		"1") scs="30" ;;
+    case $1 in
+        "0") scs="15" ;;
+        "1") scs="30" ;;
         "2") scs="60" ;;
         "3") scs="120" ;;
         "4") scs="240" ;;
         *) scs=$(awk "BEGIN{ print 2^$1 * 15 }") ;;
-	esac
+    esac
     echo "$scs"
 }
 
@@ -767,10 +743,10 @@ get_scs()
 get_phych()
 {
     local phych
-	case $1 in
-		"0") phych="DPCH" ;;
+    case $1 in
+        "0") phych="DPCH" ;;
         "1") phych="FDPCH" ;;
-	esac
+    esac
     echo "$phych"
 }
 
@@ -779,10 +755,10 @@ get_phych()
 get_sf()
 {
     local sf
-	case $1 in
-		"0"|"1"|"2"|"3"|"4"|"5"|"6"|"7") sf=$(awk "BEGIN{ print 2^$(($1+2)) }") ;;
+    case $1 in
+        "0"|"1"|"2"|"3"|"4"|"5"|"6"|"7") sf=$(awk "BEGIN{ print 2^$(($1+2)) }") ;;
         "8") sf="UNKNOWN" ;;
-	esac
+    esac
     echo "$sf"
 }
 
@@ -791,10 +767,10 @@ get_sf()
 get_slot()
 {
     local slot=$1
-	# case $1 in
-		# "0"|"1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9"|"10"|"11"|"12"|"13"|"14"|"15"|"16") slot=$1 ;;
+    # case $1 in
+        # "0"|"1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9"|"10"|"11"|"12"|"13"|"14"|"15"|"16") slot=$1 ;;
         # "0"|"1"|"2"|"3"|"4"|"5"|"6"|"7"|"8"|"9") slot=$1 ;;
-	# esac
+    # esac
     echo "$slot"
 }
 
