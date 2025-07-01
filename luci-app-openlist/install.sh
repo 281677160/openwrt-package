@@ -7,8 +7,11 @@ RED='\033[1;31m'
 GREEN='\033[1;32m'
 RESET='\033[0m'
 
-msg_red()   { printf "${RED}%s${RESET}\n" "$*"; }
-msg_green() { printf "${GREEN}%s${RESET}\n" "$*"; }
+msg_red()   { printf "${RED}%b${RESET}\n" "$*"; }
+msg_green() { printf "${GREEN}%b${RESET}\n" "$*"; }
+
+msg_green "\nInstall luci-app-openlist"
+msg_green "LuCI support for OpenList (Alist Variant)\n"
 
 # Parse gh_proxy from $1 if provided, e.g. gh_proxy="https://gh-proxy.com/"
 gh_proxy=""
@@ -27,7 +30,7 @@ fi
 
 # Check if running on OpenWrt
 if [ ! -f /etc/openwrt_release ]; then
-    msg_red "Unknown OpenWrt Version"
+    msg_red "Unknown OpenWrt Version."
     exit 1
 fi
 
@@ -51,14 +54,15 @@ fi
 
 # Check LuCI version compatibility
 if [ ! -d "/usr/share/luci/menu.d" ]; then
-    msg_red "OpenWrt LuCI version is not supported. The minimum required version is openwrt-21.02 or higher."
+    msg_red "The current OpenWrt LuCI version is not supported or \`luci-base\` is not installed."
+    msg_red "The minimum required OpenWrt version is openwrt-21.02 or higher (i.e., LuCI2)."
     exit 1
 fi
 
-# Check available root partition space (at least 35MB required)
+# Check available root partition space (at least 20MiB required)
 ROOT_SPACE=$(df -m /usr | awk 'END{print $4}')
-if [ "$ROOT_SPACE" -lt 35 ]; then
-    msg_red "Error: The system storage space is less than 35MB."
+if [ "$ROOT_SPACE" -lt 20 ]; then
+    msg_red "Error: The system storage space is less than 20MiB."
     exit 1
 fi
 
@@ -138,7 +142,7 @@ if [ -x "/etc/init.d/openlist" ]; then
 fi
 
 # Extract and install packages
-msg_green "Installing Packages ..."
+msg_green "\nInstalling Packages ..."
 tar -zxf "$TEMP_DIR/$PKG_FILE" -C "$TEMP_DIR/"
 for pkg in "$TEMP_DIR"/packages_ci/openlist*.* \
            "$TEMP_DIR"/packages_ci/luci-app-openlist*.* \
