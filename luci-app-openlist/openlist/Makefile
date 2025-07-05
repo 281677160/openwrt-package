@@ -7,13 +7,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=openlist
-PKG_VERSION:=4.0.7
-PKG_WEB_VERSION:=4.0.7
+PKG_VERSION:=4.0.8
+PKG_WEB_VERSION:=4.0.8
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/OpenListTeam/OpenList/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=363b990585b367e2cb1e98232ccdfba33b87b5e0352a51083eb16e223e5eac78
+PKG_HASH:=216a7c7c66de9bcff59ab946874a8b4641b2b6e90c5236bd45bf8219149c5a3d
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/OpenList-$(PKG_VERSION)
 
@@ -24,7 +24,7 @@ PKG_MAINTAINER:=sbwml <admin@cooluc.com>
 define Download/openlist-frontend
   FILE:=openlist-frontend-dist-lite-v$(PKG_WEB_VERSION).tar.gz
   URL:=https://github.com/OpenListTeam/OpenList-Frontend/releases/download/v$(PKG_WEB_VERSION)/
-  HASH:=24a92cc2bc8804d03e942580dd666e98e8049f18282f15c6b130df2fa83d8a6b
+  HASH:=0a3476913241ef81c096afe282bb4456269f2aa04b80e0498d45036d3e6a9cf1
 endef
 
 PKG_BUILD_DEPENDS:=golang/host
@@ -80,26 +80,18 @@ endif
 define Build/Prepare
 	$(call Build/Prepare/Default)
 	$(TAR) --strip-components=1 -C $(PKG_BUILD_DIR)/public/dist -xzf $(DL_DIR)/openlist-frontend-dist-lite-v$(PKG_WEB_VERSION).tar.gz
-	$(SED) 's_https://docs.oplist.org/logo.png_/assets/logo.png_g' $(PKG_BUILD_DIR)/public/dist/index.html
-	$(SED) 's_https://docs.oplist.org/logo.svg_/assets/logo.svg_g' $(PKG_BUILD_DIR)/public/dist/index.html
-	$(SED) 's_https://docs.oplist.org/logo.png_/assets/logo.png_g' $(PKG_BUILD_DIR)/public/dist/static/manifest.json
-	$(SED) '/SiteTitle/s_Value: "OpenList"_Value: "OpenList for OpenWrt"_' $(PKG_BUILD_DIR)/internal/bootstrap/data/setting.go
-	$(SED) '/PreviewArchivesByDefault/s_Value: "true"_Value: "false"_' $(PKG_BUILD_DIR)/internal/bootstrap/data/setting.go
-	$(SED) '/SignAll/s_Value: "true"_Value: "false"_' $(PKG_BUILD_DIR)/internal/bootstrap/data/setting.go
-	$(SED) 's_api.example.com/ocr/file/json_api.cooluc.com/ocr/file/json_g' $(PKG_BUILD_DIR)/internal/bootstrap/data/setting.go
-	$(SED) 's_https://cdnjs.cloudflare.com/polyfill/v3/_/assets/_g' $(PKG_BUILD_DIR)/internal/bootstrap/data/setting.go
-	$(SED) 's_https://cdn.oplist.org/gh/OpenListTeam/Logo@main/logo.svg_/assets/logo.svg_g' $(PKG_BUILD_DIR)/internal/bootstrap/data/setting.go
-	$(SED) '/Announcement/s_Value: "### repo\\nhttps:\/\/github.com\/OpenListTeam\/OpenList"_Value: "### repo\\nhttps:\/\/github.com\/sbwml\/luci-app-openlist"_' \
-	$(PKG_BUILD_DIR)/internal/bootstrap/data/setting.go
+	$(SED) 's_https://cdn.oplist.org/gh/OpenListTeam/Logo@main_/assets_g' $(PKG_BUILD_DIR)/public/dist/index.html
+	$(SED) 's_https://docs.oplist.org_/assets_g' $(PKG_BUILD_DIR)/public/dist/static/manifest.json
 endef
 
 define Package/openlist/install
 	$(call GoPackage/Package/Install/Bin,$(PKG_INSTALL_DIR))
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/OpenList $(1)/usr/bin/openlist
-	$(INSTALL_DIR) $(1)/etc/config $(1)/etc/init.d
+	$(INSTALL_DIR) $(1)/etc/config $(1)/etc/init.d $(1)/etc/openlist
 	$(INSTALL_CONF) $(CURDIR)/files/openlist.config $(1)/etc/config/openlist
 	$(INSTALL_BIN) $(CURDIR)/files/openlist.init $(1)/etc/init.d/openlist
+	$(INSTALL_DATA) $(CURDIR)/files/data.db $(1)/etc/openlist/data.db
 endef
 
 $(eval $(call Download,openlist-frontend))
