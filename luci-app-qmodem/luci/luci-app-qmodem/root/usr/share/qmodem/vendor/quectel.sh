@@ -324,9 +324,9 @@ get_temperature()
     local line=1
     QTEMP=$(at ${at_port} ${at_command} | grep "+QTEMP:")
     for line in $( echo -e "$QTEMP" ); do
-        templine=$(echo $line | awk -F'"' '{print $4}')
+        templine=$(echo $line | grep -o "[0-9]\{1,3\}")
         for tmp in $(echo $templine); do
-            [ "$tmp" -gt 0 ] && [ "$tmp" -lt 255 ] && temp=$tmp
+            [ "$tmp" -gt 10 ] && [ "$tmp" -lt 110 ] && temp=$tmp
             if [ -n "$temp" ]; then
                 break
             fi
