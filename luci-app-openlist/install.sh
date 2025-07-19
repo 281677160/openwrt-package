@@ -10,7 +10,7 @@ RESET='\033[0m'
 msg_red()   { printf "${RED}%b${RESET}\n" "$*"; }
 msg_green() { printf "${GREEN}%b${RESET}\n" "$*"; }
 
-msg_green "\nInstall luci-app-openlist"
+msg_green "\nInstall luci-app-openlist2"
 msg_green "LuCI support for OpenList (Alist Variant)\n"
 
 # Parse gh_proxy from $1 if provided, e.g. gh_proxy="https://gh-proxy.com/"
@@ -123,7 +123,7 @@ fi
 
 # Download the corresponding package archive
 PKG_FILE="$SDK-$DISTRIB_ARCH.tar.gz"
-BASE_URL="https://github.com/sbwml/luci-app-openlist/releases/latest/download/$PKG_FILE"
+BASE_URL="https://github.com/sbwml/luci-app-openlist2/releases/latest/download/$PKG_FILE"
 if [ -n "$gh_proxy" ]; then
     PKG_URL="${gh_proxy}${BASE_URL}"
 else
@@ -139,14 +139,16 @@ fi
 # Stop openlist service
 if [ -x "/etc/init.d/openlist" ]; then
     /etc/init.d/openlist stop || true
+elif [ -x "/etc/init.d/openlist2" ]; then
+    /etc/init.d/openlist2 stop || true
 fi
 
 # Extract and install packages
 msg_green "\nInstalling Packages ..."
 tar -zxf "$TEMP_DIR/$PKG_FILE" -C "$TEMP_DIR/"
-for pkg in "$TEMP_DIR"/packages_ci/openlist*.* \
-           "$TEMP_DIR"/packages_ci/luci-app-openlist*.* \
-           "$TEMP_DIR"/packages_ci/luci-i18n-openlist-zh-cn*.*; do
+for pkg in "$TEMP_DIR"/packages_ci/openlist2*.* \
+           "$TEMP_DIR"/packages_ci/luci-app-openlist2*.* \
+           "$TEMP_DIR"/packages_ci/luci-i18n-openlist2-zh-cn*.*; do
     [ -f "$pkg" ] && $PKG_MANAGER $PKG_OPT $pkg
 done
 
@@ -154,8 +156,8 @@ done
 rm -rf /tmp/luci-*
 
 # Start openlist service
-if [ -x "/etc/init.d/openlist" ]; then
-    /etc/init.d/openlist start || true
+if [ -x "/etc/init.d/openlist2" ]; then
+    /etc/init.d/openlist2 start || true
 fi
 
 msg_green "Done!"
