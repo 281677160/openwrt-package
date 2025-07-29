@@ -7,7 +7,7 @@ PKG_NAME:=luci-app-qmodem
 LUCI_TITLE:=LuCI support for QWRT Modem
 LUCI_PKGARCH:=all
 PKG_VERSION:=2.8.2
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 PKG_LICENSE:=GPLv3
 PKG_LINCESE_FILES:=LICENSE
 PKG_MAINTAINER:=Tom <fjrcn@outlook.com>
@@ -24,7 +24,7 @@ LUCI_DEPENDS:=+luci-compat \
 		+PACKAGE_luci-app-qmodem_INCLUDE_vendor-qmi-wwan:kmod-qmi_wwan_q \
 		+PACKAGE_luci-app-qmodem_INCLUDE_vendor-qmi-wwan:kmod-qmi_wwan_f \
 		+PACKAGE_luci-app-qmodem_INCLUDE_vendor-qmi-wwan:kmod-qmi_wwan_s \
-		+usbutils \
+		+usbutils +pciutils \
 		+PACKAGE_luci-app-qmodem_INCLUDE_ADD_PCI_SUPPORT:kmod-pcie_mhi \
 		+PACKAGE_luci-app-qmodem_INCLUDE_ADD_PCI_SUPPORT:pciutils \
 		+PACKAGE_luci-app-qmodem_INCLUDE_ADD_MTK_T7XX_SUPPORT:umbim \
@@ -33,7 +33,7 @@ LUCI_DEPENDS:=+luci-compat \
 		+PACKAGE_luci-app-qmodem_USE_TOM_CUSTOMIZED_QUECTEL_CM:quectel-CM-5G-M \
 		+PACKAGE_luci-app-qmodem_USING_QWRT_QUECTEL_CM_5G:quectel-CM-5G \
 		+PACKAGE_luci-app-qmodem_USING_NORMAL_QUECTEL_CM:quectel-cm \
-		+tom_modem +terminfo \
+		+tom_modem +terminfo +sms-tool_q \
 		+jq +bc\
 		+coreutils +coreutils-stat \
 		+ndisc6
