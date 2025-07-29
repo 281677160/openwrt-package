@@ -83,8 +83,8 @@ _scan_usb()
 _scan_pcie()
 {
     procd_open_instance "scan_pcie"
-    #delay 3 second ,scan all pcie device
-    procd_set_param command  "ash" "/usr/share/qmodem/modem_scan.sh" "scan" "3" "pcie"
+    #delay 15 second ,scan all pcie device
+    procd_set_param command  "ash" "/usr/share/qmodem/modem_scan.sh" "scan" "15" "pcie"
     procd_close_instance
 }
 
