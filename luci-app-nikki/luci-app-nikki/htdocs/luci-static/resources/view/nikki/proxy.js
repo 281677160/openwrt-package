@@ -96,6 +96,9 @@ return view.extend({
             so.value(cgroup);
         };
 
+        so = o.subsection.option(form.Flag, 'dns', _('DNS'));
+        so.rmempty = false;
+
         so = o.subsection.option(form.Flag, 'proxy', _('Proxy'));
         so.rmempty = false;
 
@@ -155,6 +158,9 @@ return view.extend({
             const hint = host.name ?? host.ipaddrs[0];
             so.value(mac, hint ? '%s (%s)'.format(mac, hint) : mac);
         };
+
+        so = o.subsection.option(form.Flag, 'dns', _('DNS'));
+        so.rmempty = false;
 
         so = o.subsection.option(form.Flag, 'proxy', _('Proxy'));
         so.rmempty = false;
