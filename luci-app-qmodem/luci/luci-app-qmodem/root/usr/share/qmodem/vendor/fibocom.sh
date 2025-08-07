@@ -842,17 +842,97 @@ set_lockband()
     json_add_string "lock_band" "$lock_band"
     json_close_object
 }
+
 #设置锁频
 set_lockband_nr()
 {
-    m_debug "Fibocom set lockband info"
+    m_debug "Fibocom set lockband info nr"
+
+    # 获取当前band配置
     get_lockband_config_command="AT+GTACT?"
-    get_lockband_config_res=$(at $at_port $get_lockband_config_command)
-    network_prefer_config=$(echo $get_lockband_config_res |cut -d : -f 2| awk -F"," '{print $1}' |tr -d ' ')
-    lock_band=$(echo "$config" | jq -r '.lock_band')
-    local lock_band="$network_prefer_config,,,$lock_band"
-    local set_lockband_command="AT+GTACT=$lock_band"
-    res=$(at $at_port $set_lockband_command)
+    get_lockband_config_res=$(at $at_port $get_lockband_config_command | grep "+GTACT:" | head -n1)
+    band_params=$(echo "$get_lockband_config_res" | sed 's/+GTACT:[ ]*//' | tr -d '\r')
+    prefix=$(echo "$band_params" | cut -d',' -f1-3)
+    bands=$(echo "$band_params" | cut -d',' -f4- | tr -d '\r')
+
+    # 获取全选band
+    get_available_band_res=$(at $at_port "AT+GTACT=?" | grep "+GTACT:" | head -n1)
+    available_band_params=$(echo "$get_available_band_res" | sed 's/+GTACT:[ ]*//' | tr -d '\r')
+    ALL_UMTS=$(echo "$available_band_params" | awk -F'[()]' '{print $10}' | tr -d ' ')
+    ALL_LTE=$(echo "$available_band_params" | awk -F'[()]' '{print $12}' | tr -d ' ')
+    ALL_NR=$(echo "$available_band_params" | awk -F'[()]' '{print $18}' | tr -d ' ')
+
+    band_class=$(echo "$config" | jq -r '.band_class')
+
+    umts_bands=""
+    lte_bands=""
+    nr_bands=""
+    for b in $(echo "$bands" | tr ',' ' '); do
+        [ -z "$b" ] && continue
+        if [ "$b" -ge 1 ] && [ "$b" -lt 100 ]; then
+            umts_bands="$umts_bands,$b"
+        elif [ "$b" -ge 100 ] && [ "$b" -lt 500 ]; then
+            lte_bands="$lte_bands,$b"
+        elif { [ "$b" -ge 500 ] && [ "$b" -lt 600 ]; } || [ "$b" -ge 5000 ]; then
+            nr_bands="$nr_bands,$b"
+        fi
+    done
+    umts_bands="${umts_bands#,}"
+    lte_bands="${lte_bands#,}"
+    nr_bands="${nr_bands#,}"
+
+    # 替换对应 band_class
+    case "$band_class" in
+        "UMTS")
+            umts_bands="$lock_band"
+            ;;
+        "LTE")
+            lte_bands="$lock_band"
+            ;;
+        "NR")
+            nr_bands="$lock_band"
+            ;;
+    esac
+
+    # 拼接所有band
+    bands_str=""
+    [ -n "$umts_bands" ] && bands_str="$umts_bands"
+    [ -n "$lte_bands" ] && [ -n "$bands_str" ] && bands_str="$bands_str,$lte_bands"
+    [ -n "$lte_bands" ] && [ -z "$bands_str" ] && bands_str="$lte_bands"
+    [ -n "$nr_bands" ] && [ -n "$bands_str" ] && bands_str="$bands_str,$nr_bands"
+    [ -n "$nr_bands" ] && [ -z "$bands_str" ] && bands_str="$nr_bands"
+    [ -z "$bands_str" ] && prefix=$(echo "$prefix" | sed 's/,$//')
+
+    # 判断全选情况
+    if [ "$nr_bands" = "$ALL_NR" ] && [ "$lte_bands" = "$ALL_LTE" ] && [ "$umts_bands" = "$ALL_UMTS" ]; then
+        set_lockband_command="AT+GTACT=20"
+    elif [ "$nr_bands" = "$ALL_NR" ] && [ -z "$lte_bands" ] && [ -z "$umts_bands" ]; then
+        set_lockband_command="AT+GTACT=14"
+    elif [ "$lte_bands" = "$ALL_LTE" ] && [ -z "$nr_bands" ] && [ -z "$umts_bands" ]; then
+        set_lockband_command="AT+GTACT=2"
+    elif [ "$umts_bands" = "$ALL_UMTS" ] && [ -z "$lte_bands" ] && [ -z "$nr_bands" ]; then
+        set_lockband_command="AT+GTACT=1"
+    elif [ "$nr_bands" = "$ALL_NR" ] && [ "$lte_bands" = "$ALL_LTE" ] && [ -z "$umts_bands" ]; then
+        set_lockband_command="AT+GTACT=17"
+    elif [ "$nr_bands" = "$ALL_NR" ] && [ "$umts_bands" = "$ALL_UMTS" ] && [ -z "$lte_bands" ]; then
+        set_lockband_command="AT+GTACT=16"
+    elif [ "$lte_bands" = "$ALL_LTE" ] && [ "$umts_bands" = "$ALL_UMTS" ] && [ -z "$nr_bands" ]; then
+        set_lockband_command="AT+GTACT=4"
+    else
+        if [ -n "$bands_str" ]; then
+            set_lockband_command="AT+GTACT=,,,$bands_str"
+        else
+            set_lockband_command="AT+GTACT=$prefix"
+        fi
+    fi
+
+    res=$(at $at_port "$set_lockband_command")
+    json_select "result"
+    json_add_string "set_lockband" "$res"
+    json_add_string "config" "$config"
+    json_add_string "band_class" "$band_class"
+    json_add_string "lock_band" "$lock_band"
+    json_close_object
 }
 
 set_lockband_lte()

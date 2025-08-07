@@ -7,7 +7,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-passwall
 PKG_VERSION:=25.8.5
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_CONFIG_DEPENDS:= \
 	CONFIG_PACKAGE_$(PKG_NAME)_Iptables_Transparent_Proxy \
@@ -129,6 +129,7 @@ config PACKAGE_$(PKG_NAME)_INCLUDE_Shadow_TLS
 config PACKAGE_$(PKG_NAME)_INCLUDE_Simple_Obfs
 	bool "Include Simple-Obfs (Shadowsocks Plugin)"
 	select PACKAGE_simple-obfs
+	select PACKAGE_simple-obfs-client
 	default y
 
 config PACKAGE_$(PKG_NAME)_INCLUDE_SingBox
