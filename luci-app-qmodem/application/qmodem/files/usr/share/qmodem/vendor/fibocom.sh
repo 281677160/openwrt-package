@@ -1402,7 +1402,7 @@ cell_info()
         add_plain_info_entry "TAC" "$endc_lte_tac" "Tracking area code of cell served by neighbor Enb"
         add_bar_info_entry "RSRP" "$endc_lte_rsrp" "Reference Signal Received Power" -140 -44 dBm
         add_bar_info_entry "RSRQ" "$endc_lte_rsrq" "Reference Signal Received Quality" -19.5 -3 dB
-        add_bar_info_entry "RSSI" "$endc_lte_rssi" "Received Signal Strength Indicator" -120 -20 dBm
+        add_bar_info_entry "RSSI" "$endc_lte_rssi" "Received Signal Strength Indicator" -20 -20 dBm
         add_bar_info_entry "SINR" "$endc_lte_sinr" "Signal to Interference plus Noise Ratio Bandwidth" 0 30 dB
         add_plain_info_entry "RxLev" "$endc_lte_rxlev" "Received Signal Level"
         add_plain_info_entry "RSSNR" "$endc_lte_rssnr" "Radio Signal Strength Noise Ratio"
@@ -1436,7 +1436,7 @@ cell_info()
         add_plain_info_entry "TAC" "$lte_tac" "Tracking area code of cell served by neighbor Enb"
         add_bar_info_entry "RSRP" "$lte_rsrp" "Reference Signal Received Power" -140 -44 dBm
         add_bar_info_entry "RSRQ" "$lte_rsrq" "Reference Signal Received Quality" -19.5 -3 dB
-        add_bar_info_entry "RSSI" "$lte_rssi" "Received Signal Strength Indicator" -120 -20 dBm
+        add_bar_info_entry "RSSI" "$lte_rssi" "Received Signal Strength Indicator" -20 -20 dBm
         add_bar_info_entry "SINR" "$lte_sinr" "Signal to Interference plus Noise Ratio Bandwidth" 0 30 dB
         add_plain_info_entry "RxLev" "$lte_rxlev" "Received Signal Level"
         add_plain_info_entry "RSSNR" "$lte_rssnr" "Radio Signal Strength Noise Ratio"
