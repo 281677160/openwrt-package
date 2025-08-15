@@ -38,7 +38,6 @@ stop_service(){
     [ -f /etc/init.d/qca-nss-ecm ] && /etc/init.d/qca-nss-ecm start
     [ -e "/lib/modules/$kernel_version/shortcut-fe-cm.ko" ] && modprobe shortcut-fe-cm
     [ -e "/lib/modules/$kernel_version/fast-classifier.ko" ] && modprobe fast-classifier
-}
     /etc/init.d/firewall restart
 }
 
