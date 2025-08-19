@@ -354,13 +354,28 @@ static int requestSetProfile(PROFILE_T *profile) {
         profile->pdp, profile->apn, profile->user, profile->password,
         profile->auth,ipStr[profile->iptype]);
 
-    if ( !strcmp(profile->old_apn, new_apn) && !strcmp(profile->old_user, new_user)
+    if (profile->force_apn_set) {
+        dbg_time("clear APN settings");
+        asprintf(&cmd, "AT+QICSGP=%d,%d,\"\",\"\",\"\",0", profile->pdp, profile->iptype);
+        err = at_send_command(cmd, &p_response);
+        safe_free(cmd);
+        if (at_response_error(err, p_response)) {
+            safe_at_response_free(p_response);
+            return -1;
+        }
+    }
+
+    if (!profile->force_apn_set && !strcmp(profile->old_apn, new_apn) && !strcmp(profile->old_user, new_user)
         && !strcmp(profile->old_password, new_password)
         && profile->old_iptype == profile->iptype
         && profile->old_auth == profile->auth)
     {
         dbg_time("no need to set skip the rest");
         return 0;
+    }
+
+    if (profile->force_apn_set) {
+        dbg_time("Force APN setting enabled, proceeding with profile update");
     }
 
     asprintf(&cmd, "AT+QICSGP=%d,%d,\"%s\",\"%s\",\"%s\",%d",
@@ -1052,4 +1067,3 @@ const struct request_ops atc_request_ops = {
     .requestGetICCID = requestGetICCID,
     .requestGetIMSI = requestGetIMSI,
 };
-
