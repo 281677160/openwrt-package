@@ -80,8 +80,8 @@ endif
 define Build/Prepare
 	$(call Build/Prepare/Default)
 	$(TAR) --strip-components=1 -C $(PKG_BUILD_DIR)/public/dist -xzf $(DL_DIR)/openlist-frontend-dist-lite-v$(PKG_WEB_VERSION).tar.gz
-	$(SED) 's_https://cdn.oplist.org/gh/OpenListTeam/Logo@main_/assets_g' $(PKG_BUILD_DIR)/public/dist/index.html
-	$(SED) 's_https://docs.oplist.org_/assets_g' $(PKG_BUILD_DIR)/public/dist/static/manifest.json
+	$(SED) 's_https://res.oplist.org/logo_/assets_g' $(PKG_BUILD_DIR)/public/dist/index.html
+	$(SED) 's_https://res.oplist.org/logo_/assets_g' $(PKG_BUILD_DIR)/public/dist/static/manifest.json
 endef
 
 define Package/openlist2/install
