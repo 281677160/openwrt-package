@@ -6,8 +6,7 @@ m = Map("sms_daemon", translate("SMS Forward Configuration"))
 m.redirect = dispatcher.build_url("admin", "modem", "qmodem", "sms_forward")
 
 -- 添加说明信息
-m.description = translate("SMS Forward Daemon allows automatic forwarding of SMS messages to various APIs. ") ..
-    translate("It supports SMS merging, multiple instances, and real-time processing.")
+m.description = translate("SMS Forward Daemon allows automatic forwarding of SMS messages to various APIs.")
 
 
 -- 检查sms_forwarder守护进程是否存在
@@ -120,6 +119,15 @@ delete_after_forward.width = "12%"
 delete_after_forward.default = "0"
 delete_after_forward.description = translate("Delete SMS messages from modem after successful forwarding")
 
+if fs.stat("/tmp/sms_forwarder_combined.json") then
+--读取 /tmp/sms_forwarder_combined.json 的内容并展示（只读）
+    c = s:option(TextValue, "_c", translate("SMS Forwarder Configuration"))
+    c.readonly = true
+    c.rows = 15
 
-
+    v = fs.readfile("/tmp/sms_forwarder_combined.json")
+    c.cfgvalue = function()
+        return v
+    end
+end
 return m
