@@ -164,9 +164,6 @@ msgstr "停止服务"
 msgid "Restart Service"
 msgstr "重启服务"
 
-msgid "SMS Forward Daemon allows automatic forwarding of SMS messages to various APIs. It supports SMS merging, multiple instances, and real-time processing."
-msgstr "短信转发守护进程允许自动将短信转发到各种API。它支持短信合并、多实例和实时处理。"
-
 msgid "Enable the SMS forward daemon service. When enabled, the daemon will start automatically."
 msgstr "启用短信转发守护进程服务。启用后，守护进程将自动启动。"
 
@@ -199,3 +196,9 @@ msgstr "短信转发高级配置"
 
 msgid "Advanced SMS Forward configuration with type-specific options."
 msgstr "具有特定类型选项的高级短信转发配置。"
+
+msgid "SMS Forwarder Configuration"
+msgstr "短信转发器配置"
+
+msgid "SMS Forward Daemon allows automatic forwarding of SMS messages to various APIs."
+msgstr "短信转发器允许自动将短信转发到各种API。"

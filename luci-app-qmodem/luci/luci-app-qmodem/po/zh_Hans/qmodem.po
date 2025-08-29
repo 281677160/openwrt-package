@@ -851,12 +851,6 @@ msgstr "（仍在测试中）"
 msgid "（beta）"
 msgstr "(测试)"
 
-msgid "V4/V6 Connect Check"
-msgstr "V4/V6 存活检测"
-
-msgid "Only for AT dial modem."
-msgstr "只适用于AT拨号模组。"
-
 msgid "Alternative AT Tools"
 msgstr "使用替代的AT工具"
 

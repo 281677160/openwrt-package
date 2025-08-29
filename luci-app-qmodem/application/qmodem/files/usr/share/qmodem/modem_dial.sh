@@ -147,7 +147,6 @@ update_config()
     config_get en_bridge $modem_config en_bridge
     config_get do_not_add_dns $modem_config do_not_add_dns
     config_get dns_list $modem_config dns_list
-    config_get connect_check $modem_config connect_check
     config_get global_dial main enable_dial
     # config_get ethernet_5g u$modem_config ethernet 转往口获取命令更新，待测试
     config_foreach get_associate_ethernet_by_path modem-slot
@@ -299,30 +298,6 @@ check_ip()
             connection_status="-1"
             m_debug "at port response unexpected $ipaddr"
         fi
-}
-
-check_connection()
-{
-    [ "$connection_status" = "0" ] || [ "$connection_status" = "-1" ] && return 0
-    if [ -n "$ipv4" ] && [ -n "$modem_netcard" ]; then
-        for i in 1 2; do
-            if ping -I "$modem_netcard" -w 1 1.1.1.1 >/dev/null 2>&1 || 
-               ping -I "$modem_netcard" -w 2 8.8.8.8 >/dev/null 2>&1; then
-                break
-            fi
-            if [ $i -eq 2 ]; then
-                m_debug "IPv4 connection test failed, will redial"
-                return 1
-            fi
-            sleep 1
-        done
-        local ifup_time=$(ubus call network.interface.$interface6_name status 2>/dev/null | jsonfilter -e '@.uptime' 2>/dev/null || echo 0)
-        if [ "$ifup_time" -gt 5 ] && [ "$pdp_type" = "ipv4v6" ]; then
-            rdisc6 $origin_device &
-            ndisc6 fe80::1 $origin_device &
-        fi
-    fi
-    return 0
 }
 
 append_to_fw_zone()
@@ -1029,7 +1004,14 @@ at_dial_monitor()
                     ipv4_cache=$ipv4
                     ipv6_cache=$ipv6
                 fi
-                [ "$connect_check" -eq 1 ] && { sleep 5; check_connection || { hang && at_dial; }; } || sleep 15
+
+                if [ "$pdp_type" = "ipv4v6" ]; then
+                    local ifup_time=$(ubus call network.interface.$interface6_name status 2>/dev/null | jsonfilter -e '@.uptime' 2>/dev/null || echo 0)
+                    [ "$ifup_time" -lt 5 ] && continue
+                    rdisc6 $origin_device &
+                    ndisc6 fe80::1 $origin_device &
+                fi
+                sleep 15
                 ;;
         esac
         check_logfile_line

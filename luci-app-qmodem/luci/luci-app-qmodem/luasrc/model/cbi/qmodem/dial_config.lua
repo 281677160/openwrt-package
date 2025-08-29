@@ -91,11 +91,6 @@ soft_reboot = s:taboption("advanced", Flag, "soft_reboot", translate("Soft Reboo
 soft_reboot.description = translate("enable modem soft reboot")
 soft_reboot.default = "0"
 
--- Connect Check
-connect_check = s:taboption("advanced", Flag, "connect_check", translate("V4/V6 Connect Check"))
-connect_check.description = translate("Only for AT dial modem.")
-connect_check.default = "0"
-
 -- 网络类型
 pdp_type= s:taboption("advanced", ListValue, "pdp_type", translate("PDP Type"))
 pdp_type.default = "ipv4v6"
