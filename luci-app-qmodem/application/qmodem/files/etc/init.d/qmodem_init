@@ -131,6 +131,7 @@ _try_device()
 {
     config_get path "$1" path
     config_get type "$1" type
+    config_get network "$1" network
     case "$type" in
         usb)
             path="/sys/bus/usb/devices/${path}"
@@ -141,6 +142,15 @@ _try_device()
     esac
     if [ ! -d "$path" ]; then
         /usr/share/qmodem/modem_scan.sh disable "$1"
+        return
+    fi
+    # if device_path not parent of netdevice_path,then disable device path an scan again
+    netdevice_path=`readlink -f /sys/class/net/$network/device/`
+    device_path=`readlink -f $path`
+    is_parent=`echo "$device_path" | grep -q "^$netdevice_path"`
+    if [ -z "$is_parent" ] || [ ! -d "$netdevice_path" ]; then
+        /usr/share/qmodem/modem_scan.sh disable "$1"
+        /usr/share/qmodem/modem_scan.sh add "$path" "$slot" 
     fi
 }
 
