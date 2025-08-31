@@ -1038,21 +1038,6 @@
                     "qmi"
                 ]
             },
-            "rm500q-cn": {
-                "manufacturer": "quectel",
-                "platform": "qualcomm",
-                "data_interface": "pcie",
-                "pdp_index": "1",
-                "wcdma_band": "1/8",
-                "lte_band": "1/3/5/8/34/38/39/40/41",
-                "nsa_band": "41/78/79",
-                "sa_band": "1/28/41/78/79",
-                "modes": [
-                    "qmi",
-                    "gobinet",
-                    "mbim"
-                ]
-            },
             "rm500q-gl": {
                 "manufacturer": "quectel",
                 "platform": "qualcomm",

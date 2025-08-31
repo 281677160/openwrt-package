@@ -1005,8 +1005,10 @@ at_dial_monitor()
                     ipv6_cache=$ipv6
                 fi
 
+                pdp_type=$(echo $pdp_type | tr 'A-Z' 'a-z')
                 if [ "$pdp_type" = "ipv4v6" ]; then
                     local ifup_time=$(ubus call network.interface.$interface6_name status 2>/dev/null | jsonfilter -e '@.uptime' 2>/dev/null || echo 0)
+                    local origin_device=$(uci -q get network.$interface_name.device 2>/dev/null || echo "")
                     [ "$ifup_time" -lt 5 ] && continue
                     rdisc6 $origin_device &
                     ndisc6 fe80::1 $origin_device &
