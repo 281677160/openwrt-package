@@ -42,6 +42,9 @@ get_mode()
         ;;
         "unisoc")
             case "$mode_num" in
+                "31") mode="ncm" ;;
+                "32") mode="ecm" ;;
+                "33") mode="rndis" ;;
                 "34") mode="ecm" ;;
                 "35") mode="ecm" ;; #-
                 "40") mode="mbim" ;;
@@ -375,7 +378,7 @@ get_temperature()
 {
     #Temperature（温度）
     at_command="AT+MTSM=1,6"
-	response=$(at $at_port $at_command | grep "+MTSM: " | sed 's/+MTSM: //g' | sed 's/\r//g')
+    response=$(at $at_port $at_command | grep "+MTSM: " | sed 's/+MTSM: //g' | sed 's/\r//g')
 
     [ -z "$response" ] && {
         #Fx160及以后型号
@@ -389,6 +392,12 @@ get_temperature()
         at_command="AT+GTSENRDTEMP=1"
         response=$(at $at_port $at_command | grep "+GTSENRDTEMP: " | awk -F',' '{print $2}' | sed 's/\r//g')
         response="${response:0:2}"
+    }
+    
+    [ -z "$response" ] && {
+        #紫光平台
+        at_command="AT+MTSM=1"
+        response=$(at $at_port $at_command | grep "+MTSM: " | sed 's/+MTSM: //g' | sed 's/\r//g')
     }
 
     local temperature
@@ -467,7 +476,7 @@ sim_info()
 
     #SIM Number（SIM卡号码，手机号）
     at_command="AT+CNUM"
-	sim_number=$(at ${at_port} ${at_command} | grep "+CNUM: " | awk -F'"' '{print $2}')
+    sim_number=$(at ${at_port} ${at_command} | grep "+CNUM: " | awk -F'"' '{print $2}')
     [ -z "$sim_number" ] && {
         sim_number=$(at ${at_port} ${at_command} | grep "+CNUM: " | awk -F'"' '{print $4}')
     }
@@ -475,13 +484,16 @@ sim_info()
     #IMSI（国际移动用户识别码）
     at_command="AT+CIMI?"
     imsi=$(at ${at_port} ${at_command} | grep "+CIMI: " | awk -F' ' '{print $2}' | sed 's/"//g' | sed 's/\r//g')
-	[ -z "$sim_number" ] && {
+    [ -z "$sim_number" ] && {
         imsi=$(at ${at_port} ${at_command} | grep "+CIMI: " | awk -F'"' '{print $2}')
     }
 
     #ICCID（集成电路卡识别码）
     at_command="AT+ICCID"
-	iccid=$(at ${at_port} ${at_command} | grep -o "+ICCID:[ ]*[-0-9]\+" | grep -o "[-0-9]\{1,4\}")
+    iccid=$(at ${at_port} ${at_command} | grep -o "+ICCID:[ ]*[-0-9]\+" | grep -o "[-0-9]\{1,4\}")
+		[ -z "$iccid" ] && {
+        iccid=$(at ${at_port} "AT+CCID" | grep -o "+CCID:[ ]*[-0-9]\+" | awk -F' ' '{print $2}')
+    }
     class="SIM Information"
     case "$sim_status" in
         "ready")
@@ -1221,6 +1233,15 @@ cell_info()
         rat_num=$(at $at_port $at_command | grep "+COPS:" | awk -F',' '{print $4}' | sed 's/\r//g')
         rat=$(get_rat ${rat_num})
     }
+    
+    #CSQ（信号强度）
+    at_command="AT+CSQ"
+    csqinfo=$(at ${at_port} ${at_command} | grep "+CSQ:" | sed 's/+CSQ: //g' | sed 's/\r//g')
+    
+    #RSSI（信号强度指示）
+    rssi_num=$(echo $csqinfo | awk -F',' '{print $1}')
+    rssi=$(get_rssi $rssi_num)
+    [ -n "$rssi" ] && rssi_actual=$(printf "%.1f" $(echo "$rssi / 10" | bc -l 2>/dev/null))
 
     for response in $response; do
         #排除+GTCCINFO:、NR service cell:还有空行
@@ -1320,13 +1341,14 @@ cell_info()
                     ul_bandwidth_num=$(echo "$response" | awk -F',' '{print $10}')
                     lte_ul_bandwidth=$(get_bandwidth "LTE" ${ul_bandwidth_num})
                     lte_dl_bandwidth="$lte_ul_bandwidth"
-                    lte_rssnr=$(echo "$response" | awk -F',' '{print $11}')
+                    lte_rssnr=$(echo "$response" | grep "," | head -n1 | awk -F',' '{print $11}')
                     lte_rxlev_num=$(echo "$response" | awk -F',' '{print $12}')
                     lte_rxlev=$(get_rxlev "LTE" ${lte_rxlev_num})
                     lte_rsrp_num=$(echo "$response" | awk -F',' '{print $13}')
                     lte_rsrp=$(get_rsrp "LTE" ${lte_rsrp_num})
                     lte_rsrq_num=$(echo "$response" | awk -F',' '{print $14}' | sed 's/\r//g')
                     lte_rsrq=$(get_rsrq "LTE" ${lte_rsrq_num})
+                    lte_rssi="$rssi_actual"
                 ;;
                 "WCDMA"|"UMTS")
                     network_mode="WCDMA Mode"
@@ -1437,7 +1459,7 @@ cell_info()
         add_bar_info_entry "RSRP" "$lte_rsrp" "Reference Signal Received Power" -140 -44 dBm
         add_bar_info_entry "RSRQ" "$lte_rsrq" "Reference Signal Received Quality" -19.5 -3 dB
         add_bar_info_entry "RSSI" "$lte_rssi" "Received Signal Strength Indicator" -20 -20 dBm
-        add_bar_info_entry "SINR" "$lte_sinr" "Signal to Interference plus Noise Ratio Bandwidth" 0 30 dB
+        #add_bar_info_entry "SINR" "$lte_sinr" "Signal to Interference plus Noise Ratio Bandwidth" 0 30 dB
         add_plain_info_entry "RxLev" "$lte_rxlev" "Received Signal Level"
         add_plain_info_entry "RSSNR" "$lte_rssnr" "Radio Signal Strength Noise Ratio"
         add_plain_info_entry "CQI" "$lte_cql" "Channel Quality Indicator"
