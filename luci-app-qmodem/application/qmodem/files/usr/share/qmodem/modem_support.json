@@ -740,6 +740,18 @@
                     "ncm"
                 ]
             },
+            "l610-eu": {
+                "manufacturer_id": "1782",
+                "manufacturer": "fibocom",
+                "platform": "unisoc",
+                "data_interface": "usb",
+                "pdp_index": "1",
+                "modes": [
+                    "ecm",
+                    "rndis",
+                    "ncm"
+                ]
+            },
             "nl668": {
                 "manufacturer_id": "1508",
                 "manufacturer": "fibocom",
