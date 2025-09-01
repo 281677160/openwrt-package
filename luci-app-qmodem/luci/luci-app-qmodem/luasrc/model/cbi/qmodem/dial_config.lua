@@ -131,6 +131,15 @@ apn:value("internet.globe.com.ph", translate("Globe Postpaid (PH)"))
 apn:value("internet", translate("Smart Communications (PH)"))
 apn:value("internet.dito.ph", translate("Dito Telecomunity (PH)"))
 
+-- Malaysia (MY)
+apn:value("celcom3g", translate("Celcom (MY)"))
+apn:value("diginet", translate("DiGi (MY)"))
+apn:value("unet", translate("Maxis | Hotlink (MY)"))
+apn:value("hos", translate("Maxis UT (MY)"))
+apn:value("yes4g", translate("YES (MY)"))
+apn:value("my3g", translate("UMobile (MY)"))
+apn:value("unifi", translate("Unifi (MY)"))
+
 auth = s:taboption("advanced", ListValue, "auth", translate("Authentication Type"))
 auth.default = "none"
 auth.rmempty = false
@@ -186,6 +195,15 @@ apn:value("http.globe.com.ph", translate("Globe Prepaid (PH)"))
 apn:value("internet.globe.com.ph", translate("Globe Postpaid (PH)"))
 apn:value("internet", translate("Smart Communications (PH)"))
 apn:value("internet.dito.ph", translate("Dito Telecomunity (PH)"))
+
+-- Malaysia (MY)
+apn:value("celcom3g", translate("Celcom (MY)"))
+apn:value("diginet", translate("DiGi (MY)"))
+apn:value("unet", translate("Maxis | Hotlink (MY)"))
+apn:value("hos", translate("Maxis UT (MY)"))
+apn:value("yes4g", translate("YES (MY)"))
+apn:value("my3g", translate("UMobile (MY)"))
+apn:value("unifi", translate("Unifi (MY)"))
 
 metric = s:taboption("advanced", Value, "metric", translate("Metric"))
 metric.description = translate("The metric value is used to determine the priority of the route. The smaller the value, the higher the priority. Cannot duplicate.")
