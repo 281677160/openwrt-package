@@ -558,9 +558,6 @@ set_imei()
 
 }
 
-
-
-
 #网络信息
 network_info()
 {
@@ -822,7 +819,7 @@ set_lockband()
             set_lockband_nr
             ;;
         "mediatek")
-            set_lockband_nr
+            set_lockband_nr_mediatek
             ;;
         "lte")
             set_lockband_lte
@@ -840,6 +837,17 @@ set_lockband()
 }
 
 #设置锁频
+set_lockband_nr_mediatek()
+{
+    m_debug "Fibocom set lockband info"
+    get_lockband_config_command="AT+GTACT?"
+    get_lockband_config_res=$(at $at_port $get_lockband_config_command)
+    network_prefer_config=$(echo $get_lockband_config_res |cut -d : -f 2| awk -F"," '{print $1}' |tr -d ' ')
+    local lock_band="$network_prefer_config,6,3,$lock_band"
+    local set_lockband_command="AT+GTACT=$lock_band"
+    res=$(at $at_port $set_lockband_command)
+}
+
 set_lockband_nr()
 {
     m_debug "Fibocom set lockband info nr"
