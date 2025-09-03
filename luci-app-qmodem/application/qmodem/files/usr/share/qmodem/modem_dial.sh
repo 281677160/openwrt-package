@@ -764,6 +764,24 @@ at_dial()
                     at_command="AT+GTRNDIS=1,$pdp_index"
                     cgdcont_command="AT+CGDCONT=$pdp_index,\"$pdp_type\",\"$apn\""
                     ;;
+                "unisoc")
+                    at_command="AT+GTRNDIS=1,$pdp_index"
+                    cgdcont_command="AT+CGDCONT=$pdp_index,\"$pdp_type\",\"$apn\""
+                    if [ -n "$auth" ]; then
+                        case $auth in
+                            "pap") 
+                                auth_num=1 ;;
+                            "chap") 
+                                auth_num=2 ;;
+                            "auto"|"both") 
+                                auth_num=3 ;;
+                            *) 
+                                auth_num=0 ;;
+                        esac
+                        if [ -n "$username" ] || [ -n "$password" ] && [ "$auth_num" != "0" ] ; then
+                            ppp_auth_command="AT+MGAUTH=$pdp_index,$auth_num,\"$username\",\"$password\""
+                        fi
+                    fi
             esac
             ;;
         "huawei")
@@ -809,6 +827,7 @@ at_dial()
             ;;
     esac
 	m_debug "dialing: vendor:$manufacturer; platform:$platform; driver:$driver; apn:$apn; command:$at_command"
+    m_debug "dial_cmd: $at_command; cgdcont_cmd: $cgdcont_command; ppp_auth_cmd: $ppp_auth_command"
 	case $driver in
         "mtk_pcie")
             mbim_port=$(echo "$at_port" | sed 's/at/mbim/g')
@@ -820,6 +839,7 @@ at_dial()
 		 	;;
 		*)
   			at "${at_port}" "${cgdcont_command}"
+            [ -n "$ppp_auth_command" ] && at "${at_port}" "$ppp_auth_command"
         	at "$at_port" "$at_command"
 		 	;;
 	esac
