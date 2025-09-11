@@ -144,7 +144,7 @@ auth = s:taboption("advanced", ListValue, "auth", translate("Authentication Type
 auth.default = "none"
 auth.rmempty = false
 auth:value("none", translate("NONE"))
-auth:value("both", translate("PAP/CHAP (both)"))
+auth:value("MsChapV2", translate("MsChapV2"))
 auth:value("pap", "PAP")
 auth:value("chap", "CHAP")
 
