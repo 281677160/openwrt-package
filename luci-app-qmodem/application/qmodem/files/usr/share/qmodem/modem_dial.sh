@@ -773,7 +773,7 @@ at_dial()
                                 auth_num=1 ;;
                             "chap") 
                                 auth_num=2 ;;
-                            "auto"|"both") 
+                            "auto"|"both"|"MsChapV2") 
                                 auth_num=3 ;;
                             *) 
                                 auth_num=0 ;;
