@@ -4,7 +4,6 @@ action=$1
 config=$2
 slot_type=$3
 modem_support=$(cat /usr/share/qmodem/modem_support.json)
-modem_port_rule=$(cat /usr/share/qmodem/modem_port_rule.json)
 debug_subject="modem_scan"
 source /lib/functions.sh
 source /usr/share/qmodem/modem_util.sh
@@ -110,6 +109,8 @@ scan_pcie()
 {
     #beta
     m_debug "scan_pcie"
+    echo 1 > /sys/bus/pci/rescan
+    sleep 1
     pcie_net_device_prefixs="rmnet wwan"
     pcie_slots=""
     for pcie_net_device_prefix in $pcie_net_device_prefixs; do
@@ -224,33 +225,6 @@ scan_usb_slot_interfaces()
     net_devices=""
     tty_devices=""
     [ ! -d "$slot_path" ] && return
-
-    slot_vid=$(cat "$slot_path/idVendor" 2>/dev/null || echo "")
-    slot_pid=$(cat "$slot_path/idProduct" 2>/dev/null || echo "")
-
-    # m_debug "($slot_vid:$slot_pid) $slot_path"
-
-    if [ -n "$slot_vid" ] && [ -n "$slot_pid" ]; then
-        modem_port_config=$(echo $modem_port_rule | jq '.modem_port_rule."'$slot_type'"."'$slot_vid:$slot_pid'"')
-        if [ "$modem_port_config" != "null" ] && [ -n "$modem_port_config" ]; then
-            config_modem_name=$(echo $modem_port_config | jq -r '.name' 2>/dev/null || echo "")
-            include_ports=$(echo $modem_port_config | jq -r '.include[]' 2>/dev/null || echo "")
-            option_driver=$(echo $modem_port_config | jq -r '.option_driver' 2>/dev/null || echo "0")
-
-            if [ -n "$include_ports" ]; then
-                include_mode=1
-                m_debug "using special config for $config_modem_name($slot_vid:$slot_pid) with ports: $include_ports"
-            fi
-        fi
-    else
-        m_debug "Unable to read VID/PID from device path: $slot_path"
-    fi
-
-    if [ "$option_driver" = "1" ] && [ -n "$slot_vid" ] && [ -n "$slot_pid" ]; then
-        if ! echo "$slot_vid $slot_pid" > /sys/bus/usb-serial/drivers/option1/new_id 2>/dev/null; then
-            m_debug "failed to set option driver"
-        fi
-    fi
 
     local slot_interfaces=$(ls $slot_path | grep -E "$slot:[0-9]\.[0-9]+")
     for interface in $slot_interfaces; do
