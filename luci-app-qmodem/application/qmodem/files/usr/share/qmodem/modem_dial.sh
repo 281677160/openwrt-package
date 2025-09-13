@@ -763,6 +763,20 @@ at_dial()
                 "lte")
                     at_command="AT+GTRNDIS=1,$pdp_index"
                     cgdcont_command="AT+CGDCONT=$pdp_index,\"$pdp_type\",\"$apn\""
+                    if [ -n "$auth" ]; then
+                        case $auth in
+                            "pap") 
+                                auth_num=1 ;;
+                            "chap") 
+                                auth_num=2 ;;
+                            "auto"|"both"|"MsChapV2") 
+                                auth_num=3 ;;
+                            *) 
+                                auth_num=0 ;;
+                        esac
+                        if [ -n "$username" ] || [ -n "$password" ] && [ "$auth_num" != "0" ] ; then
+                            ppp_auth_command="AT+MGAUTH=$pdp_index,$auth_num,\"$username\",\"$password\""
+                        fi
                     ;;
                 "unisoc")
                     at_command="AT+GTRNDIS=1,$pdp_index"
