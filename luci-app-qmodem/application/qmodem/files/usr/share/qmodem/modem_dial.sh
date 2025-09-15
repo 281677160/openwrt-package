@@ -777,6 +777,7 @@ at_dial()
                         if [ -n "$username" ] || [ -n "$password" ] && [ "$auth_num" != "0" ] ; then
                             ppp_auth_command="AT+MGAUTH=$pdp_index,$auth_num,\"$username\",\"$password\""
                         fi
+                    fi
                     ;;
                 "unisoc")
                     at_command="AT+GTRNDIS=1,$pdp_index"
