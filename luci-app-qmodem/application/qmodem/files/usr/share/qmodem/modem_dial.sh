@@ -62,7 +62,7 @@ set system.n${cfg_name}.name=${modem_slot}_net_indicator
 set system.n${cfg_name}.sysfs=${net_led}
 set system.n${cfg_name}.trigger=netdev
 set system.n${cfg_name}.dev=${modem_netcard}
-set system.n${cfg_name}.mode="tx rx"
+set system.n${cfg_name}.mode="link tx rx"
 commit system
 EOF
 
