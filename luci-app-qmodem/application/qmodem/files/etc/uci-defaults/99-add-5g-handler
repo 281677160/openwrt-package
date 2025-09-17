@@ -32,18 +32,15 @@ modem_settings()
 		uci set qmodem.mini_pci="modem-slot"
 		uci set qmodem.mini_pci.slot="1-1.4"
 		uci set qmodem.mini_pci.type="usb"
-		uci set qmodem.mini_pci.net_led="wwan"
 		#m.2 slot (usb2.0)
 		uci set qmodem.m2_u2="modem-slot"
 		uci set qmodem.m2_u2.slot="1-1.1"
 		uci set qmodem.m2_u2.type="usb"
-		uci set qmodem.m2_u2.net_led="wwan"
 		uci set qmodem.m2_u2.ethernet_5g="cpewan0"
 		#m.2 slot (usb3.0)
 		uci set qmodem.m2_u3="modem-slot"
 		uci set qmodem.m2_u3.slot="2-1"
 		uci set qmodem.m2_u3.type="usb"
-		uci set qmodem.m2_u3.net_led="wwan"
 		uci set qmodem.m2_u3.ethernet_5g="cpewan0"
 		uci commit qmodem
 		;;
