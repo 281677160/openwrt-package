@@ -748,7 +748,7 @@ at_dial()
                     ;;
                 *)
                     at_command="AT+QNETDEVCTL=$pdp_index,3,1"
-                    cgdcont_command="AT+CGDCONT=$pdp_index1,\"$pdp_type\",\"$apn\""
+                    cgdcont_command="AT+CGDCONT=$pdp_index,\"$pdp_type\",\"$apn\""
                     ;;
             esac
             ;;

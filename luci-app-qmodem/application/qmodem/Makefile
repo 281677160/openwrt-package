@@ -28,7 +28,7 @@ define Package/$(PKG_NAME)
 		+jq +bc\
 		+coreutils +coreutils-stat \
 		+usbutils \
-		+ndisc6 \
+		+ndisc6 +rdisc6 \
 		+PACKAGE_luci-app-qmodem_INCLUDE_generic-qmi-wwan:kmod-usb-net-qmi-wwan \
 		+PACKAGE_luci-app-qmodem_INCLUDE_vendor-qmi-wwan:kmod-qmi_wwan_q \
 		+PACKAGE_luci-app-qmodem_INCLUDE_vendor-qmi-wwan:kmod-qmi_wwan_f \
