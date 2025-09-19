@@ -91,6 +91,9 @@ soft_reboot = s:taboption("advanced", Flag, "soft_reboot", translate("Soft Reboo
 soft_reboot.description = translate("enable modem soft reboot")
 soft_reboot.default = "0"
 
+-- pdp_index
+pdp_index = s:taboption("advanced", Value, "pdp_index", translate("PDP Context Index"))
+
 -- 网络类型
 pdp_type= s:taboption("advanced", ListValue, "pdp_type", translate("PDP Type"))
 pdp_type.default = "ipv4v6"
