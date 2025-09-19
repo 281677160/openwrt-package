@@ -26,14 +26,5 @@ _soft_reboot() {
 		sleep 1
 	done
 
-	for i in $(seq 1 15); do
-		[ ! -e "$at_port" ] && {
-			echo "Device disconnected after $i seconds"
-			return 0
-		}
-		sleep 1
-	done
-	
-	echo "Device did not disconnect within timeout period"
 	return 0
 }
