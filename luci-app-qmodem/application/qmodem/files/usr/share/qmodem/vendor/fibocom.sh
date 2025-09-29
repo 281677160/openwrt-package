@@ -969,45 +969,29 @@ get_neighborcell()
             continue
         fi
         case $line in
-            *"NR neighbor cell"*)
-                cell_type="NR"
-                continue
-                ;;
-            *"LTE neighbor cell"*)
-                cell_type="LTE"
-                continue
-                ;;
-            *"service cell"*|*"GTCELLINFO"*|*"OK"*)
-                cell_type="undefined"
-                continue
-                ;;
-        esac
-        case $cell_type in
-            "NR")
+            "2,9"*)
+                m_debug "NR line:$line"
                 tac=$(echo "$line" | awk -F',' '{print $5}')
                 cellid=$(echo "$line" | awk -F',' '{print $6}')
                 arfcn=$(echo "$line" | awk -F',' '{print $7}')
                 pci=$(echo "$line" | awk -F',' '{print $8}')
-                ss_sinr=$(echo "$line" | awk -F',' '{print $9}')
-                rxlev=$(echo "$line" | awk -F',' '{print $10}')
-                ss_rsrp=$(echo "$line" | awk -F',' '{print $11}')
-                ss_rsrq=$(echo "$line" | awk -F',' '{print $12}')
-                arfcn=$(echo 'ibase=16;' "$arfcn"  | bc)
-                pci=$(echo 'ibase=16;' "$pci"  | bc)
+                ss_sinr=$(echo "$line" | awk -F',' '{print $10}')
+                rxlev=$(echo "$line" | awk -F',' '{print $11}')
+                ss_rsrp=$(echo "$line" | awk -F',' '{print $12}')
                 json_select "NR"
                 json_add_object ""
                 json_add_string "tac" "$tac"
                 json_add_string "cellid" "$cellid"
                 json_add_string "arfcn" "$arfcn"
                 json_add_string "pci" "$pci"
+                json_add_string "bandwidth" "$bandwidth"
                 json_add_string "ss_sinr" "$ss_sinr"
                 json_add_string "rxlev" "$rxlev"
                 json_add_string "ss_rsrp" "$ss_rsrp"
-                json_add_string "ss_rsrq" "$ss_rsrq"
                 json_close_object
                 json_select ".."
                 ;;
-            "LTE")
+            "2,4"*)
                 tac=$(echo "$line" | awk -F',' '{print $5}')
                 cellid=$(echo "$line" | awk -F',' '{print $6}')
                 arfcn=$(echo "$line" | awk -F',' '{print $7}')
@@ -1071,7 +1055,6 @@ get_neighborcell()
     json_close_object
     json_close_object
 }
-
 
 set_neighborcell(){
     json_param=$1
@@ -1253,31 +1236,68 @@ cell_info()
     rssi_num=$(echo $csqinfo | awk -F',' '{print $1}')
     rssi=$(get_rssi $rssi_num)
     [ -n "$rssi" ] && rssi_actual=$(printf "%.1f" $(echo "$rssi / 10" | bc -l 2>/dev/null))
-
+    ca_count=1
+    scc_pci=""
+    scc_arfcn=""
+    scc_band=""
+    scc_dl_bandwidth=""
+    scc_ul_bandwidth=""
     for response in $response; do
         #排除+GTCCINFO:、NR service cell:还有空行
         [ -n "$response" ] && [[ "$response" = *","* ]] && {
 
             case $rat in
                 "NR")
-                    if echo "$ca_response" | grep -q "SCC"; then
-                        has_ca=1
-                        scc_info=$(echo "$ca_response" | grep "SCC" | sed 's/\r//g')
-                        scc_band_num=$(echo "$scc_info" | awk -F',' '{print $3}')
-                        scc_arfcn=$(echo "$scc_info" | awk -F',' '{print $5}')
-                        scc_band=$(get_band "NR" ${scc_band_num})
-                        nr_scc_dl_bandwidth_num=$(echo "$scc_info" | awk -F',' '{print $6}')
-                        nr_scc_dl_bandwidth=$(get_bandwidth "NR" ${nr_scc_dl_bandwidth_num})
-                    fi
-                    if [ $has_ca -eq 1 ]; then
-                        network_mode="NR5G-SA CA Mode"
-                    else
-                        network_mode="NR5G-SA Mode"
-                    fi
+                    network_mode="NR5G-SA Mode"
+                    IFS=$'\n'
+                    for ca_res in $ca_response; do
+                        if echo "$ca_res" | grep -q "SCC"; then
+                            ca_count=$((ca_count+1))
+                            scc_ul_ca=$(echo "$ca_res" | awk -F',' '{print $2}')
+                            scc_band_num=$(echo "$ca_res" | awk -F',' '{print $3}')
+                            scc_pci_new=$(echo "$ca_res" | awk -F',' '{print $4}')
+                            if [ -z "$scc_pci" ]; then
+                                scc_pci="$scc_pci_new"
+                            else
+                                scc_pci="$scc_pci / $scc_pci_new"
+                            fi
+                            scc_arfcn_new=$(echo "$ca_res" | awk -F',' '{print $5}')
+                            if [ -z "$scc_arfcn" ]; then
+                                scc_arfcn="$scc_arfcn_new"
+                            else
+                                scc_arfcn="$scc_arfcn / $scc_arfcn_new"
+                            fi
+                            scc_band_new=$(get_band "NR" ${scc_band_num})
+                            if [ -z "$scc_band" ]; then
+                                scc_band="$scc_band_new"
+                            else
+                                scc_band="$scc_band / $scc_band_new"
+                            fi
+                            scc_dl_bandwidth_num=$(echo "$ca_res" | awk -F',' '{print $6}')
+                            scc_dl_bandwidth_new=$(get_bandwidth "NR" ${scc_dl_bandwidth_num})
+                            if [ -z "$scc_dl_bandwidth" ]; then
+                                scc_dl_bandwidth="$scc_dl_bandwidth_new"
+                            else
+                                scc_dl_bandwidth="$scc_dl_bandwidth / $scc_dl_bandwidth_new"
+                            fi
+                            if [ "$scc_ul_ca" = "1" ]; then
+                                scc_ul_bandwidth_new=$scc_dl_bandwidth_new
+                                if [ -z "$scc_ul_bandwidth" ]; then
+                                    scc_ul_bandwidth="$scc_ul_bandwidth_new"
+                                else
+                                    scc_ul_bandwidth="$scc_ul_bandwidth / $scc_ul_bandwidth_new"
+                                fi
+                            fi
+                        fi
+                    done
+                    IFS=' '
+                    network_mode="$network_mode with $ca_count CA"
                     nr_mcc=$(echo "$response" | awk -F',' '{print $3}')
                     nr_mnc=$(echo "$response" | awk -F',' '{print $4}')
                     nr_tac=$(echo "$response" | awk -F',' '{print $5}')
+                    nr_tac=$(echo 'ibase=16;' "$nr_tac" | bc)
                     nr_cell_id=$(echo "$response" | awk -F',' '{print $6}')
+                    nr_cell_id=$(echo 'ibase=16;' "$nr_cell_id" | bc)
                     nr_arfcn=$(echo "$response" | awk -F',' '{print $7}')
                     nr_physical_cell_id=$(echo "$response" | awk -F',' '{print $8}')
                     nr_band_num=$(echo "$response" | awk -F',' '{print $9}')
@@ -1389,28 +1409,34 @@ cell_info()
             #只选择第一个，然后退出
             break
         }
-        
     done
     class="Cell Information"
     add_plain_info_entry "network_mode" "$network_mode" "Network Mode"
     case $network_mode in
-    "NR5G-SA Mode"|"NR5G-SA CA Mode")
+    "NR5G-SA Mode"*)
         add_plain_info_entry "MCC" "$nr_mcc" "Mobile Country Code"
         add_plain_info_entry "MNC" "$nr_mnc" "Mobile Network Code"
         add_plain_info_entry "Duplex Mode" "$nr_duplex_mode" "Duplex Mode"
         add_plain_info_entry "Cell ID" "$nr_cell_id" "Cell ID"
-        add_plain_info_entry "Physical Cell ID" "$nr_physical_cell_id" "Physical Cell ID"
         add_plain_info_entry "TAC" "$nr_tac" "Tracking area code of cell served by neighbor Enb"
-        if [ $has_ca -eq 1 ]; then
+        if [ $ca_count -gt 1 ]; then
             add_plain_info_entry "ARFCN" "$nr_arfcn / $scc_arfcn" "Absolute Radio-Frequency Channel Number"
+            add_plain_info_entry "Physical Cell ID" "$nr_physical_cell_id / ${scc_pci}" "Physical Cell ID"
             add_plain_info_entry "Band" "$nr_band / $scc_band" "Band"
-            add_plain_info_entry "DL Bandwidth" "${nr_dl_bandwidth}M / ${nr_scc_dl_bandwidth}M" "DL Bandwidth"
+            add_plain_info_entry "DL Bandwidth" "${nr_dl_bandwidth}M / ${scc_dl_bandwidth}M" "DL Bandwidth"
+            [ -n "$scc_ul_bandwidth" ] && {
+                add_plain_info_entry "UL Bandwidth" "${nr_ul_bandwidth}M / ${scc_ul_bandwidth}M" "UL Bandwidth"
+                add_plain_info_entry "UL CA" "Yes" "UL CA"
+            } || {
+                add_plain_info_entry "UL Bandwidth" "${nr_ul_bandwidth}M" "UL Bandwidth"
+            }
         else
             add_plain_info_entry "ARFCN" "$nr_arfcn" "Absolute Radio-Frequency Channel Number"
+            add_plain_info_entry "Physical Cell ID" "$nr_physical_cell_id" "Physical Cell ID"
             add_plain_info_entry "Band" "$nr_band" "Band"
             add_plain_info_entry "DL Bandwidth" "${nr_dl_bandwidth}M" "DL Bandwidth"
+            add_plain_info_entry "UL Bandwidth" "${nr_ul_bandwidth}M" "UL Bandwidth"
         fi
-        add_plain_info_entry "UL Bandwidth" "${nr_ul_bandwidth}M" "UL Bandwidth"
         add_bar_info_entry "RSRP" "$nr_rsrp" "Reference Signal Received Power" -140 -44 dBm
         add_bar_info_entry "RSRQ" "$nr_rsrq" "Reference Signal Received Quality" -19.5 -3 dB
         add_bar_info_entry "SINR" "$nr_sinr" "Signal to Interference plus Noise Ratio Bandwidth" 0 30 dB
@@ -1418,7 +1444,7 @@ cell_info()
         add_plain_info_entry "SCS" "$nr_scs" "SCS"
         add_plain_info_entry "Srxlev" "$nr_srxlev" "Serving Cell Receive Level"
         ;;
-    "EN-DC Mode")
+    "EN-DC Mode"*)
         add_plain_info_entry "LTE" "LTE" ""
         add_plain_info_entry "MCC" "$endc_lte_mcc" "Mobile Country Code"
         add_plain_info_entry "MNC" "$endc_lte_mnc" "Mobile Network Code"
@@ -1453,7 +1479,7 @@ cell_info()
         add_plain_info_entry "SCS" "$endc_nr_scs" "SCS"
         
         ;;
-    "LTE Mode")
+    "LTE Mode"*)
         add_plain_info_entry "MCC" "$lte_mcc" "Mobile Country Code"
         add_plain_info_entry "MNC" "$lte_mnc" "Mobile Network Code"
         add_plain_info_entry "Duplex Mode" "$lte_duplex_mode" "Duplex Mode"
