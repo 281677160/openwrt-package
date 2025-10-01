@@ -1291,7 +1291,7 @@ cell_info()
                         fi
                     done
                     IFS=' '
-                    network_mode="$network_mode with $ca_count CA"
+                    [ $ca_count -gt 1 ] && network_mode="$network_mode with $ca_count CA"
                     nr_mcc=$(echo "$response" | awk -F',' '{print $3}')
                     nr_mnc=$(echo "$response" | awk -F',' '{print $4}')
                     nr_tac=$(echo "$response" | awk -F',' '{print $5}')
@@ -1401,7 +1401,7 @@ cell_info()
             esac
 
             #联发科平台特殊处理（FM350-GL）
-            [[ "$name" = "FM350-GL" ]] && {
+            [[ "$platform" = "mediatek" ]] && {
                 nr_sinr="${nr_sinr_num}"
                 endc_nr_sinr="${endc_nr_sinr_num}"
             }
