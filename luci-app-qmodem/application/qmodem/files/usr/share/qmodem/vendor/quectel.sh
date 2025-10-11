@@ -389,6 +389,7 @@ sim_info()
     fi
 
     #ISP（互联网服务提供商）
+    at $at_port "AT+COPS=3,2" > /dev/null 2>&1
     at_command="AT+COPS?"
     isp=$(at $at_port $at_command | sed -n '2p' | awk -F'"' '{print $2}')
     # if [ "$isp" = "CHN-CMCC" ] || [ "$isp" = "CMCC" ]|| [ "$isp" = "46000" ]; then
@@ -1549,7 +1550,7 @@ cell_info()
                 ca_scc_info=$(echo "$ca_response" | grep "+QCAINFO:" | grep "SCC")
 
                 if [ -n "$ca_scc_info" ]; then
-                    network_mode="NR5G-SA CA Mode"
+                    scc_count=1
                     ca_scc_arfcn=""
                     scc_nr_dl_bandwidth=""
                     ca_scc_band_num=""
@@ -1557,6 +1558,7 @@ cell_info()
 
                     while IFS= read -r scc_line; do
                         [ -z "$scc_line" ] && continue
+                        scc_count=$((scc_count + 1))
                         # +QCAINFO: "SCC",627264,12,"NR5G BAND 78",1,293,0,-,-
                         arfcn=$(echo "$scc_line" | awk -F',' '{print $2}')
                         bandwidth=$(get_bandwidth "NR" $(echo "$scc_line" | awk -F',' '{print $3}'))
@@ -1582,6 +1584,7 @@ cell_info()
                     done <<EOF
 $(echo "$ca_scc_info")
 EOF
+                    [ $scc_count -gt 1 ] && network_mode="$network_mode with $scc_count CA"
                 fi
                 nr_duplex_mode=$(echo "$response" | awk -F',' '{print $4}' | sed 's/"//g')
                 nr_mcc=$(echo "$response" | awk -F',' '{print $5}')
@@ -1597,6 +1600,7 @@ EOF
                 [ -n "$ca_scc_band_num" ] && nr_band="$nr_band / $ca_scc_band_num"
                 nr_dl_bandwidth_num=$(echo "$response" | awk -F',' '{print $12}')
                 nr_dl_bandwidth=$(get_bandwidth "NR" $nr_dl_bandwidth_num)
+                nr_ul_bandwidth=$nr_dl_bandwidth
                 [ -n "$scc_nr_dl_bandwidth" ] && nr_dl_bandwidth="$nr_dl_bandwidth / $scc_nr_dl_bandwidth"
                 nr_rsrp=$(echo "$response" | awk -F',' '{print $13}')
                 nr_rsrq=$(echo "$response" | awk -F',' '{print $14}')
@@ -1653,7 +1657,7 @@ EOF
     class="Cell Information"
     add_plain_info_entry "network_mode" "$network_mode" "Network Mode"
     case $network_mode in
-    "NR5G-SA Mode"|"NR5G-SA CA Mode")
+    "NR5G-SA Mode"*)
         add_plain_info_entry "MMC" "$nr_mcc" "Mobile Country Code"
         add_plain_info_entry "MNC" "$nr_mnc" "Mobile Network Code"
         add_plain_info_entry "Duplex Mode" "$nr_duplex_mode" "Duplex Mode"
@@ -1663,6 +1667,7 @@ EOF
         add_plain_info_entry "ARFCN" "$nr_arfcn" "Absolute Radio-Frequency Channel Number"
         add_plain_info_entry "Band" "$nr_band" "Band"
         add_plain_info_entry "DL Bandwidth" "$nr_dl_bandwidth" "DL Bandwidth"
+        add_plain_info_entry "UL Bandwidth" "$nr_ul_bandwidth" "UL Bandwidth"
         add_bar_info_entry "RSRP" "$nr_rsrp" "Reference Signal Received Power" -140 -44 dBm
         add_bar_info_entry "RSRQ" "$nr_rsrq" "Reference Signal Received Quality" -19.5 -3 dB
         add_bar_info_entry "SINR" "$nr_sinr" "Signal to Interference plus Noise Ratio Bandwidth" 0 30 dB
@@ -1681,8 +1686,8 @@ EOF
         add_plain_info_entry "EARFCN" "$endc_lte_earfcn" "E-UTRA Absolute Radio Frequency Channel Number"
         add_plain_info_entry "Freq band indicator" "$endc_lte_freq_band_ind" "Freq band indicator"
         add_plain_info_entry "Band" "$endc_lte_band" "Band"
-        add_plain_info_entry "UL Bandwidth" "$endc_lte_ul_bandwidth" "UL Bandwidth"
         add_plain_info_entry "DL Bandwidth" "$endc_lte_dl_bandwidth" "DL Bandwidth"
+        add_plain_info_entry "UL Bandwidth" "$endc_lte_ul_bandwidth" "UL Bandwidth"
         add_plain_info_entry "TAC" "$endc_lte_tac" "Tracking area code of cell served by neighbor Enb"
         add_bar_info_entry "RSRP" "$endc_lte_rsrp" "Reference Signal Received Power" -140 -44 dBm
         add_bar_info_entry "RSRQ" "$endc_lte_rsrq" "Reference Signal Received Quality" -19.5 -3 dB
@@ -1714,8 +1719,8 @@ EOF
         add_plain_info_entry "EARFCN" "$lte_earfcn" "E-UTRA Absolute Radio Frequency Channel Number"
         add_plain_info_entry "Freq band indicator" "$lte_freq_band_ind" "Freq band indicator"
         add_plain_info_entry "Band" "$lte_band" "Band"
-        add_plain_info_entry "UL Bandwidth" "$lte_ul_bandwidth" "UL Bandwidth"
         add_plain_info_entry "DL Bandwidth" "$lte_dl_bandwidth" "DL Bandwidth"
+        add_plain_info_entry "UL Bandwidth" "$lte_ul_bandwidth" "UL Bandwidth"
         add_plain_info_entry "TAC" "$lte_tac" "Tracking area code of cell served by neighbor Enb"
         add_bar_info_entry "RSRQ" "$lte_rsrq" "Reference Signal Received Quality" -19.5 -3 dB
         add_bar_info_entry "RSSI" "$lte_rssi" "Received Signal Strength Indicator" -120 -20 dBm
@@ -1725,7 +1730,6 @@ EOF
         add_plain_info_entry "CQI" "$lte_cql" "Channel Quality Indicator"
         add_plain_info_entry "TX Power" "$lte_tx_power" "TX Power"
         add_plain_info_entry "Srxlev" "$lte_srxlev" "Serving Cell Receive Level"
-        
         ;;
     "WCDMA Mode")
         add_plain_info_entry "MCC" "$wcdma_mcc" "Mobile Country Code"

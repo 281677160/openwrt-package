@@ -1282,11 +1282,13 @@ cell_info()
                             fi
                             if [ "$scc_ul_ca" = "1" ]; then
                                 scc_ul_bandwidth_new=$scc_dl_bandwidth_new
-                                if [ -z "$scc_ul_bandwidth" ]; then
-                                    scc_ul_bandwidth="$scc_ul_bandwidth_new"
-                                else
-                                    scc_ul_bandwidth="$scc_ul_bandwidth / $scc_ul_bandwidth_new"
-                                fi
+                            else
+                                scc_ul_bandwidth_num="-"
+                            fi
+                            if [ -z "$scc_ul_bandwidth" ]; then
+                                scc_ul_bandwidth="$scc_ul_bandwidth_new"
+                            else
+                                scc_ul_bandwidth="$scc_ul_bandwidth / $scc_ul_bandwidth_new"
                             fi
                         fi
                     done
