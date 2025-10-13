@@ -1179,17 +1179,30 @@ local execute = function()
 								if result then
 									-- 中文做地址的 也没有人拿中文域名搞，就算中文域也有Puny Code SB 机场
 									if not result.server or not result.server_port
+										or result.server == "127.0.0.1"
 										or result.alias == "NULL"
 										or check_filer(result)
 										or result.server:match("[^0-9a-zA-Z%-_%.%s]")
-										or cache[groupHash][result.hashkey]
 									then
 										log('丢弃无效节点: ' .. result.alias)
 									else
 										-- log('成功解析: ' .. result.type ..' 节点, ' .. result.alias)
-										result.grouphashkey = groupHash
-										tinsert(nodeResult[index], result)
-										cache[groupHash][result.hashkey] = nodeResult[index][#nodeResult[index]]
+										-- 检查重复（hashkey + alias）节点
+										cache[groupHash][result.hashkey] = cache[groupHash][result.hashkey] or {}
+										local is_duplicate = false
+										for _, r in ipairs(cache[groupHash][result.hashkey]) do
+											if r.alias == result.alias then
+									       		is_duplicate = true
+										   		break
+											end
+										end
+										if not is_duplicate then
+											result.grouphashkey = groupHash
+											tinsert(nodeResult[index], result)
+											cache[groupHash][result.hashkey] = nodeResult[index][#nodeResult[index]]
+										else
+											log('丢弃重复节点: ' .. result.alias)
+										end
 									end
 								end
 							end, function(err)
