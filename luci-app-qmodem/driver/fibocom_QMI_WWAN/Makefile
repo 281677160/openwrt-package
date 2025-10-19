@@ -26,11 +26,17 @@ define KernelPackage/qmi_wwan_f/description
   Fibocom Linux USB QMI WWAN Driver
 endef
 
+EXTRA_CFLAGS+= \
+	-Wno-unused-function \
+	-Wno-missing-prototypes \
+	-Wno-missing-declarations
+
 MAKE_OPTS:= \
 	ARCH="$(LINUX_KARCH)" \
 	CROSS_COMPILE="$(TARGET_CROSS)" \
 	CXXFLAGS="$(TARGET_CXXFLAGS)" \
 	M="$(PKG_BUILD_DIR)" \
+	EXTRA_CFLAGS="$(EXTRA_CFLAGS)" \
 	$(EXTRA_KCONFIG)
 
 define Build/Prepare
