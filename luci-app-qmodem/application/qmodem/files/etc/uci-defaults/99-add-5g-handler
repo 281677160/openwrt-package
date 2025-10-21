@@ -54,6 +54,15 @@ modem_settings()
 		uci set qmodem.m2_u3.ethernet_5g="cpewan0"
 		uci commit qmodem
 		;;
+	huasifei,ws1610)
+		#m2 usb3.0 
+		#(slot 2)
+		add_usb_slot_cfg "m2_0" "2-1" "m2_0" "green:5g" "green:sim1" "m2_reset_1" "1" "0" "5"
+		#minipci usb2.0 
+		#(slot 1)
+		add_usb_slot_cfg "minipci_0" "1-1" "minipci_0" "green:5g" "green:sim2" "" "" "" "10"
+		uci commit qmodem
+		;;
 	ailf,gs2410|\
 	huasifei,ws3006)
 		#m2 usb3.0 
