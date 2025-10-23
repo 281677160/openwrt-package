@@ -157,7 +157,7 @@ update_config()
     update_sim_slot
     case $sim_slot in
         1)
-        config_get apn $modem_config apn "auto"
+        config_get apn $modem_config apn
         config_get username $modem_config username
         config_get password $modem_config password
         config_get auth $modem_config auth
@@ -169,7 +169,7 @@ update_config()
         config_get password $modem_config password2
         config_get auth $modem_config auth2
         config_get pincode $modem_config pincode2
-        [ -z "$apn" ] && config_get apn $modem_config apn "auto"
+        [ -z "$apn" ] && config_get apn $modem_config apn
         [ -z "$username" ] && config_get username $modem_config username
         [ -z "$password" ] && config_get password $modem_config password
         [ -z "$auth" ] && config_get auth $modem_config auth
