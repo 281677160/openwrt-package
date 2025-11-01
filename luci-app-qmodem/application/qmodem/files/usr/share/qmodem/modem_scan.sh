@@ -479,7 +479,7 @@ EOF
     exec_post_init $section_name
 #判断是否重启网络
     [ -n "$is_exist" ] && [ "$orig_network" == "$net_devices" ] && [ "$orig_at_port" == "/dev/$at_port" ] && [ "$orig_state" == "enabled" ] && [ "$orig_name" == "$modem_name" ] && return
-    /etc/init.d/qmodem_network restart
+    /etc/init.d/qmodem_network reload
 }
 
 remove()
