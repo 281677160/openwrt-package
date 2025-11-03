@@ -75,6 +75,7 @@ api_type:value("webhook", translate("Webhook"))
 api_type:value("serverchan", translate("ServerChan"))
 api_type:value("pushdeer", translate("PushDeer"))
 api_type:value("custom_script", translate("Custom Script"))
+api_type:value("feishu", translate("Feishu Bot"))
 
 -- 删除已转发短信选项
 delete_after_forward = s2:option(Flag, "delete_after_forward", translate("Delete After Forward"))
@@ -129,6 +130,12 @@ pushdeer_endpoint = s2:option(Value, "pushdeer_endpoint", translate("API Endpoin
 pushdeer_endpoint:depends("api_type", "pushdeer")
 pushdeer_endpoint.placeholder = "https://api2.pushdeer.com"
 pushdeer_endpoint.description = translate("Custom PushDeer API endpoint, leave empty to use default")
+
+feishu_webhook_key = s2:option(Value, "feishu_webhook_key", translate("Feishu Webhook Key"))
+feishu_webhook_key:depends("api_type", "feishu")
+feishu_webhook_key.placeholder = "xxxxxx"
+feishu_webhook_key.description = translate("Feishu Webhook Key from your Feishu bot configuration")
+
 
 -- Custom Script 配置
 custom_script_path = s2:option(Value, "custom_script_path", translate("Script Path"))
