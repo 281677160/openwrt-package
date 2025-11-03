@@ -113,6 +113,9 @@ msgstr "自定义脚本"
 msgid "PushDeer"
 msgstr "PushDeer"
 
+msgid "Feishu Bot"
+msgstr "飞书机器人"
+
 msgid "Push Key"
 msgstr "推送密钥"
 
