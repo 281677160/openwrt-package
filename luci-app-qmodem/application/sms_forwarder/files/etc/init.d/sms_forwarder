@@ -232,7 +232,17 @@ generate_api_config() {
 			[ -n "$endpoint" ] && config_json="$config_json,\"endpoint\":\"$endpoint\""
 			config_json="$config_json}"
 			;;
+		"feishu")
+			local webhook_key
+			config_get webhook_key "$section" feishu_webhook_key
 			
+			[ -z "$webhook_key" ] && {
+				echo "Error: Feishu requires webhook_key"
+				return 1
+			}
+			
+			config_json="{\"webhook_key\":\"$webhook_key\"}"
+			;;
 		"custom_script")
 			local script_path
 			config_get script_path "$section" custom_script_path
