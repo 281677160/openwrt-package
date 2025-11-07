@@ -99,6 +99,7 @@ table td, .table .td {
 <script type="text/javascript">
 	//<![CDATA[
 	let auto_detection_time = "<%=api.uci_get_type("global_other", "auto_detection_time", "0")%>"
+	let show_node_info = "<%=api.uci_get_type("global_other", "show_node_info", "0")%>"
 	var nodes_list = [];
 	
 	var ajax = {
@@ -347,6 +348,7 @@ table td, .table .td {
 	/* Auto Ping */
 	function pingAllNodes() {
 		if (auto_detection_time == "icmp" || auto_detection_time == "tcping") {
+			const now = Date.now();
 			var nodes = [];
 			const ping_value = document.getElementsByClassName(auto_detection_time == "tcping" ? 'tcping_value' : 'ping_value');
 			for (var i = 0; i < ping_value.length; i++) {
@@ -364,11 +366,23 @@ table td, .table .td {
 					}
 					if (flag)
 						continue;
-					nodes.push({
-						indexs: i + "",
-						address: full.address,
-						port: full.port
-					});
+
+					const cacheData = JSON.parse(localStorage.getItem(auto_detection_time + ":" + full.address + ":" + full.port));
+					if (cacheData && cacheData.savetime && (now - cacheData.timestamp) < cacheData.savetime) {
+						if (cacheData.value < 100)
+							ping_value[i].innerHTML = "<font style='color:green'>" + cacheData.value + " ms" + "</font>";
+						else if (cacheData.value < 200)
+							ping_value[i].innerHTML = "<font style='color:#fb9a05'>" + cacheData.value + " ms" + "</font>";
+						else if (cacheData.value >= 200)
+							ping_value[i].innerHTML = "<font style='color:red'>" + cacheData.value + " ms" + "</font>";
+					} else {
+						localStorage.removeItem(auto_detection_time + ":" + full.address + ":" + full.port);
+						nodes.push({
+							indexs: i + "",
+							address: full.address,
+							port: full.port
+						});
+					}
 				}
 			}
 
@@ -377,39 +391,47 @@ table td, .table .td {
 					const dom = nodes[index];
 					if (!dom) res()
 					ajax.post('<%=api.url("ping_node")%>', {
-							index: dom.indexs,
-							address: dom.address,
-							port: dom.port,
-							type: auto_detection_time
-						},
-						function(x, result) {
-							if (x && x.status == 200) {
-								var strs = dom.indexs.split(",");
-								for (var i = 0; i < strs.length; i++) {
-									if (result.ping == null || result.ping.trim() == "") {
-										ping_value[strs[i]].innerHTML = "<font style='color:red'><%:Timeout%></font>";
-									} else {
-										var ping = parseInt(result.ping);
-										if (ping < 100)
-											ping_value[strs[i]].innerHTML = "<font style='color:green'>" + result.ping + " ms" + "</font>";
-										else if (ping < 200)
-											ping_value[strs[i]].innerHTML = "<font style='color:#fb9a05'>" + result.ping + " ms" + "</font>";
-										else if (ping >= 200)
-											ping_value[strs[i]].innerHTML = "<font style='color:red'>" + result.ping + " ms" + "</font>";
-									}
-								}
-							}
-							res();
-						},
-						5000,
-						function(x) {
+						index: dom.indexs,
+						address: dom.address,
+						port: dom.port,
+						type: auto_detection_time
+					},
+					function(x, result) {
+						if (x && x.status == 200) {
 							var strs = dom.indexs.split(",");
 							for (var i = 0; i < strs.length; i++) {
-								ping_value[strs[i]].innerHTML = "<font style='color:red'><%:Timeout%></font>";
+								if (result.ping == null || result.ping.trim() == "") {
+									ping_value[strs[i]].innerHTML = "<font style='color:red'><%:Timeout%></font>";
+								} else {
+									var ping = parseInt(result.ping);
+									//save to cache
+									const cache_data = {
+										dom_id: strs[i],
+										timestamp: Date.now(),
+										savetime: 60 * 1000,
+										value: ping
+									};
+									localStorage.setItem(auto_detection_time + ":" + dom.address + ":" + dom.port, JSON.stringify(cache_data));
+									if (ping < 100)
+										ping_value[strs[i]].innerHTML = "<font style='color:green'>" + result.ping + " ms" + "</font>";
+									else if (ping < 200)
+										ping_value[strs[i]].innerHTML = "<font style='color:#fb9a05'>" + result.ping + " ms" + "</font>";
+									else if (ping >= 200)
+										ping_value[strs[i]].innerHTML = "<font style='color:red'>" + result.ping + " ms" + "</font>";
+								}
 							}
-							res();
 						}
-					);
+						res();
+					},
+					5000,
+					function(x) {
+						var strs = dom.indexs.split(",");
+						for (var i = 0; i < strs.length; i++) {
+							ping_value[strs[i]].innerHTML = "<font style='color:red'><%:Timeout%></font>";
+						}
+						res();
+					}
+				);
 				})
 			}
 
@@ -448,7 +470,10 @@ table td, .table .td {
 
 <script type="text/template" id="node-tr-template">
 	<tr class="tr cbi-section-table-row" id="cbi-passwall2-{{id}}">
-		<td class="td cbi-value-field">{{remarks}}<input class="hidden" id="cbid.passwall2.{{id}}.remarks" value="{{remarks}}"/></td>
+		<input class="hidden" id="cbid.passwall2.{{id}}.remarks" value="{{remarks_val}}"/>
+		<input class="hidden" id="cbid.passwall2.{{id}}.address" value="{{address_val}}"/>
+		<input class="hidden" id="cbid.passwall2.{{id}}.port" value="{{port_val}}"/>
+		<td class="td cbi-value-field">{{remarks}}</td>
 		<td class="td cbi-value-field">{{ping}}</td>
 		<td class="td cbi-value-field">{{tcping}}</td>
 		<td class="td cbi-value-field">{{url_test}}</td>
@@ -471,7 +496,6 @@ table td, .table .td {
 
 <script type="text/javascript">
 	function get_remarks_name(o) {
-		let show_node_info = "<%=api.uci_get_type("global_other", "show_node_info", "0")%>"
 		let str = "";
 		let remarks = o["remarks"] || "";
 		let type = o["type"] || "";
@@ -520,14 +544,6 @@ table td, .table .td {
 			port_s = o["hysteria_hop"] || o["hysteria2_hop"];
 		}
 		str += type + "：" + remarks;
-		if (address != "" && port_s != "") {
-			port_s = port_s.split(":").join("-");
-			if (show_node_info == "1") {
-				//TODO
-			}
-		}
-		str += "<input type='hidden' id='cbid.passwall2." + o[".name"] + ".address' value='" + address + "'/>";
-		str += "<input type='hidden' id='cbid.passwall2." + o[".name"] + ".port' value='" + port + "'/>";
 		return str;
 	}
 
@@ -569,12 +585,12 @@ table td, .table .td {
 						var newDom = node_template.cloneNode(true);
 						newDom.classList.add("cbi-rowstyle-" + (i % 2 + 1));
 						var innerHTML = newDom.innerHTML;
-						if (auto_detection_time != "icmp") {
+						if (auto_detection_time != "icmp" && o["address"] && o["port"]) {
 							innerHTML = innerHTML.split("{{ping}}").join('<span class="ping"><a href="javascript:void(0)" onclick="javascript:ping_node(\'{{id}}\', this, \'icmp\')"><%:Test%></a></span>');
 						} else {
 							innerHTML = innerHTML.split("{{ping}}").join('<span class="ping_value" cbiid="{{id}}">---</span>');
 						}
-						if (auto_detection_time != "tcping") {
+						if (auto_detection_time != "tcping" && o["address"] && o["port"]) {
 							innerHTML = innerHTML.split("{{tcping}}").join('<span class="ping"><a href="javascript:void(0)" onclick="javascript:ping_node(\'{{id}}\', this, \'tcping\')"><%:Test%></a></span>');
 						} else {
 							innerHTML = innerHTML.split("{{tcping}}").join('<span class="tcping_value" cbiid="{{id}}">---</span>');
@@ -582,7 +598,19 @@ table td, .table .td {
 						innerHTML = innerHTML.split("{{url_test}}").join('<span class="ping"><a href="javascript:void(0)" onclick="javascript:urltest_node(\'{{id}}\', this)"><%:Test%></a></span>');
 						innerHTML = innerHTML.split("{{id}}").join(o[".name"]);
 						innerHTML = innerHTML.split("{{group}}").join(o["group"] || "");
-						innerHTML = innerHTML.split("{{remarks}}").join(get_remarks_name(o));
+						let node_remarks = get_remarks_name(o);
+						if (show_node_info == "1") {
+							if (o["address"] && o["port"]) {
+								let _address = o["address"]
+								if (o["full_address"])
+									_address = o["full_address"]
+								node_remarks += "<br>" + _address + ":" + o["port"]
+							}
+						}
+						innerHTML = innerHTML.split("{{remarks}}").join(node_remarks);
+						innerHTML = innerHTML.split("{{remarks_val}}").join(o["remarks"]);
+						innerHTML = innerHTML.split("{{address_val}}").join(o["address"] || "");
+						innerHTML = innerHTML.split("{{port_val}}").join(o["port"] || "");
 						
 						node_tr_html += innerHTML
 					}
@@ -615,15 +643,10 @@ table td, .table .td {
 			}
 			
 			get_now_use_node();
+			
+			pingAllNodes();
 		}
 	);
-
-	window.onload = function () {
-		setTimeout(function () {
-			pingAllNodes();
-		}, 1000);
-	};
-
 	//]]>
 </script>
 
