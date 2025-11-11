@@ -132,6 +132,21 @@
                     "ncm"
                 ]
             },
+            "mt5710m_cn": {
+                "manufacturer_id": "3466",
+                "manufacturer": "huawei",
+                "platform": "hisilicon",
+                "data_interface": "usb",
+                "pdp_index": "1",
+                "wcdma_band": "1/8",
+                "lte_band": "1/3/5/8/34/38/39/40/41",
+                "nsa_band": "41/78/79",
+                "sa_band": "1/28/41/78/79",
+                "modes": [
+                    "ecm",
+                    "ncm"
+                ]
+            },
             "mh5000-31": {
                 "manufacturer_id": "12d1",
                 "manufacturer": "huawei",
@@ -144,6 +159,22 @@
                 "sa_band": "1/41/78/79",
                 "modes": [
                     "ecm"
+                ]
+            },
+            "mh5000-82m": {
+                "manufacturer_id": "12d1",
+                "manufacturer": "huawei",
+                "platform": "unisoc",
+                "data_interface": "usb",
+                "pdp_index": "1",
+                "wcdma_band": "1/8",
+                "lte_band": "1/3/5/8/34/38/39/40/41",
+                "nsa_band": "41/78/79",
+                "sa_band": "1/41/78/79",
+                "modes": [
+                    "ecm",
+                    "ncm",
+                    "rndis"
                 ]
             },
             "rg200u-cn": {
@@ -1008,8 +1039,8 @@
                     "rndis"
                 ]
             },
-            "t77w968":{
-            "manufacturer_id": "413c",
+            "t77w968": {
+                "manufacturer_id": "413c",
                 "manufacturer": "foxconn",
                 "platform": "qualcomm",
                 "data_interface": "usb",
@@ -1045,7 +1076,7 @@
                     "rmnet"
                 ]
             },
-             "srm821": {
+            "srm821": {
                 "manufacturer_id": "1782",
                 "manufacturer": "meig",
                 "platform": "unisoc",

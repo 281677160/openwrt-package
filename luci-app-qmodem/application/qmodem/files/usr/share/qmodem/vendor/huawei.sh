@@ -7,7 +7,12 @@ source /usr/share/qmodem/generic.sh
 debug_subject="quectel_ctrl"
 
 vendor_get_disabled_features(){
-    json_add_string "" "LockBand"
+    case "$platform" in
+        *)
+            json_add_string "" "LockBand"
+            json_add_string "" "NeighborCell"
+            ;;
+    esac
 }
 
 function get_imei(){
@@ -22,16 +27,30 @@ function set_imei(){
 
 function get_mode(){
     cfg=$(at $at_port "AT^SETMODE?")
-    local mode_num=`echo -e "$cfg" | sed -n '2p' | sed 's/\r//g'`
-
-    case "$mode_num" in
-        "0"|"2") mode="ecm" ;;
-        "1"|"3"|"4"|"5") mode="ncm" ;;
-        "6") mode="rndis" ;;
-        "7") mode="mbim" ;;
-        "8") mode="ppp" ;;
-        *) mode="rndis" ;;
+    
+    case $platform in
+        "unisoc")
+            local mode_num=$(echo -e "$cfg" | grep "^SETMODE"|grep -o '\d')
+            case $mode_num in
+                "0") mode="rndis" ;;
+                "1") mode="ecm" ;;
+                "2") mode="ncm" ;;
+                *) mode="rndis" ;;
+            esac
+            ;;
+        *)
+            local mode_num=$(echo -e "$cfg" | sed -n '2p' | sed 's/\r//g')
+            case "$mode_num" in
+            "0"|"2") mode="ecm" ;;
+            "1"|"3"|"4"|"5") mode="ncm" ;;
+            "6") mode="rndis" ;;
+            "7") mode="mbim" ;;
+            "8") mode="ppp" ;;
+            *) mode="rndis" ;;
     esac
+            ;;
+    esac
+
     
     available_modes=$(uci -q get qmodem.$config_section.modes)
     json_add_object "mode"
@@ -48,17 +67,35 @@ function get_mode(){
 function set_mode(){
     local mode=$1
     local mode_num
-    case $mode in
-        "ecm")
-            mode_num="0"
-            ;;
-        "ncm")
-            mode_num="4"
+    case "$platform" in
+        "unisoc")
+            case $mode in
+                "rndis")
+                    mode_num="0"
+                    ;;
+                "ecm")
+                    mode_num="1"
+                    ;;
+                "ncm")
+                    mode_num="0"
+                    ;;
+            esac
             ;;
         *)
-            mode_num="0"
-            ;;
+            case $mode in
+                "ecm")
+                    mode_num="0"
+                    ;;
+                "ncm")
+                    mode_num="4"
+                    ;;
+                *)
+                    mode_num="0"
+                    ;;
+            esac
+        ;;
     esac
+
     at $at_port "AT^SETMODE=${mode_num}"
 }
 
@@ -241,9 +278,17 @@ cell_info()
 {
     at_command="AT^MONSC"
     response=$(at $at_port $at_command | grep "\^MONSC:" | sed 's/\^MONSC: //')
-    
-    local rat=$(echo "$response" | awk -F',' '{print $1}')
-    case $rat in
+        
+    cell_rat=$(echo "$response" | awk -F',' '{print $1}')
+    case "$platform" in
+        "unisoc")
+            cops=$(at $at_port "AT+COPS?" | grep "+COPS:" | awk -F',' '{print $4}' | xargs)
+            if [ "$cops" = "13" ]; then
+                cell_rat="LTE-NR"
+            fi
+            ;;
+    esac
+    case $cell_rat in
         "NR"|"NR-5GC")
             network_mode="NR5G-SA Mode"
             nr_mcc=$(echo "$response" | awk -F',' '{print $2}')
@@ -261,6 +306,7 @@ cell_info()
             nr_sinr=$(echo "$response" | awk -F',' '{print $11}' | sed 's/\r//g')
         ;;
         "LTE-NR")
+            nr_response=$(at $at_port "AT^CSERSSI?")
             network_mode="EN-DC Mode"
             #LTE
             endc_lte_mcc=$(echo "$response" | awk -F',' '{print $2}')
@@ -275,19 +321,9 @@ cell_info()
             endc_lte_rsrq=$(echo "$response" | awk -F',' '{print $9}')
             endc_lte_rxlev=$(echo "$response" | awk -F',' '{print $10}' | sed 's/\r//g')
             #NR5G-NSA
-            endc_nr_mcc=$(echo "$response" | awk -F',' '{print $2}')
-            endc_nr_mnc=$(echo "$response" | awk -F',' '{print $3}')
-            endc_nr_arfcn=$(echo "$response" | awk -F',' '{print $4}')
-            endc_nr_scs_num=$(echo "$response" | awk -F',' '{print $5}')
-            nr_scs=$(get_scs ${nr_scs_num})
-            endc_nr_cell_id_hex=$(echo "$response" | awk -F',' '{print $6}')
-            endc_nr_cell_id=$(echo "ibase=16; $endc_nr_cell_id_hex" | bc)
-            endc_nr_physical_cell_id_hex=$(echo "$response" | awk -F',' '{print $7}')
-            endc_nr_physical_cell_id=$(echo "ibase=16; $endc_nr_physical_cell_id_hex" | bc)
-            endc_nr_tac=$(echo "$response" | awk -F',' '{print $8}')
-            endc_nr_rsrp=$(echo "$response" | awk -F',' '{print $9}')
-            endc_nr_rsrq=$(echo "$response" | awk -F',' '{print $10}')
-            endc_nr_sinr=$(echo "$response" | awk -F',' '{print $11}' | sed 's/\r//g')
+            endc_nr_rsrp=$(echo "$nr_response" | awk -F',' '{print $12}')
+            endc_nr_rsrq=$(echo "$nr_response" | awk -F',' '{print $13}')
+            endc_nr_sinr=$(echo "$nr_response" | awk -F',' '{print $14}' | sed 's/\r//g')
         ;;
         "LTE"|"eMTC"|"NB-IoT")
             network_mode="LTE Mode"
@@ -367,27 +403,19 @@ cell_info()
         add_plain_info_entry "Band" "$endc_lte_band" "Band"
         add_plain_info_entry "UL Bandwidth" "$endc_lte_ul_bandwidth" "UL Bandwidth"
         add_plain_info_entry "DL Bandwidth" "$endc_lte_dl_bandwidth" "DL Bandwidth"
-        add_plain_info_entry "TAC" "$endc_lte_tac" "Tracking area code of cell served by neighbor Enb"
-        add_bar_info_entry "RSRP" "$endc_lte_rsrp" "Reference Signal Received Power" -140 -44 dBm
-        add_bar_info_entry "RSRQ" "$endc_lte_rsrq" "Reference Signal Received Quality" -20 20 dBm
-        add_bar_info_entry "RSSI" "$endc_lte_rssi" "Received Signal Strength Indicator" -140 -44 dBm
-        add_bar_info_entry "SINR" "$endc_lte_sinr" "Signal to Interference plus Noise Ratio Bandwidth" -23 40 dB
-        add_plain_info_entry "RxLev" "$endc_lte_rxlev" "Received Signal Level"
-        add_plain_info_entry "RSSNR" "$endc_lte_rssnr" "Radio Signal Strength Noise Ratio"
         add_plain_info_entry "CQI" "$endc_lte_cql" "Channel Quality Indicator"
         add_plain_info_entry "TX Power" "$endc_lte_tx_power" "TX Power"
         add_plain_info_entry "Srxlev" "$endc_lte_srxlev" "Serving Cell Receive Level"
+        add_plain_info_entry "TAC" "$endc_lte_tac" "Tracking area code of cell served by neighbor Enb"
+        add_bar_info_entry "RSRP" "$endc_lte_rsrp" "Reference Signal Received Power" -140 -44 dBm
+        add_bar_info_entry "RSRQ" "$endc_lte_rsrq" "Reference Signal Received Quality" -20 20 dBm
+        add_bar_info_entry "SINR" "$endc_lte_sinr" "Signal to Interference plus Noise Ratio Bandwidth" -23 40 dB
+        add_plain_info_entry "RxLev" "$endc_lte_rxlev" "Received Signal Level"
+        add_plain_info_entry "RSSNR" "$endc_lte_rssnr" "Radio Signal Strength Noise Ratio"
         add_plain_info_entry NR5G-NSA "NR5G-NSA" ""
-        add_plain_info_entry "MCC" "$endc_nr_mcc" "Mobile Country Code"
-        add_plain_info_entry "MNC" "$endc_nr_mnc" "Mobile Network Code"
-        add_plain_info_entry "Physical Cell ID" "$endc_nr_physical_cell_id" "Physical Cell ID"
-        add_plain_info_entry "ARFCN" "$endc_nr_arfcn" "Absolute Radio-Frequency Channel Number"
-        add_plain_info_entry "Band" "$endc_nr_band" "Band"
-        add_plain_info_entry "DL Bandwidth" "$endc_nr_dl_bandwidth" "DL Bandwidth"
         add_bar_info_entry "RSRP" "$endc_nr_rsrp" "Reference Signal Received Power" -187 -29 dBm
         add_bar_info_entry "RSRQ" "$endc_nr_rsrq" "Reference Signal Received Quality" -43 20 dBm
         add_bar_info_entry "SINR" "$endc_nr_sinr" "Signal to Interference plus Noise Ratio Bandwidth" -23 40 dB
-        add_plain_info_entry "SCS" "$endc_nr_scs" "SCS"
         ;;
     "LTE Mode")
         add_plain_info_entry "MCC" "$lte_mcc" "Mobile Country Code"
@@ -542,10 +570,21 @@ function _get_temperature(){
     response=$(at $at_port "AT^CHIPTEMP?" | grep "\^CHIPTEMP" | awk -F',' '{print $6}' | sed 's/\r//g' )
     
     local temperature
-    [ -n "$response" ] && {
-        response=$(awk "BEGIN{ printf \"%.2f\", $response / 10 }" | sed 's/\.*0*$//')
-        add_plain_info_entry "temperature" "$response $(printf "\xc2\xb0")C" "Temperature" 
-    }
+    case $platform in
+        "unisoc")
+            [ -n "$response" ] && {
+                response=$(awk "BEGIN{ printf \"%.2f\", $response }" | sed 's/\.*0*$//')
+                add_plain_info_entry "temperature" "$response $(printf "\xc2\xb0")C" "Temperature" 
+            }
+            ;;
+        *)
+            [ -n "$response" ] && {
+                response=$(awk "BEGIN{ printf \"%.2f\", $response / 10 }" | sed 's/\.*0*$//')
+                add_plain_info_entry "temperature" "$response $(printf "\xc2\xb0")C" "Temperature" 
+            }
+            ;;
+    esac
+
 }
 
 function _add_avalible_band(){
@@ -645,4 +684,3 @@ for line in $data;do
 done
 unset IFS
 }
-
