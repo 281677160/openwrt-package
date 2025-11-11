@@ -72,6 +72,30 @@
                 "include": [
                     "1.1"
                 ]
+            },
+            "1782:4056": {
+                "name": "TDTECH MH5000-82M",
+                "mode": "rndis",
+                "option_driver": 1,
+                "include": [
+                    "1.2"
+                ]
+            },
+            "1782:4057": {
+                "name": "TDTECH MH5000-82M",
+                "mode": "ecm",
+                "option_driver": 1,
+                "include": [
+                    "1.2"
+                ]
+            },
+            "1782:4058": {
+                "name": "TDTECH MH5000-82M",
+                "mode": "ncm",
+                "option_driver": 1,
+                "include": [
+                    "1.2"
+                ]
             }
         }
     }
