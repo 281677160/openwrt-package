@@ -180,17 +180,19 @@ function getModemCFG()
 		local config_name=modem_device[".name"]
 		--设置模组AT串口
 		local cfg = modem_device[".name"]
-		local at_port=modem_device["at_port"]
-		local name=modem_device["name"]:upper()
-		local config = {}
-		if alias then
-			config["name"] = alias .. "("..name..")"
-		else
-			config["name"] = name
+		if modem_device["at_port"] ~= nil then
+			local at_port=modem_device["at_port"]
+			local name=modem_device["name"]:upper()
+			local config = {}
+			if alias then
+				config["name"] = alias .. "("..name..")"
+			else
+				config["name"] = name
+			end
+			config["at_port"] = at_port
+			config["cfg"] = cfg
+			table.insert(cfgs, config)
 		end
-		config["at_port"] = at_port
-		config["cfg"] = cfg
-		table.insert(cfgs, config)
 	end)
 
 	-- 设置值
