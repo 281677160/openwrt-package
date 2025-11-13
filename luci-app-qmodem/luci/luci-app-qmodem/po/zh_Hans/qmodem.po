@@ -1,4 +1,7 @@
 #controller/qmodem.lua
+msgid "Modem Offline"
+msgstr "模组离线"
+
 msgid "QModem"
 msgstr "QWRT模组管理"
 
