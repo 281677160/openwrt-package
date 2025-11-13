@@ -110,6 +110,9 @@ msgstr "正常字体"
 msgid "Large font"
 msgstr "大字体"
 
+msgid "Expand Toolbar"
+msgstr "扩展工具栏"
+
 msgid "Expand or shrink the toolbar"
 msgstr "展开或者收缩导航栏"
 
