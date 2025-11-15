@@ -183,19 +183,37 @@ generate_api_config() {
 			;;
 			
 		"webhook")
-			local webhook_url headers
+			local webhook_url headers format request_method format_escaped
 			config_get webhook_url "$section" webhook_url
 			config_get headers "$section" webhook_headers
+			config_get format "$section" webhook_format
+			config_get request_method "$section" webhook_request_method
 			
 			[ -z "$webhook_url" ] && {
 				echo "Error: Webhook requires webhook_url"
 				return 1
 			}
 			
+			# Escape format string for JSON using awk (safe for all special characters)
+			if [ -n "$format" ]; then
+				format_escaped=$(printf '%s' "$format" | awk '
+				{
+					gsub(/\\/, "\\\\")
+					gsub(/"/, "\\\"")
+					gsub(/\t/, "\\t")
+					gsub(/\r/, "\\r")
+					gsub(/\n/, "\\n")
+					printf "%s", $0
+				}
+				END {
+					if (NR > 0) printf "\\n"
+				}' | sed 's/\\n$//')
+			fi
+			
 			if [ -n "$headers" ]; then
-				config_json="{\"webhook_url\":\"$webhook_url\",\"headers\":\"$headers\"}"
+				config_json="{\"webhook_url\":\"$webhook_url\",\"headers\":\"$headers\",\"format\":\"$format_escaped\",\"request_method\":\"$request_method\"}"
 			else
-				config_json="{\"webhook_url\":\"$webhook_url\"}"
+				config_json="{\"webhook_url\":\"$webhook_url\",\"format\":\"$format_escaped\",\"request_method\":\"$request_method\"}"
 			fi
 			;;
 			
