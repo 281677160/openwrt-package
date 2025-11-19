@@ -179,6 +179,7 @@ int parse_user_input(int argc, char *argv[], PROFILE_T *profile)
 
 int run_op(PROFILE_T *profile, void *transport)
 {
+    int ret;
     switch (profile->op)
     {
     case AT_OP:
@@ -188,7 +189,26 @@ int run_op(PROFILE_T *profile, void *transport)
     case SMS_READ_OP:
         return sms_read(profile, transport);
     case SMS_SEND_OP:
-        return sms_send(profile, transport);
+        ret = sms_send(profile, transport);
+        switch (ret)
+        {
+        case SUCCESS:
+            printf("{\"status\":\"success\"}");
+            break;
+        case SEND_SMS_FAILED:
+            printf("{\"status\":\"failed\",\"reason\":\"send_sms_failed\"}");
+            break;
+        case INVALID_PARAM:
+            printf("{\"status\":\"failed\",\"reason\":\"invalid_param\"}");
+            break;
+        case COMM_ERROR:
+            printf("{\"status\":\"failed\",\"reason\":\"comm_error\"}");
+            break;
+        default:
+            printf("{\"status\":\"failed\",\"reason\":\"unknown_error\"}");
+            break;
+        }
+        return ret;
     case SMS_DELETE_OP:
         return sms_delete(profile, transport);
     case SMS_UNREAD_OP:

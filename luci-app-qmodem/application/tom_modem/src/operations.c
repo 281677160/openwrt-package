@@ -117,6 +117,7 @@ int sms_read(PROFILE_T *profile, void *transport_ptr)
                 sms->sms_pdu = (char *)malloc(strlen(pdu));
                 sms->sender = (char *)malloc(PHONE_NUMBER_SIZE);
                 sms->sms_text = (char *)malloc(SMS_TEXT_SIZE);
+                memset(sms->sms_text, 0, SMS_TEXT_SIZE);
                 sms->sms_index = get_sms_index(line);
                 memcpy(sms->sms_pdu, pdu, strlen(pdu));
                 int sms_len = decode_pdu(sms);
@@ -157,6 +158,7 @@ int sms_send(PROFILE_T *profile, void *transport_ptr)
     char send_sms_cmd[32];
     char pdu_hex[512];
     char send_sms_cmd2[514];
+    char send_sms_response[64];
     int result;
     int ascii_code;
     
@@ -184,12 +186,17 @@ int sms_send(PROFILE_T *profile, void *transport_ptr)
     usleep(10000); // 10ms delay
 
     // Send PDU data and wait for +CMGS response
-    result = transport_send_at_with_response(transport, profile, send_sms_cmd2, "+CMGS:", 1, NULL);
+    result = transport_send_at_with_response(transport, profile, send_sms_cmd2, "+CMGS:", 1, send_sms_response);
     if (result != SUCCESS) {
         dbg_msg("Error sending SMS PDU, error code: %d", result);
         return result;
     }
-    
+    // Check send SMS response (contain +CME ERROR or +CMS ERROR indicates failure and contain OK indicates success)
+    dbg_msg("Send SMS response: %s", send_sms_response);
+    if (strstr(send_sms_response, "ERROR") != NULL) {
+        dbg_msg("Error sending SMS, response: %s", send_sms_response);
+        return SEND_SMS_FAILED;
+    }
     return SUCCESS;
 }
 
@@ -237,6 +244,7 @@ int sms_read_unread(PROFILE_T *profile, void *transport_ptr)
                 sms->sms_pdu = (char *)malloc(strlen(pdu));
                 sms->sender = (char *)malloc(PHONE_NUMBER_SIZE);
                 sms->sms_text = (char *)malloc(SMS_TEXT_SIZE);
+                memset(sms->sms_text, 0, SMS_TEXT_SIZE);
                 sms->sms_index = get_sms_index(line);
                 memcpy(sms->sms_pdu, pdu, strlen(pdu));
                 int sms_len = decode_pdu(sms);

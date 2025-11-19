@@ -831,6 +831,21 @@
                     "ncm"
                 ]
             },
+            "fm160-eau": {
+                "manufacturer_id": "2cb7",
+                "manufacturer": "fibocom",
+                "platform": "qualcomm",
+                "data_interface": "usb",
+                "pdp_index": "1",
+                "modes": [
+                    "qmi",
+                    "gobinet",
+                    "ecm",
+                    "mbim",
+                    "rndis",
+                    "ncm"
+                ]
+            },
             "fm160-na": {
                 "manufacturer_id": "2cb7",
                 "manufacturer": "fibocom",

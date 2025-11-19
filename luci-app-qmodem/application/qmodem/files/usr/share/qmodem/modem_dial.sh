@@ -283,7 +283,7 @@ check_ip()
             fi
             disallow_ipv4="0.0.0.0"
             #remove the disallow ip
-            if [ "$ipv4" == *"$disallow_ipv4"* ];then
+            if [[ "$ipv4" == *"$disallow_ipv4"* ]];then
                 ipv4=""
             fi
             connection_status=0
