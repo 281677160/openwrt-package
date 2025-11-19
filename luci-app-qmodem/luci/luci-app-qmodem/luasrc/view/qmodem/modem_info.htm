@@ -99,11 +99,12 @@ class LuciTable{
             var type = data.type;
             switch(type){
                 case "plain_text":
-                    var key,value,full_name;
+                    var key,value,full_name,extra_info;
                     key = data.key;
                     value = data.value;
                     full_name = data.full_name ? data.full_name : key;
-                    this.rows[index].left.innerHTML = full_name;
+                    extra_info = data.extra_info;
+                    this.rows[index].left.innerHTML = extra_info ? `${full_name} (${extra_info})` : full_name;
                     this.rows[index].right.innerHTML = value;
 
                     if (value == null || value == "") {
@@ -114,14 +115,15 @@ class LuciTable{
                     }
                     break;
                 case "progress_bar":
-                    var key,title,min,max,precentage,full_name;
+                    var key,title,min,max,precentage,full_name,extra_info;
                     key = data.key;
                     full_name = data.full_name ? data.full_name : key;
+                    extra_info = data.extra_info;
                     title = `(${data.value}/${data.max_value}${data.unit})`
                     min = data.min_value;
                     max = data.max_value;
                     precentage = (data.value - min) / (max - min) * 100;
-                    this.rows[index].left.innerHTML = full_name;
+                    this.rows[index].left.innerHTML = extra_info ? `${full_name} (${extra_info})` : full_name;
                     var progress_bar = document.createElement('div')
                     progress_bar.className = progressbar_className;
                     progress_bar.title = title;
@@ -355,7 +357,7 @@ class ModemInfo {
 
         var warning_message = [];
         for (let entry of data){
-            let class_name,full_name,value,type;
+            let class_name,full_name,value,type,extra_info;
             class_name = entry.class;
             if (entry.type == "warning_message") {
                 warning_message.push(entry);
@@ -385,9 +387,10 @@ class ModemInfo {
             for (let i = 0; i < warning_message.length; i++) {
                 let entry = warning_message[i];
                 let full_name = entry.full_name ? entry.full_name : entry.key;
+                let extra_info = entry.extra_info;
 
                 let node = document.createElement('p');
-                node.innerHTML = full_name + entry.value;
+                node.innerHTML = extra_info ? `${full_name} (${extra_info}) ${entry.value}` : full_name + entry.value;
                 this.warning_message(node);
             }
         }
