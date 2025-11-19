@@ -426,6 +426,7 @@ base_info()
     revision=$(at $at_port $at_command | grep "+CGMR: " | awk -F'"' '{print $2}')
 
     class="Base Information"
+    add_plain_info_entry "name" "$name" "Name"
     add_plain_info_entry "manufacturer" "$manufacturer" "Manufacturer"
     add_plain_info_entry "revision" "$revision" "Revision"
     add_plain_info_entry "at_port" "$at_port" "AT Port"

@@ -117,7 +117,7 @@ int decode_pdu(SMS_T *sms)
             // UCS2
             sms->type = SMS_CHARSET_UCS2;
             int offset = 0;
-            for (int i = skip_bytes; i < SMS_TEXT_SIZE; i += 2)
+            for (int i = skip_bytes; i < sms_len; i += 2)
             {
                 int ucs2_char = 0x000000FF & sms_text[i + 1];
                 ucs2_char |= (0x0000FF00 & (sms_text[i] << 8));

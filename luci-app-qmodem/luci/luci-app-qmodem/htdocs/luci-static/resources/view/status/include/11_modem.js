@@ -41,11 +41,12 @@ return baseclass.extend({
 				
 				for (var entry of info) {
 					var full_name = entry.full_name;
+					var extra_info = entry.extra_info;
 					if (entry.value == null) {
 						continue
 					}
 					if ((entry.class == 'Base Information') ||(entry.class == '"SIM Information"')  || (entry.class == 'Cell Information' && entry.type == 'progress_bar')) {
-					fields.push(_(full_name));
+					fields.push(extra_info ? '%s (%s)'.format(_(full_name), extra_info) : _(full_name));
 					fields.push(entry);
 					}
 				}
