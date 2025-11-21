@@ -281,11 +281,11 @@ check_ip()
                 ipv4=$(echo $ipaddr | grep -oE "\b([0-9]{1,3}\.){3}[0-9]{1,3}\b" | grep -v "0\.0\.0\.0" | head -n 1)
                 ipv6=$(echo $ipaddr | grep -oE "\b([0-9a-fA-F]{0,4}.){2,7}[0-9a-fA-F]{0,4}\b")
             fi
-            disallow_ipv4="0.0.0.0"
-            #remove the disallow ip
-            if [[ "$ipv4" == *"$disallow_ipv4"* ]];then
-                ipv4=""
-            fi
+            # disallow_ipv4="0.0.0.0"
+            # #remove the disallow ip
+            # if [[ "$ipv4" == *"$disallow_ipv4"* ]];then
+            #     ipv4=""
+            # fi
             connection_status=0
             if [ -n "$ipv4" ];then
                 connection_status=1

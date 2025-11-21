@@ -46,7 +46,7 @@ def parse_po_file_translations(po_file_path: str) -> set:
                 msgstr_unescaped = unescape_po_string(msgstr_value)
                 
                 # Only add to set if msgstr is not empty and not same as msgid
-                if msgstr_unescaped and msgstr_unescaped != current_msgid:
+                if msgstr_unescaped:
                     translated_keys.add(current_msgid)
                 
                 current_msgid = None
@@ -304,7 +304,7 @@ def generate_po_file(strings_data: dict, translations: dict, output_path: str):
     # Write to file
     output_file = Path(output_path)
     output_file.parent.mkdir(parents=True, exist_ok=True)
-    
+    po_content.append("")  # Append newline at end of output file
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write('\n'.join(po_content))
     

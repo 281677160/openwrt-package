@@ -288,6 +288,8 @@ validate_at_port()
     for at_port in $at_ports; do
         dev_path="/dev/$at_port"
         [ ! -e "$dev_path" ] && continue
+        #disable at-daemon binding
+        ubus call at-daemon close '{ "at_port": "'$dev_path'" }' 2>/dev/null
         res=$(fastat $dev_path "ATI")
         [ -z "$res" ] && continue
         !(echo "$res" | grep -qE 'OK|ATI') && continue
