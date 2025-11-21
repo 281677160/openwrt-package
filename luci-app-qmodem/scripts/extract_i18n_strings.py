@@ -79,6 +79,7 @@ def extract_strings_from_shell_file(file_path: str) -> List[Dict[str, any]]:
         # Pattern to match the three add_*_entry functions and extract the 3rd parameter
         # These functions have format: add_*_entry "param1" "param2" "param3" ...
         # We want to extract param3 (the translatable string)
+        # Pattern to match variables named "class" is also included
         patterns = [
             # Match add_plain_info_entry with 3rd parameter in double quotes
             r'add_plain_info_entry\s+(?:"[^"]*"|\'[^\']*\'|\$\w+)\s+(?:"[^"]*"|\'[^\']*\'|\$\w+)\s+"([^"]+)"',
@@ -92,6 +93,9 @@ def extract_strings_from_shell_file(file_path: str) -> List[Dict[str, any]]:
             r'add_bar_info_entry\s+(?:"[^"]*"|\'[^\']*\'|\$\w+)\s+(?:"[^"]*"|\'[^\']*\'|\$\w+)\s+"([^"]+)"',
             # Match add_bar_info_entry with 3rd parameter in single quotes
             r"add_bar_info_entry\s+(?:\"[^\"]*\"|'[^']*'|\$\w+)\s+(?:\"[^\"]*\"|'[^']*'|\$\w+)\s+'([^']+)'",
+            # Match with all variable named "class" parameters e.g. class="Base Info"
+            r"class\s*=\s*\"([^\"]+)\"",
+            r"class\s*=\s*'([^']+)'",
         ]
         
         for line_num, line in enumerate(lines, start=1):

@@ -108,6 +108,13 @@ var callGetRebootCaps = rpc.declare({
 	expect: { }
 });
 
+var callGetCopyright = rpc.declare({
+	object: 'qmodem',
+	method: 'get_copyright',
+	params: ['config_section'],
+	expect: { }
+});
+
 var callSendAt = rpc.declare({
 	object: 'qmodem',
 	method: 'send_at',
@@ -303,6 +310,11 @@ return L.Class.extend({
 		return callGetRebootCaps(section);
 	},
 
+	// Get copyright information
+	getCopyright: function(section) {
+		return callGetCopyright(section);
+	},
+
 	// Send AT command
 	sendAt: function(section, port, command, use_ubus) {
 		var params = {
@@ -418,7 +430,6 @@ return L.Class.extend({
 					enabled: s.enabled !== '0'
 				});
 			});
-            console.log(sections);
 			return sections;
 		});
 	},

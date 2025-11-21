@@ -87,7 +87,7 @@ return view.extend({
 			
 			var buttons = [];
 			
-			// Running control: show Start if not running, show Stop if running
+			// Running control: show Start if not running, show Stop and Restart if running
 			if (!running) {
 				buttons.push(
 					E('button', {
@@ -125,6 +125,24 @@ return view.extend({
 								});
 						})
 					}, _('Stop'))
+				);
+				buttons.push(
+					E('button', {
+						'class': 'cbi-button cbi-button-apply',
+						'id': 'rc-restart-button',
+						'click': ui.createHandlerFn(this, function() {
+							var self = this;
+							return callInitAction('qmodem_network', 'restart')
+								.then(function() {
+									ui.addNotification(null, E('p', _('QModem Network restarted successfully')));
+									return self.updateRcStatus();
+								})
+								.catch(function(err) {
+									ui.addNotification(null, E('p', _('Failed to restart QModem Network: ') + err.message), 'error');
+									return self.updateRcStatus();
+								});
+						})
+					}, _('Restart'))
 				);
 			}
 			
@@ -283,194 +301,226 @@ return view.extend({
 			]);
 		};
 
-		// ============ Modal Configuration Options ============
-		
-		// General Settings
-		o = s.option(form.Value, 'alias', _('Modem Alias'));
-		o.rmempty = true;
-		o.modalonly = true;
+	// ============ Modal Configuration Options ============
+	
+	// General Settings
+	o = s.option(form.Value, 'alias', _('Modem Alias'));
+	o.rmempty = true;
+	o.modalonly = true;
 
-		o = s.option(form.DynamicList, 'dns_list', _('DNS'));
-		o.placeholder = _('If the DNS server is not set, it will use the DNS server leased by the operator.');
-		o.rmempty = true;
-		o.modalonly = true;
+	o = s.option(form.DynamicList, 'dns_list', _('DNS'));
+	o.placeholder = _('If the DNS server is not set, it will use the DNS server leased by the operator.');
+	o.rmempty = true;
+	o.modalonly = true;
 
-		o = s.option(form.Flag, 'use_ubus', _('Use Ubus'));
-		o.default = '0';
-		o.rmempty = false;
-		o.modalonly = true;
+	o = s.option(form.Flag, 'use_ubus', _('Use Ubus'));
+	o.default = '0';
+	o.rmempty = false;
+	o.modalonly = true;
 
-		// Advanced Settings
-		o = s.option(form.Flag, 'force_set_apn', _('Force Set APN'));
-		o.description = _('If enabled, the APN will be set even if it matches the current configuration.(only works with tom modified version of quectel-cm)');
-		o.default = '0';
-		o.rmempty = false;
-		o.modalonly = true;
+	// Advanced Settings
+	o = s.option(form.Flag, 'force_set_apn', _('Force Set APN'));
+	o.description = _('If enabled, the APN will be set even if it matches the current configuration.(only works with tom modified version of quectel-cm)');
+	o.default = '0';
+	o.rmempty = false;
+	o.modalonly = true;
 
-		o = s.option(form.Flag, 'en_bridge', _('Bridge Mode'));
-		o.description = _('Caution: Only avalible for quectel sdx 5G Modem.');
-		o.default = '0';
-		o.rmempty = false;
-		o.modalonly = true;
+	o = s.option(form.Flag, 'en_bridge', _('Bridge Mode'));
+	o.description = _('Caution: Only avalible for quectel sdx 5G Modem.');
+	o.default = '0';
+	o.rmempty = false;
+	o.modalonly = true;
 
-		o = s.option(form.Flag, 'do_not_add_dns', _('Do Not modify resolv.conf'));
-		o.description = _('quectel-CM will append the DNS server to the resolv.conf file by default.if you do not want to modify the resolv.conf file, please check this option.');
-		o.default = '0';
-		o.rmempty = false;
-		o.modalonly = true;
+	o = s.option(form.Flag, 'do_not_add_dns', _('Do Not modify resolv.conf'));
+	o.description = _('quectel-CM will append the DNS server to the resolv.conf file by default.if you do not want to modify the resolv.conf file, please check this option.');
+	o.default = '0';
+	o.rmempty = false;
+	o.modalonly = true;
 
-		o = s.option(form.Flag, 'ra_master', _('RA Master'));
-		o.description = _('Caution: Enabling this option will make it the IPV6 RA Master, and only one interface can be configured as such.');
-		o.default = '0';
-		o.rmempty = false;
-		o.modalonly = true;
+	o = s.option(form.Flag, 'ra_master', _('RA Master'));
+	o.description = _('Caution: Enabling this option will make it the IPV6 RA Master, and only one interface can be configured as such.');
+	o.default = '0';
+	o.rmempty = false;
+	o.modalonly = true;
 
-		o = s.option(form.Flag, 'extend_prefix', _('Extend Prefix'));
-		o.description = _('Once checking, the prefix will be apply to lan zone');
-		o.default = '0';
-		o.rmempty = false;
-		o.modalonly = true;
+	o = s.option(form.Flag, 'extend_prefix', _('Extend Prefix'));
+	o.description = _('Once checking, the prefix will be apply to lan zone');
+	o.default = '0';
+	o.rmempty = false;
+	o.modalonly = true;
 
-		o = s.option(form.Value, 'pdp_index', _('PDP Context Index'));
-		o.rmempty = true;
-		o.modalonly = true;
+	o = s.option(form.Value, 'pdp_index', _('PDP Context Index'));
+	o.rmempty = true;
+	o.modalonly = true;
 
-		o = s.option(form.ListValue, 'pdp_type', _('PDP Type'));
-		o.value('ip', _('IPv4'));
-		o.value('ipv6', _('IPv6'));
-		o.value('ipv4v6', _('IPv4/IPv6'));
-		o.default = 'ipv4v6';
-		o.rmempty = false;
-		o.modalonly = true;
+	o = s.option(form.ListValue, 'pdp_type', _('PDP Type'));
+	o.value('ip', _('IPv4'));
+	o.value('ipv6', _('IPv6'));
+	o.value('ipv4v6', _('IPv4/IPv6'));
+	o.default = 'ipv4v6';
+	o.rmempty = false;
+	o.modalonly = true;
 
-		o = s.option(form.Value, 'apn', _('APN'));
-		o.placeholder = _('Auto Choose');
-		o.rmempty = true;
-		o.modalonly = true;
-		o.value('', _('Auto Choose'));
-		o.value('cmnet', _('China Mobile (CN)'));
-		o.value('3gnet', _('China Unicom (CN)'));
-		o.value('ctnet', _('China Telecom (CN)'));
-		o.value('cbnet', _('China Broadcast (CN)'));
-		o.value('5gscuiot', _('Skytone (CN)'));
-		// Switzerland (CH)
-		o.value('gprs.swisscom.ch', _('Swisscom (CH)'));
-		o.value('internet', 'Salt (CH), Sunrise (CH), O2 (DE), 1&1 (DE)');
-		// Germany (DE)
-		o.value('web.vodafone.de', _('Vodafone (DE)'));
-		o.value('internet.telekom', _('Telekom (DE)'));
-		o.value('internet.eplus.de', _('E-Plus (DE)'));
-		// Austria (AT)
-		o.value('A1.net', _('A1 (AT)'));
-		o.value('drei.at', _('Drei (AT)'));
-		o.value('internet.t-mobile.at', _('Magenta (AT)'));
-		// Philippines (PH)
-		o.value('http.globe.com.ph', _('Globe Prepaid (PH)'));
-		o.value('internet.globe.com.ph', _('Globe Postpaid (PH)'));
-		o.value('internet', _('Smart Communications (PH)'));
-		o.value('internet.dito.ph', _('Dito Telecomunity (PH)'));
-		// Malaysia (MY)
-		o.value('celcom3g', _('Celcom (MY)'));
-		o.value('diginet', _('DiGi (MY)'));
-		o.value('unet', _('Maxis | Hotlink (MY)'));
-		o.value('hos', _('Maxis UT (MY)'));
-		o.value('yes4g', _('YES (MY)'));
-		o.value('my3g', _('UMobile (MY)'));
-		o.value('unifi', _('Unifi (MY)'));
-		// Russia (RU)
-		o.value('internet.beeline.ru', _('Beeline (RU)'));
-		o.value('internet.mts.ru', _('MTS (RU)'));
-		o.value('internet', _('Megafon (RU)'));
-		o.value('internet.tele2.ru', _('Tele2 (RU)'));
-		o.value('internet.yota', _('Yota (RU)'));
-		o.value('m.tinkoff', _('T-mobile (RU)'));
-		o.value('internet.rtk.ru', _('Rostelecom (RU)'));
-		o.value('internet.sberbank-tele.com', _('Sber Mobile (RU)'));
+	o = s.option(form.Value, 'apn', _('APN'));
+	o.placeholder = _('Auto Choose');
+	o.rmempty = true;
+	o.modalonly = true;
+	o.value('', _('Auto Choose'));
+	o.value('cmnet', _('China Mobile (CN)'));
+	o.value('3gnet', _('China Unicom (CN)'));
+	o.value('ctnet', _('China Telecom (CN)'));
+	o.value('cbnet', _('China Broadcast (CN)'));
+	o.value('5gscuiot', _('Skytone (CN)'));
+	// Switzerland (CH)
+	o.value('gprs.swisscom.ch', _('Swisscom (CH)'));
+	o.value('internet', 'Salt (CH), Sunrise (CH), O2 (DE), 1&1 (DE)');
+	// Germany (DE)
+	o.value('web.vodafone.de', _('Vodafone (DE)'));
+	o.value('internet.telekom', _('Telekom (DE)'));
+	o.value('internet.eplus.de', _('E-Plus (DE)'));
+	// Austria (AT)
+	o.value('A1.net', _('A1 (AT)'));
+	o.value('drei.at', _('Drei (AT)'));
+	o.value('internet.t-mobile.at', _('Magenta (AT)'));
+	// Philippines (PH)
+	o.value('http.globe.com.ph', _('Globe Prepaid (PH)'));
+	o.value('internet.globe.com.ph', _('Globe Postpaid (PH)'));
+	o.value('internet', _('Smart Communications (PH)'));
+	o.value('internet.dito.ph', _('Dito Telecomunity (PH)'));
+	// Malaysia (MY)
+	o.value('celcom3g', _('Celcom (MY)'));
+	o.value('diginet', _('DiGi (MY)'));
+	o.value('unet', _('Maxis | Hotlink (MY)'));
+	o.value('hos', _('Maxis UT (MY)'));
+	o.value('yes4g', _('YES (MY)'));
+	o.value('my3g', _('UMobile (MY)'));
+	o.value('unifi', _('Unifi (MY)'));
+	// Russia (RU)
+	o.value('internet.beeline.ru', _('Beeline (RU)'));
+	o.value('internet.mts.ru', _('MTS (RU)'));
+	o.value('internet', _('Megafon (RU)'));
+	o.value('internet.tele2.ru', _('Tele2 (RU)'));
+	o.value('internet.yota', _('Yota (RU)'));
+	o.value('m.tinkoff', _('T-mobile (RU)'));
+	o.value('internet.rtk.ru', _('Rostelecom (RU)'));
+	o.value('internet.sberbank-tele.com', _('Sber Mobile (RU)'));
 
-		o = s.option(form.ListValue, 'auth', _('Authentication Type'));
-		o.value('none', _('NONE'));
-		o.value('MsChapV2', _('MsChapV2'));
-		o.value('pap', 'PAP');
-		o.value('chap', 'CHAP');
-		o.default = 'none';
-		o.rmempty = false;
-		o.modalonly = true;
+	o = s.option(form.ListValue, 'auth', _('Authentication Type'));
+	o.value('none', _('NONE'));
+	o.value('MsChapV2', _('MsChapV2'));
+	o.value('pap', 'PAP');
+	o.value('chap', 'CHAP');
+	o.default = 'none';
+	o.rmempty = false;
+	o.modalonly = true;
 
-		o = s.option(form.Value, 'username', _('PAP/CHAP Username'));
-		o.rmempty = true;
-		o.modalonly = true;
-		o.depends('auth', 'both');
-		o.depends('auth', 'pap');
-		o.depends('auth', 'chap');
-		o.depends('auth', 'MsChapV2');
+	o = s.option(form.Value, 'username', _('PAP/CHAP Username'));
+	o.rmempty = true;
+	o.modalonly = true;
+	o.depends('auth', 'both');
+	o.depends('auth', 'pap');
+	o.depends('auth', 'chap');
+	o.depends('auth', 'MsChapV2');
 
-		o = s.option(form.Value, 'password', _('PAP/CHAP Password'));
-		o.password = true;
-		o.rmempty = true;
-		o.modalonly = true;
-		o.depends('auth', 'both');
-		o.depends('auth', 'pap');
-		o.depends('auth', 'chap');
-		o.depends('auth', 'MsChapV2');
+	o = s.option(form.Value, 'password', _('PAP/CHAP Password'));
+	o.password = true;
+	o.rmempty = true;
+	o.modalonly = true;
+	o.depends('auth', 'both');
+	o.depends('auth', 'pap');
+	o.depends('auth', 'chap');
+	o.depends('auth', 'MsChapV2');
 
-		o = s.option(form.Value, 'pincode', _('PIN Code'));
-		o.description = _('If the PIN code is not set, leave it blank.');
-		o.rmempty = true;
-		o.modalonly = true;
+	o = s.option(form.Value, 'pincode', _('PIN Code'));
+	o.description = _('If the PIN code is not set, leave it blank.');
+	o.rmempty = true;
+	o.modalonly = true;
 
-		// Slot 2 Configuration
-		o = s.option(form.Value, 'apn2', _('APN') + ' 2');
-		o.description = _('If slot 2 config is not set,will use slot 1 config.');
-		o.placeholder = _('Auto Choose');
-		o.rmempty = true;
-		o.modalonly = true;
-		o.value('', _('Auto Choose'));
-		o.value('cmnet', _('China Mobile (CN)'));
-		o.value('3gnet', _('China Unicom (CN)'));
-		o.value('ctnet', _('China Telecom (CN)'));
-		o.value('cbnet', _('China Broadcast (CN)'));
-		o.value('5gscuiot', _('Skytone (CN)'));
-		// Switzerland (CH)
-		o.value('gprs.swisscom.ch', _('Swisscom (CH)'));
-		o.value('internet', 'Salt (CH), Sunrise (CH), O2 (DE), 1&1 (DE)');
-		// Germany (DE)
-		o.value('web.vodafone.de', _('Vodafone (DE)'));
-		o.value('internet.telekom', _('Telekom (DE)'));
-		o.value('internet.eplus.de', _('E-Plus (DE)'));
-		// Austria (AT)
-		o.value('A1.net', _('A1 (AT)'));
-		o.value('drei.at', _('Drei (AT)'));
-		o.value('internet.t-mobile.at', _('Magenta (AT)'));
-		// Philippines (PH)
-		o.value('http.globe.com.ph', _('Globe Prepaid (PH)'));
-		o.value('internet.globe.com.ph', _('Globe Postpaid (PH)'));
-		o.value('internet', _('Smart Communications (PH)'));
-		o.value('internet.dito.ph', _('Dito Telecomunity (PH)'));
-		// Malaysia (MY)
-		o.value('celcom3g', _('Celcom (MY)'));
-		o.value('diginet', _('DiGi (MY)'));
-		o.value('unet', _('Maxis | Hotlink (MY)'));
-		o.value('hos', _('Maxis UT (MY)'));
-		o.value('yes4g', _('YES (MY)'));
-		o.value('my3g', _('UMobile (MY)'));
-		o.value('unifi', _('Unifi (MY)'));
-		// Russia (RU)
-		o.value('internet.beeline.ru', _('Beeline (RU)'));
-		o.value('internet.mts.ru', _('MTS (RU)'));
-		o.value('internet', _('Megafon (RU)'));
-		o.value('internet.tele2.ru', _('Tele2 (RU)'));
-		o.value('internet.yota', _('Yota (RU)'));
-		o.value('m.tinkoff', _('T-mobile (RU)'));
-		o.value('internet.rtk.ru', _('Rostelecom (RU)'));
-		o.value('internet.sberbank-tele.com', _('Sber Mobile (RU)'));
+	// Slot 2 Configuration
+	o = s.option(form.Value, 'apn2', _('APN') + ' 2');
+	o.description = _('If slot 2 config is not set,will use slot 1 config.');
+	o.placeholder = _('Auto Choose');
+	o.rmempty = true;
+	o.modalonly = true;
+	o.value('', _('Auto Choose'));
+	o.value('cmnet', _('China Mobile (CN)'));
+	o.value('3gnet', _('China Unicom (CN)'));
+	o.value('ctnet', _('China Telecom (CN)'));
+	o.value('cbnet', _('China Broadcast (CN)'));
+	o.value('5gscuiot', _('Skytone (CN)'));
+	// Switzerland (CH)
+	o.value('gprs.swisscom.ch', _('Swisscom (CH)'));
+	o.value('internet', 'Salt (CH), Sunrise (CH), O2 (DE), 1&1 (DE)');
+	// Germany (DE)
+	o.value('web.vodafone.de', _('Vodafone (DE)'));
+	o.value('internet.telekom', _('Telekom (DE)'));
+	o.value('internet.eplus.de', _('E-Plus (DE)'));
+	// Austria (AT)
+	o.value('A1.net', _('A1 (AT)'));
+	o.value('drei.at', _('Drei (AT)'));
+	o.value('internet.t-mobile.at', _('Magenta (AT)'));
+	// Philippines (PH)
+	o.value('http.globe.com.ph', _('Globe Prepaid (PH)'));
+	o.value('internet.globe.com.ph', _('Globe Postpaid (PH)'));
+	o.value('internet', _('Smart Communications (PH)'));
+	o.value('internet.dito.ph', _('Dito Telecomunity (PH)'));
+	// Malaysia (MY)
+	o.value('celcom3g', _('Celcom (MY)'));
+	o.value('diginet', _('DiGi (MY)'));
+	o.value('unet', _('Maxis | Hotlink (MY)'));
+	o.value('hos', _('Maxis UT (MY)'));
+	o.value('yes4g', _('YES (MY)'));
+	o.value('my3g', _('UMobile (MY)'));
+	o.value('unifi', _('Unifi (MY)'));
+	// Russia (RU)
+	o.value('internet.beeline.ru', _('Beeline (RU)'));
+	o.value('internet.mts.ru', _('MTS (RU)'));
+	o.value('internet', _('Megafon (RU)'));
+	o.value('internet.tele2.ru', _('Tele2 (RU)'));
+	o.value('internet.yota', _('Yota (RU)'));
+	o.value('m.tinkoff', _('T-mobile (RU)'));
+	o.value('internet.rtk.ru', _('Rostelecom (RU)'));
+	o.value('internet.sberbank-tele.com', _('Sber Mobile (RU)'));
 
-		o = s.option(form.Value, 'metric', _('Metric'));
-		o.description = _('The metric value is used to determine the priority of the route. The smaller the value, the higher the priority. Cannot duplicate.');
-		o.default = '10';
-		o.rmempty = true;
-		o.modalonly = true;
+	o = s.option(form.Value, 'metric', _('Metric'));
+	o.description = _('The metric value is used to determine the priority of the route. The smaller the value, the higher the priority. Cannot duplicate.');
+	o.default = '10';
+	o.rmempty = true;
+	o.modalonly = true;
 
-		return m.render().then(L.bind(function(rendered) {
+	// Pre Dial Delay
+	o = s.option(form.Value, 'pre_dial_delay', _('Pre Dial Delay') + ' ' + _('(beta)'));
+	o.description = _('Delay of executing AT command before dialing, in seconds.') + _('(still in beta)');
+	o.placeholder = _('Enter delay in seconds');
+	o.default = '0';
+	o.datatype = 'uinteger';
+	o.rmempty = true;
+	o.modalonly = true;
+
+	// Post Init Delay
+	o = s.option(form.Value, 'post_init_delay', _('Post Init Delay') + ' ' + _('(beta)'));
+	o.description = _('Delay of executing AT command after modem initialization, in seconds.') + _('(still in beta)');
+	o.placeholder = _('Enter delay in seconds');
+	o.default = '0';
+	o.datatype = 'uinteger';
+	o.rmempty = true;
+	o.modalonly = true;
+
+	// Post Init AT Commands
+	o = s.option(form.DynamicList, 'post_init_at_cmds', _('Post Init AT Commands') + ' ' + _('(beta)'));
+	o.description = _('AT commands to execute after modem initialization.') + _('(still in beta)');
+	o.placeholder = _('Enter AT commands');
+	o.rmempty = true;
+	o.modalonly = true;
+
+	// Pre Dial AT Commands
+	o = s.option(form.DynamicList, 'pre_dial_at_cmds', _('Pre Dial AT Commands') + ' ' + _('(beta)'));
+	o.description = _('AT commands to execute before dialing.') + _('(still in beta)');
+	o.placeholder = _('Enter AT commands');
+	o.rmempty = true;
+	o.modalonly = true;
+
+	return m.render().then(L.bind(function(rendered) {
 			// Update dial controls for all modems
 			this.updateAllDialControls();
 			// Update connection status indicators
@@ -690,7 +740,7 @@ return view.extend({
 
 				var buttons = [];
 
-				// Running control: show Start if not running, show Stop if running
+				// Running control: show Start if not running, show Stop and Restart if running
 				if (!running) {
 					buttons.push(
 						E('button', {
@@ -728,6 +778,24 @@ return view.extend({
 									});
 							})
 						}, _('Stop'))
+					);
+					buttons.push(
+						E('button', {
+							'class': 'cbi-button cbi-button-apply',
+							'id': 'rc-restart-button',
+							'click': ui.createHandlerFn(this, function() {
+								var self = this;
+								return callInitAction('qmodem_network', 'restart')
+									.then(function() {
+										ui.addNotification(null, E('p', _('QModem Network restarted successfully')));
+										return self.updateRcStatus();
+									})
+									.catch(function(err) {
+										ui.addNotification(null, E('p', _('Failed to restart QModem Network: ') + err.message), 'error');
+										return self.updateRcStatus();
+									});
+							})
+						}, _('Restart'))
 					);
 				}
 

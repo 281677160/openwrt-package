@@ -45,14 +45,14 @@ var LuciTable = function() {
 
 LuciTable.prototype = {
 	initTable: function() {
-		this.fieldset = E('fieldset', { 'class': 'cbi-section' });
-		this.legend = E('legend', {});
+		this.fieldset = E('fieldset', { 'class': 'cbi-section collapsible draggable', 'draggable': 'true' });
+		//this.legend = E('legend', {});
 		this.title_span = E('h2', { 'class': 'panel-title' });
 		var table = E('table', { 'class': 'table' });
 		this.tbody = E('tbody', { 'style': 'width: 100%' });
 		
 		table.appendChild(this.tbody);
-		this.fieldset.appendChild(this.legend);
+		//this.fieldset.appendChild(this.legend);
 		this.fieldset.appendChild(this.title_span);
 		this.fieldset.appendChild(table);
 	},
@@ -60,7 +60,7 @@ LuciTable.prototype = {
 	setTitle: function(value) {
 		// Translate class name
 		var translatedValue = _(value);
-		this.legend.textContent = translatedValue;
+		//this.legend.textContent = translatedValue;
 		this.title_span.textContent = translatedValue;
 	},
 
@@ -233,7 +233,116 @@ return view.extend({
 		return modems;
 	},
 
-	updateModemInfo: function(modemId, tables_map, infoContainer, updateTimeElement) {
+	// Get section order from localStorage
+	getSectionOrder: function(modemId) {
+		var key = 'qmodem_section_order_' + modemId;
+		var order = localStorage.getItem(key);
+		return order ? JSON.parse(order) : [];
+	},
+
+	// Save section order to localStorage
+	saveSectionOrder: function(modemId, order) {
+		var key = 'qmodem_section_order_' + modemId;
+		localStorage.setItem(key, JSON.stringify(order));
+	},
+
+	// Get collapsed state from localStorage
+	getCollapsedState: function(modemId, className) {
+		var key = 'qmodem_collapsed_' + modemId + '_' + className;
+		return localStorage.getItem(key) === 'true';
+	},
+
+	// Save collapsed state to localStorage
+	saveCollapsedState: function(modemId, className, isCollapsed) {
+		var key = 'qmodem_collapsed_' + modemId + '_' + className;
+		localStorage.setItem(key, isCollapsed ? 'true' : 'false');
+	},
+
+	// Attach collapse and drag handlers to a section
+	attachSectionHandlers: function(fieldset, className, modemId, infoContainer) {
+		var self = this;
+		
+		// Collapse/expand handler
+		var legend = fieldset.querySelector('legend');
+		var title = fieldset.querySelector('.panel-title');
+		
+		var toggleCollapse = function(e) {
+			// Don't toggle if dragging
+			if (fieldset.classList.contains('dragging')) {
+				return;
+			}
+			
+			fieldset.classList.toggle('collapsed');
+			var isCollapsed = fieldset.classList.contains('collapsed');
+			self.saveCollapsedState(modemId, className, isCollapsed);
+		};
+		
+		if (legend) legend.addEventListener('click', toggleCollapse);
+		if (title) title.addEventListener('click', toggleCollapse);
+		
+		// Drag and drop handlers
+		fieldset.addEventListener('dragstart', function(e) {
+			fieldset.classList.add('dragging');
+			e.dataTransfer.effectAllowed = 'move';
+			e.dataTransfer.setData('text/plain', className);
+		});
+		
+		fieldset.addEventListener('dragend', function(e) {
+			fieldset.classList.remove('dragging');
+			// Remove all drag-over classes
+			var sections = infoContainer.querySelectorAll('.cbi-section.draggable');
+			sections.forEach(function(section) {
+				section.classList.remove('drag-over');
+			});
+		});
+		
+		fieldset.addEventListener('dragover', function(e) {
+			e.preventDefault();
+			e.dataTransfer.dropEffect = 'move';
+			
+			var draggingElement = infoContainer.querySelector('.dragging');
+			if (draggingElement && draggingElement !== fieldset) {
+				fieldset.classList.add('drag-over');
+			}
+		});
+		
+		fieldset.addEventListener('dragleave', function(e) {
+			fieldset.classList.remove('drag-over');
+		});
+		
+		fieldset.addEventListener('drop', function(e) {
+			e.preventDefault();
+			fieldset.classList.remove('drag-over');
+			
+			var draggedClassName = e.dataTransfer.getData('text/plain');
+			if (draggedClassName === className) {
+				return;
+			}
+			
+			// Get all sections in current order
+			var sections = Array.from(infoContainer.querySelectorAll('.cbi-section.draggable'));
+			var draggedSection = infoContainer.querySelector('.dragging');
+			
+			// Reorder in DOM
+			if (draggedSection) {
+				infoContainer.insertBefore(draggedSection, fieldset);
+			}
+			
+			// Save new order
+			var newOrder = Array.from(infoContainer.querySelectorAll('.cbi-section.draggable')).map(function(section) {
+				// Extract className from legend or title
+				var legend = section.querySelector('legend');
+				var title = section.querySelector('.panel-title');
+				return (legend && legend.textContent) || (title && title.textContent) || '';
+			}).filter(function(name) {
+				return name !== '';
+			});
+			
+			self.saveSectionOrder(modemId, newOrder);
+		});
+	},
+
+	updateModemInfo: function(modemId, tables_map, infoContainer, updateTimeElement, copyrightElement) {
 		var self = this;
 		
 		// Show loading state
@@ -246,15 +355,31 @@ return view.extend({
 			qmodem.getBaseInfo(modemId),
 			qmodem.getSimInfo(modemId),
 			qmodem.getNetworkInfo(modemId),
-			qmodem.getCellInfo(modemId)
+			qmodem.getCellInfo(modemId),
+			qmodem.getCopyright(modemId)
 		]).then(function(results) {
-			// Merge all modem_info arrays
+			// Merge all modem_info arrays (exclude copyright)
 			var all_info = [];
-			results.forEach(function(result) {
-				if (result && result.modem_info) {
-					all_info = all_info.concat(result.modem_info);
+			for (var i = 0; i < results.length - 1; i++) {
+				if (results[i] && results[i].modem_info) {
+					all_info = all_info.concat(results[i].modem_info);
 				}
-			});
+			}
+			
+			// Handle copyright (last result)
+			var copyrightData = results[results.length - 1];
+			if (copyrightElement && copyrightData && copyrightData.copyright) {
+				// Format copyright object into display string
+				var copyrightInfo = copyrightData.copyright;
+				var copyrightText = [];
+				for (var key in copyrightInfo) {
+					copyrightText.push(_(key) + ': ' + copyrightInfo[key]);
+				}
+				copyrightElement.textContent = copyrightText.join(' | ');
+				copyrightElement.style.display = '';
+			} else if (copyrightElement) {
+				copyrightElement.style.display = 'none';
+			}
 
 			// Group by class
 			var grouped = {};
@@ -287,15 +412,42 @@ return view.extend({
 				}
 			}
 
-			// Update or create tables
+			// Get section order from localStorage
+			var sectionOrder = self.getSectionOrder(modemId);
+			var orderedClasses = [];
+			
+			// First add classes in saved order
+			sectionOrder.forEach(function(className) {
+				if (grouped[className]) {
+					orderedClasses.push(className);
+				}
+			});
+			
+			// Then add any new classes not in saved order
 			for (var className in grouped) {
+				if (orderedClasses.indexOf(className) === -1) {
+					orderedClasses.push(className);
+				}
+			}
+			
+			// Update or create tables in order
+			orderedClasses.forEach(function(className) {
 				if (!tables_map[className]) {
 					tables_map[className] = new LuciTable();
 					infoContainer.appendChild(tables_map[className].fieldset);
+					self.attachSectionHandlers(tables_map[className].fieldset, className, modemId, infoContainer);
 				}
 				tables_map[className].setTitle(className);
 				tables_map[className].setData(grouped[className]);
-			}
+				
+				// Restore collapsed state
+				var collapsedState = self.getCollapsedState(modemId, className);
+				if (collapsedState) {
+					tables_map[className].fieldset.classList.add('collapsed');
+				} else {
+					tables_map[className].fieldset.classList.remove('collapsed');
+				}
+			});
 			
 			// Update refresh time
 			if (updateTimeElement) {
@@ -352,6 +504,13 @@ return view.extend({
 		selectorSection.appendChild(selectorTable);
 		container.appendChild(selectorSection);
 		
+		// Create copyright display
+		var copyrightDiv = E('div', { 
+			'class': 'copyright-section',
+			'style': 'display: none;'
+		});
+		container.appendChild(copyrightDiv);
+		
 		// Create update time display
 		var updateTimeSection = E('fieldset', { 'class': 'cbi-section' });
 		var updateTimeDiv = E('div', { 
@@ -382,7 +541,7 @@ return view.extend({
 				tables_map = {};
 			}
 			
-			self.updateModemInfo(selectedModem, tables_map, infoContainer, updateTimeDiv);
+			self.updateModemInfo(selectedModem, tables_map, infoContainer, updateTimeDiv, copyrightDiv);
 		};
 		
 		// Selector change handler
@@ -396,7 +555,7 @@ return view.extend({
 		// Start polling (every 10 seconds)
 		poll.add(function() {
 			var selectedModem = select.value;
-			self.updateModemInfo(selectedModem, tables_map, infoContainer, updateTimeDiv);
+			self.updateModemInfo(selectedModem, tables_map, infoContainer, updateTimeDiv, copyrightDiv);
 		}, 10);
 		
 		return container;
