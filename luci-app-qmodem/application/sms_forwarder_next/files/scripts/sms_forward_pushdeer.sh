@@ -15,7 +15,7 @@ if [ -z "$API_CONFIG" ]; then
 fi
 
 # Extract configuration using jq or manual parsing
-PUSH_KEY=$(echo "$API_CONFIG" | jq -r '.push_key' 2>/dev/null)
+PUSH_KEY=$(echo "$API_CONFIG" | jq -r '.pushkey' 2>/dev/null)
 ENDPOINT=$(echo "$API_CONFIG" | jq -r '.endpoint' 2>/dev/null)
 
 # Handle null values from jq

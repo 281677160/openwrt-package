@@ -285,6 +285,7 @@ case "$1" in
     "scan_all": {},
     "get_pcie_devices": {},
     "get_usb_devices": {},
+    "get_available_devices": {},
     "get_leds": {},
     "get_network_interfaces": {},
     "get_tty_ports": {}
@@ -456,17 +457,8 @@ EOF
                 ;;
                 
             do_reboot)
-                read -r input
                 params=$(echo "$input" | jsonfilter -e '@.params')
                 reboot_method=$(echo "$params" | jq -r '.method')
-                
-                # Source helper functions and get configuration
-                . /usr/share/qmodem/modem_util.sh
-                get_modem_config "$config_section"
-                
-                # Load vendor-specific script
-                load_vendor_script "$vendor"
-                
                 
                 case "$reboot_method" in
                     "hard")
@@ -480,6 +472,7 @@ EOF
                 json_init
                 json_add_object result
                 json_add_string status "1"
+                json_add_string method "$reboot_method"
                 json_close_object
                 json_dump
                 ;;
@@ -748,6 +741,43 @@ EOF
                     done
                 fi
                 json_close_array
+                json_dump
+                ;;
+            
+            get_available_devices)
+                json_init
+                json_add_object "devices"
+                # Add PCIe devices
+                if [ -d "/sys/bus/pci/devices/" ]; then
+                    for device in /sys/bus/pci/devices/*; do
+                        [ -e "$device" ] || continue
+                        device_id=$(basename "$device")
+                        # Convert to UCI-safe name
+                        uci_name=$(echo "$device_id" | sed 's/\./_/g; s/:/_/g; s/-/_/g')
+                        json_add_object "$uci_name"
+                        json_add_string "label" "$device_id [pcie]"
+                        json_add_string "type" "pcie"
+                        json_add_string "path" "/sys/bus/pci/devices/$device_id"
+                        json_close_object
+                    done
+                fi
+                # Add USB devices
+                if [ -d "/sys/bus/usb/devices/" ]; then
+                    for device in /sys/bus/usb/devices/*; do
+                        [ -e "$device" ] || continue
+                        device_id=$(basename "$device")
+                        # Skip root hubs (usb1, usb2, etc.)
+                        echo "$device_id" | grep -q '^usb[0-9]\+$' && continue
+                        # Convert to UCI-safe name
+                        uci_name=$(echo "$device_id" | sed 's/\./_/g; s/:/_/g; s/-/_/g')
+                        json_add_object "$uci_name"
+                        json_add_string "label" "$device_id [usb]"
+                        json_add_string "type" "usb"
+                        json_add_string "path" "/sys/bus/usb/devices/$device_id"
+                        json_close_object
+                    done
+                fi
+                json_close_object
                 json_dump
                 ;;
             

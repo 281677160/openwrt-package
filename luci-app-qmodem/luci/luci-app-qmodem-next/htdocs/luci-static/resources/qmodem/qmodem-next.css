@@ -212,3 +212,77 @@
 #sms-char-counter {
 	font-weight: bold;
 }
+
+/* Collapsible Section Styles */
+.cbi-section.collapsible > legend,
+.cbi-section.collapsible > .panel-title {
+	cursor: pointer;
+	user-select: none;
+	position: relative;
+	padding-right: 30px;
+}
+
+.cbi-section.collapsible > legend::after,
+.cbi-section.collapsible > .panel-title::after {
+	content: '▼';
+	position: absolute;
+	right: 10px;
+	top: 50%;
+	transform: translateY(-50%);
+	font-size: 0.8em;
+	transition: transform 0.2s ease;
+}
+
+.cbi-section.collapsible.collapsed > legend::after,
+.cbi-section.collapsible.collapsed > .panel-title::after {
+	transform: translateY(-50%) rotate(-90deg);
+}
+
+.cbi-section.collapsible.collapsed > table,
+.cbi-section.collapsible.collapsed > div:not(.panel-title) {
+	display: none;
+}
+
+/* Draggable Section Styles */
+.cbi-section.draggable {
+	cursor: move;
+	transition: box-shadow 0.2s ease;
+}
+
+.cbi-section.draggable.dragging {
+	opacity: 0.5;
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.cbi-section.draggable.drag-over {
+	border-top: 3px solid var(--primary-color-medium, #0066cc);
+}
+
+.cbi-section.draggable > legend,
+.cbi-section.draggable > .panel-title {
+	padding-left: 30px;
+	position: relative;
+}
+
+.cbi-section.draggable > legend::before,
+.cbi-section.draggable > .panel-title::before {
+	content: '≡';
+	position: absolute;
+	left: 10px;
+	top: 50%;
+	transform: translateY(-50%);
+	font-size: 1.2em;
+	color: var(--text-color-secondary, #888888);
+}
+
+/* Copyright Display Styles */
+.copyright-section {
+	background: var(--background-color-medium, #f9f9f9);
+	border: 1px solid var(--border-color-low, #e0e0e0);
+	border-radius: 4px;
+	padding: 10px 15px;
+	margin: 10px 0;
+	font-size: 0.9em;
+	color: var(--text-color-secondary, #666666);
+	text-align: center;
+}

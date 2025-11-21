@@ -283,7 +283,7 @@ function saveReceivedSms(config, config_section, received_from_sim) {
 				sender: sms.sender,
 				timestamp: sms.timestamp,
 				content: sms.content,
-				reference: sms.reference,
+				reference: `${sms.reference}_${sms.timestamp}`,  // Unique reference for multipart
 				total: sms.total,
 				part: sms.part,
 				is_read: false,

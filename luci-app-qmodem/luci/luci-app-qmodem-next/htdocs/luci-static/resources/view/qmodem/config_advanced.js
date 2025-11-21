@@ -315,7 +315,7 @@ return view.extend({
 					'name': 'mode_' + modem.id,
 					'value': mode,
 					'id': 'mode_' + modem.id + '_' + mode,
-					'checked': mode === currentMode
+					'checked': mode === currentMode ? 'checked' : null
 				});
 				var label = E('label', {
 					'for': 'mode_' + modem.id + '_' + mode,
@@ -454,7 +454,7 @@ return view.extend({
 					'name': 'network_' + modem.id,
 					'value': network,
 					'id': 'network_' + modem.id + '_' + network,
-					'checked': networkPrefer[network] === '1' || networkPrefer[network] === 1
+					'checked': networkPrefer[network] === '1' || networkPrefer[network] === 1 ? 'checked' : null
 				});
 				var label = E('label', {
 					'for': 'network_' + modem.id + '_' + network,
@@ -784,6 +784,41 @@ return view.extend({
 		var buttonSection = E('div', { 'class': 'cbi-value' });
 		buttonSection.appendChild(E('label', { 'class': 'cbi-value-title' }, ''));
 		var buttonField = E('div', { 'class': 'cbi-value-field' });
+		var unlockButton = E('button', {
+			'class': 'btn cbi-button-action',
+			'id': 'unlock_button_' + modem.id,
+			'style': 'margin-right: 10px;',
+			'click': function() {
+				// Unlock cell
+				var btn = this;
+				btn.disabled = true;
+				btn.textContent = _('Unlocking...');
+				// rpc call lockcell but arfcn and pci empty
+				qmodem.setNeighborCell(modem.id, {
+					rat: '0',
+					pci: '',
+					arfcn: '',
+					band: '',
+					scs: ''
+				}).then(function(result) {
+					if (result) {
+						ui.addNotification(null, E('p', _('Cell unlocked successfully')), 'success');
+						//  Refresh status
+						self.updateLockCellStatus(modem, statusContent);
+						
+					} else {
+						ui.addNotification(null, E('p', _('Failed to unlock cell')), 'error');
+					}
+					btn.disabled = false;
+					btn.textContent = _('Unlock Cell');
+				}).catch(function(e) {
+					ui.addNotification(null, E('p', _('Error: %s').format(e.message)), 'error');
+					btn.disabled = false;
+					btn.textContent = _('Unlock Cell');
+				});
+			}
+		}, _('Unlock Cell'));
+		buttonField.appendChild(unlockButton);
 		var submitButton = E('button', {
 			'class': 'btn cbi-button-action',
 			'id': 'submit_lockcell_' + modem.id,
@@ -858,7 +893,7 @@ return view.extend({
 				scanButton.textContent = _('Scan Neighbor Cells');
 				return;
 			}
-
+			result = result.neighborcell;
 			var nrCells = result.NR || [];
 			var lteCells = result.LTE || [];
 			var lockcellStatus = result.lockcell_status || {};
@@ -1013,6 +1048,7 @@ return view.extend({
 		if (!lockcellStatus) {
 			// Try to get fresh status
 			qmodem.getNeighborCell(modem.id).then(function(result) {
+				result = result.neighborcell;
 				if (result && result.lockcell_status) {
 					renderStatus(result.lockcell_status);
 				} else {
@@ -1191,7 +1227,7 @@ return view.extend({
 						'name': 'band_' + modem.id + '_' + bandClass,
 						'value': band.band_id,
 						'id': 'band_' + modem.id + '_' + bandClass + '_' + band.band_id,
-						'checked': lockbandState[bandClass].locked.includes(band.band_id.toString()),
+						'checked': lockbandState[bandClass].locked.includes(band.band_id.toString()) ? 'checked' : null,
 						'change': function() {
 							if (this.checked) {
 								if (!lockbandState[bandClass].locked.includes(band.band_id.toString())) {

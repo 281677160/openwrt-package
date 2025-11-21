@@ -52,7 +52,8 @@ fi
 
 logger -t modem_hotplug "net slot: ${slot} action: ${ACTION} slot_type: ${slot_type}"
 case "${ACTION}" in
-    add)
+    add|\
+    bind)
         /usr/share/qmodem/modem_scan.sh add "${slot}" "${slot_type}"
         ;;
 esac

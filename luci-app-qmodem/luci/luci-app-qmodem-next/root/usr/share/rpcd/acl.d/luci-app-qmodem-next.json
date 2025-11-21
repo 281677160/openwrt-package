@@ -31,7 +31,8 @@
 					"get_usb_devices",
 					"get_leds",
 					"get_network_interfaces",
-					"get_tty_ports"
+					"get_tty_ports",
+					"get_available_devices"
 				],
 				"qmodem_sms": [
 					"list_sms",

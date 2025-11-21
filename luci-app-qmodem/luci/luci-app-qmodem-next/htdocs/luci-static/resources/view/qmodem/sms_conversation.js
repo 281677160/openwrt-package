@@ -572,7 +572,6 @@ return view.extend({
 			message.type,
 			idsToDelete
 		).then(function(result) {
-			console.log('Delete result:', result);
 			if (result.error) {
 				ui.addNotification(null, E('p', _('Failed to delete SMS: ') + result.error), 'error');
 				return;
