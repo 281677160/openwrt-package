@@ -5,6 +5,7 @@
 'require rpc';
 'require ui';
 'require poll';
+'require qmodem.modem_cfg as modemCfg';
 
 var callSystemBoard = rpc.declare({
 	object: 'system',
@@ -51,6 +52,11 @@ var callGetTtyPorts = rpc.declare({
 	method: 'get_tty_ports'
 });
 
+var callGetAvailableDevices = rpc.declare({
+	object: 'qmodem',
+	method: 'get_available_devices'
+});
+
 return view.extend({
 	load: function() {
 		return Promise.all([
@@ -60,13 +66,15 @@ return view.extend({
 			callGetUsbDevices(),
 			callGetLeds(),
 			callGetNetworkInterfaces(),
-			callGetTtyPorts()
+			callGetTtyPorts(),
+			callGetAvailableDevices()
 		]).then(L.bind(function(results) {
 			this.pcieDevices = results[2] && results[2].devices ? results[2].devices : [];
 			this.usbDevices = results[3] && results[3].devices ? results[3].devices : [];
 			this.leds = results[4] && results[4].leds ? results[4].leds : [];
 			this.networkInterfaces = results[5] && results[5].interfaces ? results[5].interfaces : [];
 			this.ttyPorts = results[6] && results[6].ports ? results[6].ports : [];
+			this.availableDevices = results[7] && results[7].devices ? results[7].devices : {};
 			return results;
 		}, this));
 	},
@@ -185,17 +193,75 @@ return view.extend({
 
 		// Modem Configuration (Device Settings Only)
 		s = m.section(form.GridSection, 'modem-device', _('Modem Devices'));
-		s.addremove = true;
-		s.anonymous = false;
+		s.anonymous = true;
 		s.sortable = true;
 		s.modaltitle = L.bind(function(section_id) {
 			var name = uci.get('qmodem', section_id, 'name');
 			return _('Modem Device') + ': ' + (name || section_id);
 		}, this);
 
+		// Use available devices from RPC call
+		var availableDevices = this.availableDevices || {};
+
+		// Custom add handler
+		s.addremove = true;
+		s.handleAdd = function(ev, section_id) {
+			var deviceKeys = Object.keys(availableDevices);
+			if (deviceKeys.length === 0) {
+				ui.addNotification(null, E('p', _('No devices available. Please scan for devices first.')), 'warning');
+				return;
+			}
+
+			var selectList = deviceKeys.map(function(key) {
+				return E('option', { value: key }, availableDevices[key].label);
+			});
+
+			ui.showModal(_('Add Modem Device'), [
+				E('p', _('Select a device to configure:')),
+				E('div', { 'class': 'cbi-section' }, [
+					E('label', { 'class': 'cbi-value-title' }, _('Available Devices')),
+					E('select', { 'id': 'device-select', 'class': 'cbi-input-select' }, selectList)
+				]),
+				E('div', { 'class': 'right' }, [
+					E('button', {
+						'class': 'btn cbi-button-neutral',
+						'click': ui.hideModal
+					}, _('Cancel')),
+					E('button', {
+						'class': 'btn cbi-button-positive',
+						'click': L.bind(function() {
+							var select = document.getElementById('device-select');
+							var selectedKey = select.value;
+							var deviceInfo = availableDevices[selectedKey];
+							
+							// Create new section with selected device name
+							var sid = uci.add('qmodem', 'modem-device', selectedKey);
+							
+							// Set type and path automatically
+							uci.set('qmodem', sid, 'data_interface', deviceInfo.type);
+							uci.set('qmodem', sid, 'path', deviceInfo.path);
+							
+							ui.hideModal();
+							m.save().then(function() {
+								window.location.reload();
+							});
+						}, this)
+					}, _('Add'))
+				])
+			]);
+		};
+
 		o = s.option(form.Flag, 'enabled', _('Enabled'));
 		o.default = '1';
 		o.editable = true;
+		o.modalonly = true;
+
+		o = s.option(form.DummyValue, 'data_interface', _('Type'));
+		o.editable = true;
+		o.cfgvalue = function(section_id) {
+			var type = uci.get('qmodem', section_id, 'data_interface') || '-';
+			return type.toUpperCase();
+		};
 
 		o = s.option(form.Flag, 'soft_reboot', _('Soft Reboot'));
 		o.description = _('enable modem soft reboot');
@@ -203,12 +269,16 @@ return view.extend({
 		o.rmempty = false;
 		o.modalonly = true;
 
-	o = s.option(form.Value, 'name', _('Model Name'));
-	o.placeholder = _('e.g.') + ' RG500Q';
-	o.rmempty = false;	o = s.option(form.Value, 'alias', _('Alias'));
-	o.placeholder = _('e.g.') + ' Modem1';	o = s.option(form.Value, 'path', _('Device Path'));
+		o = s.option(form.Value, 'name', _('Model Name'));
+		o.placeholder = _('e.g.') + ' RG500Q';
+		o.rmempty = false;	o = s.option(form.Value, 'alias', _('Alias'));
+	o.placeholder = _('e.g.') + ' Modem1';
+	o.editable = true;
+
+	o = s.option(form.Value, 'path', _('Device Path'));
 	o.placeholder = _('e.g.') + ' /sys/bus/usb/devices/1-1';
-	o.rmempty = false;	o = s.option(form.Value, 'at_port', _('AT Port'));
+	o.rmempty = false;
+	o.readonly = true;	o = s.option(form.Value, 'at_port', _('AT Port'));
 	o.placeholder = _('e.g.') + ' /dev/ttyUSB2';
 	o.rmempty = false;
 	if (this.ttyPorts && this.ttyPorts.length > 0) {
@@ -221,7 +291,7 @@ return view.extend({
 		this.ttyPorts.forEach(function(port) {
 			o.value(port.id, port.label);
 		});
-	}	o = s.option(form.Value, 'override_at_port', _('Override AT Port'));
+	} 		o = s.option(form.Value, 'override_at_port', _('Override AT Port'));
 	o.placeholder = _('e.g.') + ' /dev/ttyUSB3';
 	if (this.ttyPorts && this.ttyPorts.length > 0) {
 		this.ttyPorts.forEach(function(port) {
@@ -229,6 +299,60 @@ return view.extend({
 		});
 	}		o = s.option(form.Flag, 'use_ubus', _('Use Ubus AT Daemon'));
 		o.default = '0';
+
+
+		// Additional modem configuration (modal only)
+		//vendor
+		o = s.option(form.ListValue, 'vendor', _('Vendor'));
+		o.modalonly = true;
+		o.optional = true;
+		for (var key in modemCfg.manufacturers) {
+			o.value(key, modemCfg.manufacturers[key]);
+		}
+
+		o = s.option(form.ListValue, 'platform', _('Platform'));
+		o.modalonly = true;
+		o.optional = true;
+		for (var key in modemCfg.platforms) {
+			o.value(key, modemCfg.platforms[key]);
+		}
+
+		o = s.option(form.DynamicList, 'modes', _('Supported Modes'));
+		o.description = _('Supported driver modes (e.g., RNDIS/NCM/QMI/MBIM/ETH/PPP)');
+		o.modalonly = true;
+		o.optional = true;
+		for (var key in modemCfg.modes) {
+			o.value(key, modemCfg.modes[key]);
+		}
+
+		o = s.option(form.DynamicList, 'disabled_features', _('Disabled Features'));
+		o.description = _('Select features to disable for this modem.');
+		o.modalonly = true;
+		o.optional = true;
+		for (var key in modemCfg.disabled_features) {
+			o.value(key, modemCfg.disabled_features[key]);
+		}
+
+		o = s.option(form.Value, 'wcdma_band', _('WCDMA Band'));
+		o.placeholder = _('e.g.') + ' 1/2/5/8';
+		o.modalonly = true;
+		o.optional = true;
+
+		o = s.option(form.Value, 'lte_band', _('LTE Band'));
+		o.placeholder = _('e.g.') + ' 1/3/5/7/8/20';
+		o.modalonly = true;
+		o.optional = true;
+
+		o = s.option(form.Value, 'nsa_band', _('NSA Band'));
+		o.placeholder = _('e.g.') + ' 41/78';
+		o.modalonly = true;
+		o.optional = true;
+
+		o = s.option(form.Value, 'sa_band', _('SA Band'));
+		o.placeholder = _('e.g.') + ' 78/79';
+		o.modalonly = true;
+		o.optional = true;
+
 	// ===========================================
 	// Modem Slot Configuration
 	// ===========================================
@@ -323,13 +447,15 @@ return view.extend({
 	o.optional = true;
 	o.modalonly = true;
 
-	o = s.option(form.Value, 'gpio_down', _('GPIO Down Value'));
-	o.depends('gpio', /\./);
+	o = s.option(form.Value, 'gpio_down', _('GPIO Value(Modem Power Down)'));
+	o.depends({gpio: /./ } );
 	o.placeholder = _('e.g.') + ' 0';
+	o.modalonly = true;
 
-	o = s.option(form.Value, 'gpio_up', _('GPIO Up Value'));
-	o.depends('gpio', /\./);
+	o = s.option(form.Value, 'gpio_up', _('GPIO Value(Modem Power Up)'));
+	o.depends({gpio: /./ } );
 	o.placeholder = _('e.g.') + ' 1';
+	o.modalonly = true;
 
 		return m.render();
 	}
