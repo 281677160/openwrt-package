@@ -97,12 +97,6 @@ return L.Class.extend({
 		// Generate PDU using sms-pdu.js
 		encoding = encoding || '16bit';  // Default to 16bit for better compatibility
 		
-		console.log('sendSms called:', {
-			configSection: configSection,
-			recipient: recipient,
-			message: message,
-			encoding: encoding
-		});
 		
 		try {
 			var pdus = pduParser.generate({
@@ -111,7 +105,6 @@ return L.Class.extend({
 				encoding: encoding
 			});
 
-			console.log("Generated PDUs:", pdus);
 
 			if (!pdus || pdus.length === 0) {
 				console.error('Failed to generate PDU');
@@ -121,11 +114,8 @@ return L.Class.extend({
 			// For multi-part messages, we need to send all parts
 			// For now, we'll send the first PDU and handle multi-part in the future
 			var pdu = pdus[0];
-			console.log("Using PDU:", pdu, "Length:", pdu.length);
-			console.log("Calling RPC with:", configSection || 'modem_1', recipient, pdu.substring(0, 50) + '...', message);
-			
+
 			return callSendSms(configSection || 'modem_1', recipient, pdu, message).then(function(result) {
-				console.log('SMS send result:', result);
 				return result;
 			}).catch(function(error) {
 				console.error('SMS send error:', error);

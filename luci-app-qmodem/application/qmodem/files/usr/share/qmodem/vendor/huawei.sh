@@ -10,6 +10,7 @@ vendor_get_disabled_features(){
     case "$platform" in
         *)
             json_add_string "" "LockBand"
+            json_add_string "" "NeighborCell"
             ;;
     esac
 }
