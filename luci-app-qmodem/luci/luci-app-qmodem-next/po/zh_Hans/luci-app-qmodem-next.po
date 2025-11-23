@@ -2313,3 +2313,11 @@ msgstr "解锁小区"
 # Source: view/qmodem/config_advanced.js:795
 msgid "Unlocking..."
 msgstr "解锁中..."
+
+# Source: view/qmodem/network_config.js:340
+msgid "Do Not NAT(Only for Quectel Modem)"
+msgstr "不启用NAT（仅适用于移远模组）"
+
+# Source: view/qmodem/network_config.js:341
+msgid "If enabled, will turn off NAT function on quectel modem."
+msgstr "启用后，将关闭移远模组的NAT功能。"
