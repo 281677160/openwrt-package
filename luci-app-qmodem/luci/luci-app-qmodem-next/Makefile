@@ -8,6 +8,7 @@ include ../../version.mk
 
 LUCI_TITLE:=LuCI Modern UI for QModem(Not Support Lua Version)
 LUCI_DEPENDS:=+qmodem +luci-base +sms-forwarder-next
+CONFFILES:=luci-app-qmodem
 LUCI_PKGARCH:=all
 PKG_VERSION:=$(QMODEM_VERSION)
 PKG_RELEASE:=1
