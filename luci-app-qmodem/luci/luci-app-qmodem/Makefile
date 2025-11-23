@@ -34,6 +34,17 @@ choice
   bool "Generic QMI driver"
 endchoice
 
+choice 
+	prompt "MHI PCIe Modem Driver Selection"
+	depends on PACKAGE_luci-app-qmodem_INCLUDE_ADD_PCI_SUPPORT
+	
+	config PACKAGE_luci-app-qmodem_VENDOR_MHI_PCIe_DRIVER
+	bool "Use Vendor MHI PCIe Driver"
+
+	config  PACKAGE_luci-app-qmodem_GENERIC_MHI_PCIe_DRIVER
+	bool "Use Generic MHI PCIe Driver"
+endchoice
+
 choice
   prompt "Quectel Connect Manager Selection"
   default PACKAGE_luci-app-qmodem_USE_TOM_CUSTOMIZED_QUECTEL_CM
