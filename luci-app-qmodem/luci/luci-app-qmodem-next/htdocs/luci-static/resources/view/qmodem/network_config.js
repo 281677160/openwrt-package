@@ -337,6 +337,12 @@ return view.extend({
 	o.rmempty = false;
 	o.modalonly = true;
 
+	o = s.option(form.Flag, 'donot_nat', _('Do Not NAT(Only for Quectel Modem)'));
+	o.description = _('If enabled, will turn off NAT function on quectel modem.');
+	o.default = '0';
+	o.rmempty = false;
+	o.modalonly = true;
+
 	o = s.option(form.Flag, 'ra_master', _('RA Master'));
 	o.description = _('Caution: Enabling this option will make it the IPV6 RA Master, and only one interface can be configured as such.');
 	o.default = '0';
