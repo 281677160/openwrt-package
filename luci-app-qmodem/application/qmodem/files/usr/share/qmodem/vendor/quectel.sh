@@ -1659,98 +1659,58 @@ EOF
     add_plain_info_entry "network_mode" "$network_mode" "Network Mode"
     case $network_mode in
     "NR5G-SA Mode"*)
-        add_plain_info_entry "MMC" "$nr_mcc" "Mobile Country Code"
-        add_plain_info_entry "MNC" "$nr_mnc" "Mobile Network Code"
         add_plain_info_entry "Duplex Mode" "$nr_duplex_mode" "Duplex Mode"
-        add_plain_info_entry "Cell ID" "$nr_cell_id" "Cell ID"
-        add_plain_info_entry "Physical Cell ID" "$nr_physical_cell_id" "Physical Cell ID"
-        add_plain_info_entry "TAC" "$nr_tac" "Tracking area code of cell served by neighbor Enb"
-        add_plain_info_entry "ARFCN" "$nr_arfcn" "Absolute Radio-Frequency Channel Number"
-        add_plain_info_entry "Band" "$nr_band" "Band"
-        add_plain_info_entry "DL Bandwidth" "$nr_dl_bandwidth" "DL Bandwidth"
-        add_plain_info_entry "UL Bandwidth" "$nr_ul_bandwidth" "UL Bandwidth"
-        add_bar_info_entry "RSRP" "$nr_rsrp" "Reference Signal Received Power" -140 -44 dBm
-        add_bar_info_entry "RSRQ" "$nr_rsrq" "Reference Signal Received Quality" -19.5 -3 dB
-        add_bar_info_entry "SINR" "$nr_sinr" "Signal to Interference plus Noise Ratio Bandwidth" 0 30 dB
-        add_plain_info_entry "RxLev" "$nr_rxlev" "Received Signal Level"
+        set_5g_cell_info "$nr_mcc" "$nr_mnc" "$nr_tac" "$nr_cell_id" "$nr_arfcn" \
+            "$nr_physical_cell_id" "$nr_band" "$nr_ul_bandwidth" "$nr_dl_bandwidth" \
+            "$nr_rsrp" "$nr_rsrq" "$nr_sinr" "" ""
         add_plain_info_entry "SCS" "$nr_scs" "SCS"
         add_plain_info_entry "Srxlev" "$nr_srxlev" "Serving Cell Receive Level"
-        
+        # Add CA info if present
+        if [ -n "$ca_scc_arfcn" ] || [ -n "$ca_scc_pci" ] || [ -n "$ca_scc_band_num" ]; then
+            add_ca_info "5G" "$ca_scc_arfcn" "$ca_scc_pci" "$ca_scc_band_num" "" "$scc_nr_dl_bandwidth"
+        fi
         ;;
     "EN-DC Mode")
+        # LTE part
         add_plain_info_entry "LTE" "LTE" ""
-        add_plain_info_entry "MCC" "$endc_lte_mcc" "Mobile Country Code"
-        add_plain_info_entry "MNC" "$endc_lte_mnc" "Mobile Network Code"
         add_plain_info_entry "Duplex Mode" "$endc_lte_duplex_mode" "Duplex Mode"
-        add_plain_info_entry "Cell ID" "$endc_lte_cell_id" "Cell ID"
-        add_plain_info_entry "Physical Cell ID" "$endc_lte_physical_cell_id" "Physical Cell ID"
-        add_plain_info_entry "EARFCN" "$endc_lte_earfcn" "E-UTRA Absolute Radio Frequency Channel Number"
-        add_plain_info_entry "Freq band indicator" "$endc_lte_freq_band_ind" "Freq band indicator"
-        add_plain_info_entry "Band" "$endc_lte_band" "Band"
-        add_plain_info_entry "DL Bandwidth" "$endc_lte_dl_bandwidth" "DL Bandwidth"
-        add_plain_info_entry "UL Bandwidth" "$endc_lte_ul_bandwidth" "UL Bandwidth"
-        add_plain_info_entry "TAC" "$endc_lte_tac" "Tracking area code of cell served by neighbor Enb"
-        add_bar_info_entry "RSRP" "$endc_lte_rsrp" "Reference Signal Received Power" -140 -44 dBm
-        add_bar_info_entry "RSRQ" "$endc_lte_rsrq" "Reference Signal Received Quality" -19.5 -3 dB
+        extra_info="LTE"
+        set_4g_cell_info "$endc_lte_mcc" "$endc_lte_mnc" "$endc_lte_tac" "$endc_lte_cell_id" \
+            "$endc_lte_earfcn" "$endc_lte_physical_cell_id" "$endc_lte_band" \
+            "$endc_lte_ul_bandwidth" "$endc_lte_dl_bandwidth" "$endc_lte_rsrp" "$endc_lte_rsrq" \
+            "$endc_lte_sinr" "$endc_lte_rssnr" "$endc_lte_rxlev"
         add_bar_info_entry "RSSI" "$endc_lte_rssi" "Received Signal Strength Indicator" -120 -20 dBm
-        add_bar_info_entry "SINR" "$endc_lte_sinr" "Signal to Interference plus Noise Ratio Bandwidth" 0 30 dB
-        add_plain_info_entry "RxLev" "$endc_lte_rxlev" "Received Signal Level"
-        add_plain_info_entry "RSSNR" "$endc_lte_rssnr" "Radio Signal Strength Noise Ratio"
         add_plain_info_entry "CQI" "$endc_lte_cql" "Channel Quality Indicator"
         add_plain_info_entry "TX Power" "$endc_lte_tx_power" "TX Power"
         add_plain_info_entry "Srxlev" "$endc_lte_srxlev" "Serving Cell Receive Level"
-        add_plain_info_entry NR5G-NSA "NR5G-NSA" ""
-        add_plain_info_entry "MCC" "$endc_nr_mcc" "Mobile Country Code"
-        add_plain_info_entry "MNC" "$endc_nr_mnc" "Mobile Network Code"
-        add_plain_info_entry "Physical Cell ID" "$endc_nr_physical_cell_id" "Physical Cell ID"
-        add_plain_info_entry "ARFCN" "$endc_nr_arfcn" "Absolute Radio-Frequency Channel Number"
-        add_plain_info_entry "Band" "$endc_nr_band" "Band"
-        add_plain_info_entry "DL Bandwidth" "$endc_nr_dl_bandwidth" "DL Bandwidth"
-        add_bar_info_entry "RSRP" "$endc_nr_rsrp" "Reference Signal Received Power" -140 -44 dBm
-        add_bar_info_entry "RSRQ" "$endc_nr_rsrq" "Reference Signal Received Quality" -19.5 -3 dB
-        add_bar_info_entry "SINR" "$endc_nr_sinr" "Signal to Interference plus Noise Ratio Bandwidth" 0 30 dB
+        # NR5G-NSA part
+        add_plain_info_entry "NR5G-NSA" "NR5G-NSA" ""
+        extra_info="NR"
+        set_5g_cell_info "$endc_nr_mcc" "$endc_nr_mnc" "" "" "$endc_nr_arfcn" \
+            "$endc_nr_physical_cell_id" "$endc_nr_band" "" "$endc_nr_dl_bandwidth" \
+            "$endc_nr_rsrp" "$endc_nr_rsrq" "$endc_nr_sinr" "" ""
         add_plain_info_entry "SCS" "$endc_nr_scs" "SCS"
         ;;
     "LTE Mode")
-        add_plain_info_entry "MCC" "$lte_mcc" "Mobile Country Code"
-        add_plain_info_entry "MNC" "$lte_mnc" "Mobile Network Code"
         add_plain_info_entry "Duplex Mode" "$lte_duplex_mode" "Duplex Mode"
-        add_plain_info_entry "Cell ID" "$lte_cell_id" "Cell ID"
-        add_plain_info_entry "Physical Cell ID" "$lte_physical_cell_id" "Physical Cell ID"
-        add_plain_info_entry "EARFCN" "$lte_earfcn" "E-UTRA Absolute Radio Frequency Channel Number"
-        add_plain_info_entry "Freq band indicator" "$lte_freq_band_ind" "Freq band indicator"
-        add_plain_info_entry "Band" "$lte_band" "Band"
-        add_plain_info_entry "DL Bandwidth" "$lte_dl_bandwidth" "DL Bandwidth"
-        add_plain_info_entry "UL Bandwidth" "$lte_ul_bandwidth" "UL Bandwidth"
-        add_plain_info_entry "TAC" "$lte_tac" "Tracking area code of cell served by neighbor Enb"
-        add_bar_info_entry "RSRQ" "$lte_rsrq" "Reference Signal Received Quality" -19.5 -3 dB
+        extra_info="LTE"
+        set_4g_cell_info "$lte_mcc" "$lte_mnc" "$lte_tac" "$lte_cell_id" "$lte_earfcn" \
+            "$lte_physical_cell_id" "$lte_band" "$lte_ul_bandwidth" "$lte_dl_bandwidth" \
+            "$lte_rsrp" "$lte_rsrq" "$lte_sinr" "$lte_rssnr" "$lte_rxlev"
         add_bar_info_entry "RSSI" "$lte_rssi" "Received Signal Strength Indicator" -120 -20 dBm
-        add_bar_info_entry "SINR" "$lte_sinr" "Signal to Interference plus Noise Ratio Bandwidth" 0 30 dB
-        add_plain_info_entry "RxLev" "$lte_rxlev" "Received Signal Level"
-        add_plain_info_entry "RSSNR" "$lte_rssnr" "Radio Signal Strength Noise Ratio"
         add_plain_info_entry "CQI" "$lte_cql" "Channel Quality Indicator"
         add_plain_info_entry "TX Power" "$lte_tx_power" "TX Power"
         add_plain_info_entry "Srxlev" "$lte_srxlev" "Serving Cell Receive Level"
         ;;
     "WCDMA Mode")
-        add_plain_info_entry "MCC" "$wcdma_mcc" "Mobile Country Code"
-        add_plain_info_entry "MNC" "$wcdma_mnc" "Mobile Network Code"
-        add_plain_info_entry "LAC" "$wcdma_lac" "Location Area Code"
-        add_plain_info_entry "Cell ID" "$wcdma_cell_id" "Cell ID"
-        add_plain_info_entry "UARFCN" "$wcdma_uarfcn" "UTRA Absolute Radio Frequency Channel Number"
-        add_plain_info_entry "PSC" "$wcdma_psc" "Primary Scrambling Code"
-        add_plain_info_entry "RAC" "$wcdma_rac" "Routing Area Code"
-        add_plain_info_entry "Band" "$wcdma_band" "Band"
-        add_bar_info_entry "RSCP" "$wcdma_rscp" "Received Signal Code Power" -120 -25 dBm
-        add_plain_info_entry "Ec/Io" "$wcdma_ecio" "Ec/Io"
+        set_3g_cell_info "$wcdma_mcc" "$wcdma_mnc" "$wcdma_lac" "$wcdma_cell_id" \
+            "$wcdma_uarfcn" "$wcdma_psc" "" "" "" "$wcdma_rscp" "" "$wcdma_ecio" "" "$wcdma_rac"
         add_plain_info_entry "Ec/No" "$wcdma_ecno" "Ec/No"
         add_plain_info_entry "Physical Channel" "$wcdma_phych" "Physical Channel"
         add_plain_info_entry "Spreading Factor" "$wcdma_sf" "Spreading Factor"
         add_plain_info_entry "Slot" "$wcdma_slot" "Slot"
         add_plain_info_entry "Speech Code" "$wcdma_speech_code" "Speech Code"
         add_plain_info_entry "Compression Mode" "$wcdma_com_mod" "Compression Mode"
-        add_plain_info_entry "RxLev" "$wcdma_rxlev" "RxLev"
-        
         ;;
     esac
 }

@@ -171,9 +171,11 @@ return view.extend({
 			responseSection.appendChild(E('label', { 'class': 'cbi-value-title' }, _('Response')));
 			var responseField = E('div', { 'class': 'cbi-value-field' });
 			
-			var responseDiv = E('pre', {
+			var responseDiv = E('textarea', {
 				'id': 'at_response_' + modem.id,
-				'style': 'background: var(#404040); color: var(#ffffff); padding: 10px; min-height: 100px; max-height: 400px; overflow-y: auto; font-family: monospace; white-space: pre-wrap; border: 1px solid var(--border-color-medium, #cccccc);'
+				'style': 'padding: 10px; overflow-y: auto; font-family: monospace; white-space: pre-wrap; width: 80%;',
+				'rows': 20,
+				'readonly': 'readonly',
 			}, _('Click "Send AT Command" to execute'));
 
 			var sendBtn = E('button', {
