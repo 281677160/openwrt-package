@@ -57,6 +57,13 @@ var callGetAvailableDevices = rpc.declare({
 	method: 'get_available_devices'
 });
 
+var callRemoveModem = rpc.declare({
+	object: 'qmodem',
+	method: 'remove_modem',
+	params: ['config_section'],
+	expect: { }
+});
+
 return view.extend({
 	load: function() {
 		return Promise.all([
@@ -135,6 +142,7 @@ return view.extend({
 						var msg = res.message || _('PCIe scan failed');
 						if (res.output) msg += ' - ' + res.output;
 						ui.addNotification(null, E('p', msg), 'warning');
+						window.location.reload();
 					}
 				})
 				.catch(function(err) {
@@ -154,6 +162,7 @@ return view.extend({
 					ui.hideModal();
 					if (res.code === 0) {
 						ui.addNotification(null, E('p', res.message || _('USB scan completed successfully')), 'info');
+						window.location.reload();
 					} else {
 						var msg = res.message || _('USB scan failed');
 						if (res.output) msg += ' - ' + res.output;
@@ -177,6 +186,7 @@ return view.extend({
 					ui.hideModal();
 					if (res.code === 0) {
 						ui.addNotification(null, E('p', res.message || _('Full scan completed successfully')), 'info');
+						window.location.reload();
 					} else {
 						var msg = res.message || _('Full scan failed');
 						if (res.output) msg += ' - ' + res.output;
@@ -250,6 +260,23 @@ return view.extend({
 				])
 			]);
 		};
+		//call remove_modem rpc method on remove
+		s.handleRemove = function(section_id, isturst) {
+			//add a comfirmation dialog
+			if (!confirm(_('Are you sure you want to remove this modem device? this cannot be roll back with uci machanism.'))) {
+				return;
+			}
+			return callRemoveModem(section_id)
+				.then(function() {
+					ui.addNotification(null, E('p', _('Modem device removed successfully')), 'info');
+					//refresh the page
+					window.location.reload();
+				})
+				.catch(function(err) {
+					ui.addNotification(null, E('p', _('Modem device removal failed: ') + (err.message || err)), 'error');
+				});
+		};
+
 
 		o = s.option(form.Flag, 'enabled', _('Enabled'));
 		o.default = '1';

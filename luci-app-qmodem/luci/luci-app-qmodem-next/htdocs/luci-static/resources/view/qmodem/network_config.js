@@ -876,11 +876,10 @@ return view.extend({
 		var dialog = ui.showModal(title, [
 			E('style', {}, '\
 				.dial-log-content { \
-					background: #f5f5f5; \
 					padding: 10px; \
-					border: 1px solid #ddd; \
 					border-radius: 3px; \
 					max-height: 400px; \
+					width: 100%; \
 					overflow-y: auto; \
 					font-family: monospace; \
 					font-size: 12px; \
@@ -890,7 +889,6 @@ return view.extend({
 				.dial-log-empty { \
 					text-align: center; \
 					padding: 40px; \
-					color: #999; \
 				}'),
 			logContent,
 			E('div', { 'class': 'right' }, [
@@ -932,7 +930,7 @@ return view.extend({
 					);
 				} else {
 					container.appendChild(
-						E('pre', { 'class': 'dial-log-content' }, result.log)
+							E('textarea', { 'class': 'dial-log-content','readonly':'readonly','rows':'20','maxlength':'160' }, result.log)
 					);
 				}
 			} else {
