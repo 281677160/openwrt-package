@@ -2321,3 +2321,35 @@ msgstr "不启用NAT（仅适用于移远模组）"
 # Source: view/qmodem/network_config.js:341
 msgid "If enabled, will turn off NAT function on quectel modem."
 msgstr "启用后，将关闭移远模组的NAT功能。"
+
+# Source: generic.sh:262
+msgid "$arfcn_label"
+msgstr "$arfcn_label"
+
+# Source: view/qmodem/settings.js:266
+msgid "Are you sure you want to remove this modem device? this cannot be roll back with uci machanism."
+msgstr "确定要移除此模组设备吗？此操作无法通过UCI机制回滚。"
+
+# Source: generic.sh:263
+msgid "Band (CA)"
+msgstr "频段（载波聚合）"
+
+# Source: generic.sh:265
+msgid "DL Bandwidth (CA)"
+msgstr "下行带宽（载波聚合）"
+
+# Source: view/qmodem/settings.js:276
+msgid "Modem device removal failed: "
+msgstr "模组设备移除失败："
+
+# Source: view/qmodem/settings.js:271
+msgid "Modem device removed successfully"
+msgstr "模组设备已成功移除"
+
+# Source: generic.sh:261
+msgid "Physical Cell ID (CA)"
+msgstr "物理小区ID（载波聚合）"
+
+# Source: generic.sh:264
+msgid "UL Bandwidth (CA)"
+msgstr "上行带宽（载波聚合）"
