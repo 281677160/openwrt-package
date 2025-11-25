@@ -280,6 +280,9 @@ case "$1" in
     "sim_info": {
         "config_section": "string"
     },
+    "remove_modem": {
+        "config_section": "string"
+    },
     "scan_pcie": {},
     "scan_usb": {},
     "scan_all": {},
@@ -305,7 +308,8 @@ EOF
             base_info|cell_info|info|network_info|sim_info|get_copyright|\
             get_disabled_features|get_dns|get_imei|get_lockband|get_mode|\
             get_neighborcell|get_network_prefer|get_reboot_caps|get_sms|\
-            get_at_cfg|clear_dial_log|dial_status|get_dial_log|get_connect_status)
+            get_at_cfg|clear_dial_log|dial_status|get_dial_log|get_connect_status|\
+            remove_modem)
                 # Execute method
                 case "$2" in
                     base_info)
@@ -345,7 +349,7 @@ EOF
                         json_init
                         log_file="/var/run/qmodem/${config_section}_dir/dial_log"
                         if [ -f "$log_file" ]; then
-                            log_content=$(cat "$log_file")
+                            log_content=$(cat "$log_file" | tail -n 100)
                             json_add_string log "$log_content"
                         else
                             json_add_string log ""
@@ -427,6 +431,12 @@ EOF
                         json_init
                         get_connect_status
                         json_add_string connection_status "$connect_status"
+                        json_dump
+                        ;;
+                    remove_modem)
+                        json_init
+                        /usr/share/qmodem/modem_scan.sh remove "$config_section" >/dev/null 2>&1
+                        json_add_string status "$?"
                         json_dump
                         ;;
                 esac

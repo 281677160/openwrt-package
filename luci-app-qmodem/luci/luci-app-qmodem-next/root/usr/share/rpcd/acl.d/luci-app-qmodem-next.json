@@ -23,6 +23,7 @@
 					"get_sms",
 					"info",
 					"network_info",
+					"remove_modem",
 					"sim_info",
 					"scan_all",
 					"scan_pcie",

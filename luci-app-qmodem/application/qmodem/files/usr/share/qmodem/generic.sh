@@ -123,6 +123,150 @@ add_avalible_band_entry()
     json_close_object
 }
 
+# Helper function for 3G cell info
+# Usage: set_3g_cell_info mcc mnc lac cell_id uarfcn psc band ul_bw dl_bw rscp rsrq ecio rxlev rac
+set_3g_cell_info() {
+    local mcc="$1"
+    local mnc="$2"
+    local lac="$3"
+    local cell_id="$4"
+    local uarfcn="$5"
+    local psc="$6"
+    local band="$7"
+    local ul_bw="$8"
+    local dl_bw="$9"
+    local rscp="${10}"
+    local rsrq="${11}"
+    local ecio="${12}"
+    local rxlev="${13}"
+    local rac="${14}"
+    
+    add_plain_info_entry "MCC" "$mcc" "Mobile Country Code"
+    add_plain_info_entry "MNC" "$mnc" "Mobile Network Code"
+    add_plain_info_entry "LAC" "$lac" "Location Area Code"
+    add_plain_info_entry "Cell ID" "$cell_id" "Cell ID"
+    add_plain_info_entry "UARFCN" "$uarfcn" "UTRA Absolute Radio Frequency Channel Number"
+    add_plain_info_entry "PSC" "$psc" "Primary Scrambling Code"
+    add_plain_info_entry "Band" "$band" "Band"
+    add_plain_info_entry "UL Bandwidth" "$ul_bw" "UL Bandwidth"
+    add_plain_info_entry "DL Bandwidth" "$dl_bw" "DL Bandwidth"
+    add_bar_info_entry "RSCP" "$rscp" "Received Signal Code Power" -120 -25 dBm
+    add_bar_info_entry "RSRQ" "$rsrq" "Reference Signal Received Quality" -19.5 -3 dB
+    add_plain_info_entry "Ec/Io" "$ecio" "Ec/Io"
+    add_bar_info_entry "RxLev" "$rxlev" "Received Signal Level" -120 -25 dBm
+    add_plain_info_entry "RAC" "$rac" "Routing Area Code"
+    
+    unset extra_info
+}
+
+# Helper function for 4G cell info
+# Usage: set_4g_cell_info mcc mnc tac cell_id earfcn pci band ul_bw dl_bw rsrp rsrq sinr rssnr rxlev
+set_4g_cell_info() {
+    local mcc="$1"
+    local mnc="$2"
+    local tac="$3"
+    local cell_id="$4"
+    local earfcn="$5"
+    local pci="$6"
+    local band="$7"
+    local ul_bw="$8"
+    local dl_bw="$9"
+    local rsrp="${10}"
+    local rsrq="${11}"
+    local sinr="${12}"
+    local rssnr="${13}"
+    local rxlev="${14}"
+    
+    add_plain_info_entry "MCC" "$mcc" "Mobile Country Code"
+    add_plain_info_entry "MNC" "$mnc" "Mobile Network Code"
+    add_plain_info_entry "TAC" "$tac" "Tracking Area Code"
+    add_plain_info_entry "Cell ID" "$cell_id" "Cell ID"
+    add_plain_info_entry "Physical Cell ID" "$pci" "Physical Cell ID"
+    add_plain_info_entry "EARFCN" "$earfcn" "E-UTRA Absolute Radio Frequency Channel Number"
+    add_plain_info_entry "Band" "$band" "Band"
+    add_plain_info_entry "UL Bandwidth" "$ul_bw" "UL Bandwidth"
+    add_plain_info_entry "DL Bandwidth" "$dl_bw" "DL Bandwidth"
+    add_bar_info_entry "RSRP" "$rsrp" "Reference Signal Received Power" -140 -44 dBm
+    add_bar_info_entry "RSRQ" "$rsrq" "Reference Signal Received Quality" -19.5 -3 dB
+    add_bar_info_entry "SINR" "$sinr" "Signal to Interference plus Noise Ratio" 0 30 dB
+    add_plain_info_entry "RSSNR" "$rssnr" "Radio Signal Strength Noise Ratio"
+    add_bar_info_entry "RxLev" "$rxlev" "Received Signal Level" -120 -25 dBm
+    
+    unset extra_info
+}
+
+# Helper function for 5G cell info
+# Usage: set_5g_cell_info mcc mnc tac cell_id arfcn pci band ul_bw dl_bw rsrp rsrq sinr rssnr rxlev
+set_5g_cell_info() {
+    local mcc="$1"
+    local mnc="$2"
+    local tac="$3"
+    local cell_id="$4"
+    local arfcn="$5"
+    local pci="$6"
+    local band="$7"
+    local ul_bw="$8"
+    local dl_bw="$9"
+    local rsrp="${10}"
+    local rsrq="${11}"
+    local sinr="${12}"
+    local rssnr="${13}"
+    local rxlev="${14}"
+    
+    add_plain_info_entry "MCC" "$mcc" "Mobile Country Code"
+    add_plain_info_entry "MNC" "$mnc" "Mobile Network Code"
+    add_plain_info_entry "TAC" "$tac" "Tracking Area Code"
+    add_plain_info_entry "Cell ID" "$cell_id" "Cell ID"
+    add_plain_info_entry "Physical Cell ID" "$pci" "Physical Cell ID"
+    add_plain_info_entry "ARFCN" "$arfcn" "Absolute Radio-Frequency Channel Number"
+    add_plain_info_entry "Band" "$band" "Band"
+    add_plain_info_entry "UL Bandwidth" "$ul_bw" "UL Bandwidth"
+    add_plain_info_entry "DL Bandwidth" "$dl_bw" "DL Bandwidth"
+    add_bar_info_entry "RSRP" "$rsrp" "Reference Signal Received Power" -140 -44 dBm
+    add_bar_info_entry "RSRQ" "$rsrq" "Reference Signal Received Quality" -19.5 -3 dB
+    add_bar_info_entry "SINR" "$sinr" "Signal to Interference plus Noise Ratio" 0 30 dB
+    add_plain_info_entry "RSSNR" "$rssnr" "Radio Signal Strength Noise Ratio"
+    add_bar_info_entry "RxLev" "$rxlev" "Received Signal Level" -120 -25 dBm
+    
+    unset extra_info
+}
+
+# Helper function to add CA (Carrier Aggregation) info
+# Usage: add_ca_info rat ca_arfcn ca_pci ca_band ca_ul_bw ca_dl_bw
+# rat should be "4G" or "5G"
+add_ca_info() {
+    local rat="$1"
+    local ca_arfcn="$2"
+    local ca_pci="$3"
+    local ca_band="$4"
+    local ca_ul_bw="$5"
+    local ca_dl_bw="$6"
+    
+    [ -z "$ca_arfcn" ] && [ -z "$ca_pci" ] && [ -z "$ca_band" ] && return
+    
+    case "$rat" in
+        "4G")
+            extra_info="CA-LTE"
+            local arfcn_label="EARFCN (CA)"
+            ;;
+        "5G")
+            extra_info="CA-NR"
+            local arfcn_label="ARFCN (CA)"
+            ;;
+        *)
+            return
+            ;;
+    esac
+    
+    add_plain_info_entry "Physical Cell ID (CA)" "$ca_pci" "Physical Cell ID (CA)"
+    add_plain_info_entry "$arfcn_label" "$ca_arfcn" "$arfcn_label"
+    add_plain_info_entry "Band (CA)" "$ca_band" "Band (CA)"
+    add_plain_info_entry "UL Bandwidth (CA)" "$ca_ul_bw" "UL Bandwidth (CA)"
+    add_plain_info_entry "DL Bandwidth (CA)" "$ca_dl_bw" "DL Bandwidth (CA)"
+    
+    unset extra_info
+}
+
 get_driver()
 {
     for i in $(find $modem_path -name driver);do
