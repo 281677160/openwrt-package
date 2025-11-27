@@ -100,6 +100,15 @@ get_vendor_info() {
     platform=$(uci get qmodem.$section.platform 2>/dev/null)
 }
 
+check_is_disabled(){
+    is_disabled=$(uci -q get qmodem.${config_section}.state 2>/dev/null)
+    if [ "$is_disabled" = "disabled" ]; then
+        json_add_string status "disabled"
+        json_dump
+        exit 0
+    fi
+}
+
 # Helper function for AT configuration
 get_at_cfg() {
     json_add_object at_cfg
@@ -314,11 +323,14 @@ EOF
                 case "$2" in
                     base_info)
                         json_init
+                        check_is_disabled
                         cache_file="/tmp/cache_base_info_$config_section"
+                        
                         try_cache 10 "$cache_file" base_info
                         ;;
                     cell_info)
                         json_init
+                        check_is_disabled
                         cache_file="/tmp/cache_cell_info_$config_section"
                         try_cache 10 "$cache_file" cell_info
                         ;;
@@ -338,6 +350,7 @@ EOF
                     dial_status)
                         status_output=$(/etc/init.d/qmodem_network modem_status "$config_section" 2>/dev/null)
                         json_init
+                        check_is_disabled
                         if [[ "$status_output" != *"Not Running"* ]]; then
                             json_add_string running true
                         else
@@ -367,6 +380,7 @@ EOF
                         ;;
                     get_disabled_features)
                         json_init
+                        check_is_disabled
                         json_add_array disabled_features
                         vendor_get_disabled_features
                         get_modem_disabled_features
@@ -376,31 +390,37 @@ EOF
                         ;;
                     get_dns)
                         json_init
+                        check_is_disabled
                         get_dns
                         json_dump
                         ;;
                     get_imei)
                         json_init
+                        check_is_disabled
                         get_imei
                         json_dump
                         ;;
                     get_lockband)
                         json_init
+                        check_is_disabled
                         get_lockband
                         json_dump
                         ;;
                     get_mode)
                         json_init
+                        check_is_disabled
                         get_mode
                         json_dump
                         ;;
                     get_neighborcell)
                         json_init
+                        check_is_disabled
                         get_neighborcell
                         json_dump
                         ;;
                     get_network_prefer)
                         json_init
+                        check_is_disabled
                         get_network_prefer
                         json_dump
                         ;;
@@ -414,21 +434,25 @@ EOF
                         ;;
                     info)
                         json_init
+                        check_is_disabled
                         cache_file="/tmp/cache_info_$config_section"
                         try_cache 10 "$cache_file" get_info
                         ;;
                     network_info)
                         json_init
+                        check_is_disabled
                         cache_file="/tmp/cache_network_info_$config_section"
                         try_cache 10 "$cache_file" network_info
                         ;;
                     sim_info)
                         json_init
+                        check_is_disabled
                         cache_file="/tmp/cache_sim_info_$config_section"
                         try_cache 10 "$cache_file" sim_info
                         ;;
                     get_connect_status)
                         json_init
+                        check_is_disabled
                         get_connect_status
                         json_add_string connection_status "$connect_status"
                         json_dump
@@ -451,6 +475,7 @@ EOF
                 get_at_port_config "$config_section" 1
                 
                 json_init
+                check_is_disabled
                 json_add_object result
                 for i in $index; do
                     tom_modem $use_ubus_flag -d "$at_port" -o d -i "$i"
@@ -488,7 +513,6 @@ EOF
                 ;;
                 
             send_at)
-
                 params=$(echo "$input" | jsonfilter -e '@.params')
                 cmd=$(echo "$params" | jq -r '.at')
                 port=$(echo "$params" | jq -r '.port')
@@ -567,6 +591,7 @@ EOF
             set_imei)
                 imei=$(echo "$input" | jsonfilter -e '@.imei')
                 json_init
+                check_is_disabled
                 json_add_string imei "$imei"
                 set_imei "$imei"
                 json_dump
@@ -584,6 +609,7 @@ EOF
                 load_vendor_script "$vendor"
                 
                 json_init
+                check_is_disabled
                 case "$2" in
                     set_lockband)
                         set_lockband "$params"
@@ -601,6 +627,7 @@ EOF
             set_mode)
                 mode=$(echo "$input" | jsonfilter -e '@.mode')
                 json_init
+                check_is_disabled
                 set_mode "$mode"
                 json_add_string result "$mode"
                 json_dump
@@ -609,6 +636,7 @@ EOF
             set_sms_storage)
                 storage=$(echo "$input" | jsonfilter -e '@.storage')
                 json_init
+                check_is_disabled
                 set_sms_storage "$storage"
                 json_dump
                 ;;
