@@ -14,6 +14,7 @@ define Package/$(PKG_NAME)
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=quectel-CM-5G app building test with metric option ( -M )
+  DEPENDS:=+libjson-c
 endef
 
 define Package/$(PKG_NAME)/description
@@ -33,6 +34,8 @@ endef
 define Package/$(PKG_NAME)/install
 		$(INSTALL_DIR) $(1)/usr/bin $(1)/lib/netifd/proto $(1)/lib/netifd
 		$(INSTALL_BIN) $(PKG_BUILD_DIR)/quectel-CM $(1)/usr/bin/quectel-CM-M
+		$(INSTALL_DIR) $(1)/usr/share/qmodem
+		$(INSTALL_DATA) ./files/apns.json $(1)/usr/share/qmodem/apns.json
 endef
 
 $(eval $(call BuildPackage,$(PKG_NAME)))
