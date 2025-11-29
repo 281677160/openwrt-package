@@ -1207,7 +1207,7 @@ local function processData(szType, content, add_mode, group)
 				result.xhttp_path = params.path
 				result.xhttp_mode = params.mode or "auto"
 				result.use_xhttp_extra = (params.extra and params.extra ~= "") and "1" or nil
-				result.xhttp_extra = (params.extra and params.extra ~= "") and params.extra or nil
+				result.xhttp_extra = (params.extra and params.extra ~= "") and api.base64Encode(params.extra) or nil
 				local success, Data = pcall(jsonParse, params.extra)
 				if success and Data then
 					local address = (Data.extra and Data.extra.downloadSettings and Data.extra.downloadSettings.address)
@@ -1804,7 +1804,9 @@ local function update_node(manual)
 		end
 	end
 
-	luci.sys.call("/etc/init.d/" .. appname .. " restart > /dev/null 2>&1 &")
+	if manual ~= 1 then
+		luci.sys.call("/etc/init.d/" .. appname .. " restart > /dev/null 2>&1 &")
+	end
 end
 
 local function parse_link(raw, add_mode, group, cfgid)
