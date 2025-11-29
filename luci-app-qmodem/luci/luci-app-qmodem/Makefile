@@ -23,6 +23,21 @@ define Package/luci-app-qmodem/conffiles
 endef
 
 define Package/luci-app-qmodem/config
+
+choice
+  prompt "IPv6 Neighbor Discovery Selection"
+  default PACKAGE_luci-app-qmodem_INCLUDE_ndisc6
+
+  config PACKAGE_luci-app-qmodem_INCLUDE_ndisc6
+  bool "Include ndisc6 for IPv6 Neighbor Discovery"
+
+  config PACKAGE_luci-app-qmodem_INCLUDE_rdisc6
+  bool "Include rdisc6 for IPv6 Router Discovery"
+
+  config PACKAGE_luci-app-qmodem_INCLUDE_no_ndisc_rdisc6
+  bool "Do not include any IPv6 Neighbor/Router Discovery tool"
+endchoice
+
 choice
   prompt "Qualcomm QMI WWAN Driver Selection"
   default PACKAGE_luci-app-qmodem_INCLUDE_vendor-qmi-wwan
