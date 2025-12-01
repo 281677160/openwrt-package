@@ -256,6 +256,77 @@ function messageExists(db_messages, sender, timestamp, content) {
 	return false;
 }
 
+// Get or create a unique reference ID for multipart SMS
+// Uses the original reference and sender to identify the group
+// Returns a global unique reference in format: global_<id>
+function getOrCreateGlobalReference(db, original_ref, sender, current_timestamp) {
+	if (!db.ref_mapping)
+		db.ref_mapping = {};
+	if (!db.ref_windows)
+		db.ref_windows = {};
+	
+	// Key to identify this SMS group: original_ref + sender
+	let group_key = `${original_ref}_${sender}`;
+	
+	// Check if we have an existing mapping within time window
+	if (db.ref_mapping[group_key]) {
+		let mapping = db.ref_mapping[group_key];
+		let last_seen = db.ref_windows[group_key] || 0;
+		
+		// Dynamic time window: 5 minutes from last fragment
+		const WINDOW_SECONDS = 300;  // 5 minutes
+		
+		if (current_timestamp - last_seen <= WINDOW_SECONDS) {
+			// Still within window, update last seen time
+			db.ref_windows[group_key] = current_timestamp;
+			return mapping.global_ref;
+		}
+		
+		// Window expired, this is a new SMS with same ref_id
+		// Remove old mapping to create a new one
+		delete db.ref_mapping[group_key];
+		delete db.ref_windows[group_key];
+	}
+	
+	// Create new global reference
+	if (!db.next_global_ref)
+		db.next_global_ref = 1;
+	
+	let global_ref = `global_${db.next_global_ref++}`;
+	
+	// Store mapping
+	db.ref_mapping[group_key] = {
+		global_ref: global_ref,
+		created_at: current_timestamp,
+		original_ref: original_ref
+	};
+	db.ref_windows[group_key] = current_timestamp;
+	
+	return global_ref;
+}
+
+// Clean up expired reference mappings (older than 1 hour)
+function cleanupExpiredReferences(db, current_time) {
+	if (!db.ref_mapping || !db.ref_windows)
+		return;
+	
+	const CLEANUP_THRESHOLD = 3600;  // 1 hour
+	let keys_to_delete = [];
+	
+	for (let key in db.ref_windows) {
+		let last_seen = db.ref_windows[key];
+		if (current_time - last_seen > CLEANUP_THRESHOLD) {
+			push(keys_to_delete, key);
+		}
+	}
+	
+	// Delete expired mappings
+	for (let key in keys_to_delete) {
+		delete db.ref_mapping[key];
+		delete db.ref_windows[key];
+	}
+}
+
 // Save received SMS to database and optionally delete from SIM
 function saveReceivedSms(config, config_section, received_from_sim) {
 	// Read existing received SMS database
@@ -272,18 +343,30 @@ function saveReceivedSms(config, config_section, received_from_sim) {
 		return db.received;
 	
 	let indices_to_delete = [];
+	let current_time = time();
+	
+	// Clean up expired reference mappings
+	cleanupExpiredReferences(db, current_time);
 	
 	// Process each SMS from SIM
 	for (let sms in sim_messages) {
 		// Check if already in database (by sender, timestamp, content)
 		if (!messageExists(db.received, sms.sender, sms.timestamp, sms.content)) {
+			// Get or create global reference for multipart SMS
+			let global_ref = null;
+			if (sms.reference && sms.total > 1) {
+				// Use dynamic window to get/create global reference
+				global_ref = getOrCreateGlobalReference(db, sms.reference, sms.sender, sms.timestamp);
+			}
+			
 			// Add to database with auto-increment ID
 			let msg = {
 				id: db.next_id++,
 				sender: sms.sender,
 				timestamp: sms.timestamp,
 				content: sms.content,
-				reference: `${sms.reference}_${sms.timestamp}`,  // Unique reference for multipart
+				reference: global_ref,  // Use global reference for multipart
+				original_reference: sms.reference,  // Keep original for debugging
 				total: sms.total,
 				part: sms.part,
 				is_read: false,
@@ -400,14 +483,15 @@ function groupByConversation(messages) {
 	return result;
 }
 
-// Reconstruct multi-part SMS messages
+// Reconstruct multi-part SMS messages with dynamic time window
 function reconstructMultipartSms(messages) {
 	let multipart = {};
 	let singles = [];
 	
 	for (let msg in messages) {
 		if (msg.total && msg.total > 1 && msg.reference) {
-			let key = `${msg.reference}_${msg.sender || msg.recipient}`;
+			// Use reference directly since it's already globally unique
+			let key = msg.reference;
 			
 			if (!multipart[key]) {
 				multipart[key] = {
@@ -415,18 +499,30 @@ function reconstructMultipartSms(messages) {
 					total: msg.total,
 					parts: [],
 					part_ids: [],
-					timestamp: msg.timestamp,
+					timestamps: [],
 					sender: msg.sender,
 					recipient: msg.recipient,
 					type: msg.type,
 					is_read: msg.is_read,
 					forwarded: msg.forwarded,
-					is_success: msg.is_success
+					is_success: msg.is_success,
+					min_timestamp: msg.timestamp,
+					max_timestamp: msg.timestamp
 				};
 			}
 			
-			multipart[key].parts[msg.part - 1] = msg.content;
-			multipart[key].part_ids[msg.part - 1] = msg.id;
+			// Store part content and metadata
+			if (msg.part && msg.part > 0 && msg.part <= msg.total) {
+				multipart[key].parts[msg.part - 1] = msg.content;
+				multipart[key].part_ids[msg.part - 1] = msg.id;
+				multipart[key].timestamps[msg.part - 1] = msg.timestamp;
+				
+				// Update timestamp range
+				if (msg.timestamp < multipart[key].min_timestamp)
+					multipart[key].min_timestamp = msg.timestamp;
+				if (msg.timestamp > multipart[key].max_timestamp)
+					multipart[key].max_timestamp = msg.timestamp;
+			}
 		} else {
 			push(singles, msg);
 		}
@@ -436,25 +532,28 @@ function reconstructMultipartSms(messages) {
 	for (let key in multipart) {
 		let mp = multipart[key];
 		let complete = true;
+		let received_parts = 0;
 		
 		// Check if all parts are present
 		for (let i = 0; i < mp.total; i++) {
 			if (!mp.parts[i]) {
 				complete = false;
-				break;
+			} else {
+				received_parts++;
 			}
 		}
 		
 		if (complete) {
-			// Use first part's ID as the combined message ID
+			// All parts received, combine them
 			let combined_content = join('', mp.parts);
 			
+			// Use earliest timestamp as the message timestamp
 			push(singles, {
 				id: mp.part_ids[0],  // Use first part's ID
 				part_ids: mp.part_ids,  // Keep track of all part IDs
 				sender: mp.sender,
 				recipient: mp.recipient,
-				timestamp: mp.timestamp,
+				timestamp: mp.min_timestamp,  // Use earliest timestamp
 				content: combined_content,
 				reference: mp.reference,
 				total: mp.total,
@@ -463,17 +562,18 @@ function reconstructMultipartSms(messages) {
 				is_read: mp.is_read,
 				forwarded: mp.forwarded,
 				is_success: mp.is_success,
-				multipart: true
+				multipart: true,
+				time_span: mp.max_timestamp - mp.min_timestamp  // Record time span for debugging
 			});
 		} else {
-			// Add incomplete parts individually
+			// Add incomplete parts individually with warning
 			for (let i = 0; i < length(mp.parts); i++) {
 				if (mp.parts[i]) {
 					push(singles, {
 						id: mp.part_ids[i],
 						sender: mp.sender,
 						recipient: mp.recipient,
-						timestamp: mp.timestamp,
+						timestamp: mp.timestamps[i],
 						content: mp.parts[i],
 						reference: mp.reference,
 						total: mp.total,
@@ -482,7 +582,8 @@ function reconstructMultipartSms(messages) {
 						is_read: mp.is_read,
 						forwarded: mp.forwarded,
 						is_success: mp.is_success,
-						incomplete: true
+						incomplete: true,
+						received_parts: received_parts  // Show how many parts we have
 					});
 				}
 			}
