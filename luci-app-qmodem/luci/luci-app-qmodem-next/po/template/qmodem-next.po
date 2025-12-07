@@ -1218,10 +1218,6 @@ msgstr ""
 msgid "Hide IP"
 msgstr ""
 
-#: vendor/nk.sh:9
-msgid "I Love U"
-msgstr ""
-
 #: view/qmodem/config_advanced.js:482
 msgid "IMEI Configuration"
 msgstr ""
@@ -1889,30 +1885,6 @@ msgstr ""
 #: view/qmodem/config_advanced.js:686
 #: view/qmodem/config_advanced.js:1055
 msgid "No status information available"
-msgstr ""
-
-#: vendor/nk.sh:10
-msgid "No.1"
-msgstr ""
-
-#: vendor/nk.sh:11
-msgid "No.2"
-msgstr ""
-
-#: vendor/nk.sh:12
-msgid "No.3"
-msgstr ""
-
-#: vendor/nk.sh:13
-msgid "No.4"
-msgstr ""
-
-#: vendor/nk.sh:14
-msgid "No.5"
-msgstr ""
-
-#: vendor/nk.sh:15
-msgid "No.6"
 msgstr ""
 
 #: view/qmodem/config_advanced.js:441
