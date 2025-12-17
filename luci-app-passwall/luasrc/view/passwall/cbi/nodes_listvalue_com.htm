@@ -91,7 +91,6 @@ local appname = api.appname
 	top: 0;
 	left: 0;
 	z-index: 2147483647;
-	display: none;
 	border: 1px solid #dcdcdc;
 	border-radius: 4px;
 	box-shadow: 0 6px 18px rgba(0,0,0,0.08);
@@ -245,9 +244,11 @@ local appname = api.appname
 		return lv_rgbToHex(r, g, b);
 	}
 
+	// copy select styles
 	function lv_adaptiveStyle(cbid) {
 		const display = document.getElementById(cbid + ".display");
 		const hiddenSelect = document.getElementById(cbid);
+		const panel = document.getElementById(cbid + ".panel");
 		if (hiddenSelect && display) {
 			const elOption = hiddenSelect.getElementsByTagName("option")[0]
 			const styleSelect = window.getComputedStyle(hiddenSelect)
@@ -255,7 +256,7 @@ local appname = api.appname
 			const styleBody = window.getComputedStyle(document.body)
 
 			const styleNode = document.createElement('style')
-			const styleNames = ["width", "color", "height", "padding", "margin", "lineHeight", "border", "borderRadius"]
+			const styleNames = ["width", "color", "height", "padding", "margin", "lineHeight", "border", "borderRadius", "minWidth", "minHeight"]
 			document.head.appendChild(styleNode)
 			// trace back from option -> select -> body for background color
 			const optionColor = !lv_isTransparent(styleOption.backgroundColor) ? styleOption.backgroundColor : !lv_isTransparent(styleSelect.backgroundColor) ? styleSelect.backgroundColor : styleBody.backgroundColor
@@ -431,7 +432,9 @@ local appname = api.appname
 			});
 		}
 		if (targetLi) {
-			targetLi.scrollIntoView({ block: "nearest" });
+			requestAnimationFrame(() => {
+				targetLi.scrollIntoView({ block: "nearest" });
+			});
 		}
 	}
 
@@ -465,7 +468,13 @@ local appname = api.appname
 		}
 		panel.style.left = rect.left + "px";
 		panel.style.top = top + "px";
-		panel.style.minWidth = rect.width + "px";
+		const panelRect = panel.getBoundingClientRect();
+		const displayWidth = rect.width;
+		const remainingWidth = window.innerWidth - panelRect.left - 12;
+		const maxWidth = Math.max(displayWidth, Math.floor(remainingWidth));
+		panel.style.maxWidth = maxWidth + "px";
+		panel.style.minWidth = displayWidth + "px";
+		panel.style.width = "auto";
 		panel.style.visibility = "";
 	}
 
@@ -491,8 +500,14 @@ local appname = api.appname
 		panel._docClickHandler = handler;
 		document.addEventListener("click", handler);
 		// 滚动 / resize 自动 reposition
-		const repositionHandler = function() {
-			lv_repositionPanel(panel, display);
+		let ticking = false;
+		const repositionHandler = function () {
+			if (ticking) return;
+			ticking = true;
+			requestAnimationFrame(function () {
+				ticking = false;
+				lv_repositionPanel(panel, display);
+			});
 		};
 		panel._repositionHandler = repositionHandler;
 		window.addEventListener("scroll", repositionHandler, true);
@@ -522,8 +537,6 @@ local appname = api.appname
 			"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
 		}[c]));
 	}
-
-	// 通用渲染函数
 	function lv_render_dropdown_list(cbid, panel, listContainer, hiddenSelect, labelSpan, searchInput, display) {
 		if (window.lv_dropdown_rendered[cbid]) return;
 		const data = window.lv_dropdown_data[cbid];
@@ -596,18 +609,24 @@ local appname = api.appname
 			if(!li || li === listContainer) return;
 			const key = li.getAttribute('data-key') || "";
 			const text = li.querySelector(".lv-item-label")?.textContent || li.textContent || key;
-			//动态改值
-			hiddenSelect.options[0].value =key;
-			hiddenSelect.value = key;
-			labelSpan.textContent = text;
-			labelSpan.title = text;
-			try {
-				var evt = new Event('change', { bubbles: true });
-				hiddenSelect.dispatchEvent(evt);
-			} catch(e){}
-			lv_highlightSelectedItem(listContainer, hiddenSelect);
-			lv_updateGroupCounts(cbid, listContainer, hiddenSelect, searchInput);
+
+			const changed = key !== hiddenSelect.value;
+			if (changed) {
+				//改值
+				hiddenSelect.options[0].value = key;
+				hiddenSelect.options[0].text = key;
+				hiddenSelect.value = key;
+				labelSpan.textContent = text;
+				labelSpan.title = text;
+				lv_highlightSelectedItem(listContainer, hiddenSelect);
+				lv_updateGroupCounts(cbid, listContainer, hiddenSelect, searchInput);
+			}
 			lv_closePanel(cbid,panel,listContainer,hiddenSelect,searchInput);
+			if (changed) {
+				setTimeout(() => {
+					hiddenSelect.dispatchEvent(new Event('change', { bubbles: true }));
+				}, 0);
+			}
 		});
 
 		// 搜索功能
@@ -626,27 +645,22 @@ local appname = api.appname
 				}
 			});
 		});
-		
-		// 设置宽度
-		panel.style.maxWidth = lv_getPanelMaxWidth(display);
-		panel.style.minWidth = display.getBoundingClientRect().width + "px";
-		panel.style.width = "auto";
 	}
 
-	function lv_getPanelMaxWidth(display) {
-		if (!display) return 0;
-		const rectW = el => el && el.getBoundingClientRect().width;
-		const fallback = rectW(display) || 0;
-		const cbiValue = display.closest(".cbi-value");
-		if (cbiValue) {
-			const valueW = rectW(cbiValue);
-			const titleW = rectW(cbiValue.querySelector(".cbi-value-title"));
-			if (valueW) {
-				return Math.floor(titleW ? valueW - titleW : valueW);
-			}
-		}
-		const fieldW = rectW(display.closest(".cbi-value-field"));
-		return Math.floor(fieldW || fallback);
+	const lv_adaptiveControls = new Set();
+	function lv_registerAdaptive(cbid) {
+		lv_adaptiveControls.add(cbid);
+		lv_adaptiveStyle(cbid);
 	}
+	let lv_adaptiveTicking = false;
+	window.addEventListener("resize", () => {
+		if (!lv_adaptiveTicking) {
+			lv_adaptiveTicking = true;
+			requestAnimationFrame(() => {
+				lv_adaptiveControls.forEach(cbid => lv_adaptiveStyle(cbid));
+				lv_adaptiveTicking = false;
+			});
+		}
+	});
 //]]>
 </script>
