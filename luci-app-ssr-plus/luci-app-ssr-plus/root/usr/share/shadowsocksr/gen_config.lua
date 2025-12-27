@@ -31,7 +31,7 @@ function vmess_vless()
 						id = server.vmess_id,
 						alterId = (server.v2ray_protocol == "vmess" or not server.v2ray_protocol) and tonumber(server.alter_id) or nil,
 						security = (server.v2ray_protocol == "vmess" or not server.v2ray_protocol) and server.security or nil,
-						encryption = (server.v2ray_protocol == "vless") and server.vless_encryption or "none", 
+						encryption = (server.v2ray_protocol == "vless" or (not server.v2ray_protocol and server.vless_encryption)) and (server.vless_encryption or "none") or nil,
 						flow = (server.v2ray_protocol == "vless" and (server.xtls == "1" or server.tls == "1" or server.reality == "1"
 								or (server.vless_encryption and server.vless_encryption ~= "" and server.vless_encryption ~= "none")) and (
 								server.transport == "raw" or server.transport == "tcp" or server.transport == "xhttp" or server.transport == "splithttp") and (
@@ -292,12 +292,19 @@ end
 					path = server.xhttp_path or "/",
 					extra = (server.enable_xhttp_extra == "1" and server.xhttp_extra) and (function()
 						local success, parsed = pcall(json.parse, server.xhttp_extra)
-							if success then
-								return parsed.extra or parsed
-							else
-								return nil
+						if not success or not parsed then return nil end
+						-- 如果包含 "extra" 节，就使用它，否则直接使用 tbl
+						local tbl = parsed.extra or parsed
+						-- 枚举第1层字段，如果值为空表或 nil 就删除(简单容错)
+						for k, v in pairs(tbl) do
+							if type(v) == "table" and next(v) == nil then
+								tbl[k] = nil
+							elseif v == nil then
+								tbl[k] = nil
 							end
-						end)() or nil
+						end
+						return tbl
+					end)() or nil
 				} or nil,
 				httpSettings = (server.transport == "h2") and {
 					-- h2
@@ -452,7 +459,7 @@ local hysteria2 = {
 			server.port_range and 
 			server.server .. ":" .. string.gsub(server.port_range, ":", "-") 
 			or 
-			server.server .. ":443"
+			server.server and server.server .. ":443"
 		)
 	),
 	bandwidth = (server.uplink_capacity or server.downlink_capacity) and {
