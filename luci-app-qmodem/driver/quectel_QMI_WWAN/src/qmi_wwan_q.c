@@ -884,7 +884,7 @@ static void usbnet_bh(unsigned long data) {
 	struct tasklet_struct *t = &pQmapDev->usbnet_bh;
 	bool use_callback = false;
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION( 5,8,0 )) //c955e329bb9d44fab75cf2116542fcc0de0473c5
+#if (LINUX_VERSION_CODE > KERNEL_VERSION( 5,8,0 )) && (LINUX_VERSION_CODE < KERNEL_VERSION( 6,17,0 ))
 	use_callback = t->use_callback;
 	if (use_callback)
 		t->callback(&pQmapDev->mpNetDev->bh);
@@ -2267,8 +2267,11 @@ static int qmi_wwan_bind(struct usbnet *dev, struct usb_interface *intf)
 				}
 
 				if (pQmapDev->use_rmnet_usb && !one_card_mode) {
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION( 6,17,0 ))
+#else
 					pQmapDev->usbnet_bh = dev->bh;
 					tasklet_init(&dev->bh, usbnet_bh, (unsigned long)pQmapDev);
+#endif
 				}
 			}
 		}
