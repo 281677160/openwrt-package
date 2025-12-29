@@ -718,14 +718,8 @@ static struct sk_buff * add_qhdr(struct sk_buff *skb, u8 mux_id) {
 	if (pad) {
 		pad = 4 - pad;
 		if (skb_tailroom(skb) < pad) {
-			new_skb = skb_copy_expand(skb, skb_headroom(skb) + sizeof(struct qmap_hdr),
-						  pad, GFP_ATOMIC);
-			if (!new_skb) {
-				printk("Failed to expand skb for padding\n");
-				return NULL;
-			}
-			dev_kfree_skb_any(skb);
-			skb = new_skb;
+			printk("skb_tailroom small!\n");
+			pad = 0;
 		}
 		if (pad)
 			__skb_put(skb, pad);
@@ -750,16 +744,8 @@ static struct sk_buff * add_qhdr_v5(struct sk_buff *skb, u8 mux_id) {
 	if (padding) {
 		padding = 4 - padding;
 		if (skb_tailroom(skb) < padding) {
-			new_skb = skb_copy_expand(skb, skb_headroom(skb) + 
-						 sizeof(struct rmnet_map_header) + 
-						 sizeof(struct rmnet_map_v5_csum_header),
-						 padding, GFP_ATOMIC);
-			if (!new_skb) {
-				printk("Failed to expand skb for padding\n");
-				return NULL;
-			}
-			dev_kfree_skb_any(skb);
-			skb = new_skb;
+			printk("skb_tailroom small!\n");
+			padding = 0;
 		}
 		if (padding)
 			__skb_put(skb, padding);
