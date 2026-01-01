@@ -8,7 +8,6 @@ USE_PROCD=1
 
 NAME=timecontrol
 LOCK="/var/lock/$NAME.lock"
-CR=/etc/crontabs/root
 
 start_instance() {
 	 procd_open_instance
@@ -20,17 +19,17 @@ start_instance() {
 
 _timecontrol_start() {
 	 if [ "$(grep -c 'option enable .1.' /etc/config/$NAME 2>/dev/null)" -gt "0" ]; then
-
 	    touch $LOCK
 	    timecontrol start
 	    start_instance
-	    (crontab -l ; echo "00 1 * * * /etc/init.d/timecontrol start") | sort - | uniq - | crontab -
+	 else
+            echo "INFO: 没有任何管制的设备！"
+	    stop_service
 	 fi
 }
 
 start_service(){
 	[ -f $LOCK ] && exit
-	stop_service
 	_timecontrol_start
 	rm -f $LOCK
 }
@@ -41,7 +40,6 @@ service_triggers() {
 
 stop_service(){
 	kill -9 $(busybox ps -w | grep 'timecontrolctrl' | grep -v 'grep' | awk '{print $1}') >/dev/null 2>&1
-	sed -i '/timecontrol/d' $CR >/dev/null 2>&1
 	rm -f $LOCK 2>/dev/null
 	timecontrol stop
 }
