@@ -27,6 +27,7 @@ endef
 
 EXTRA_CFLAGS+= \
 	-Wno-unused-function \
+	-Wno-unused-variable \
 	-Wno-missing-prototypes \
 	-Wno-missing-declarations
 
