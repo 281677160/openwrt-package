@@ -9,9 +9,8 @@ if not arg[1] or not m:get(arg[1]) then
 	luci.http.redirect(m.redirect)
 end
 
-m.render = function(self, ...)
-	Map.render(self, ...)
-	api.optimize_cbi_ui()
+function m.on_before_save(self)
+	self:del(arg[1], "md5")
 end
 
 m:append(Template(appname .. "/cbi/nodes_listvalue_com"))
@@ -70,10 +69,6 @@ end
 s = m:section(NamedSection, arg[1])
 s.addremove = false
 s.dynamic = false
-
-function m.commit_handler(self)
-	self:del(arg[1], "md5")
-end
 
 o = s:option(Value, "remark", translate("Subscribe Remark"))
 o.rmempty = false
@@ -245,7 +240,7 @@ o.default = "v2rayN/9.99"
 o:value("curl", "Curl")
 o:value("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0", "Edge for Linux")
 o:value("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0", "Edge for Windows")
-o:value("Passwall2/OpenWrt", "PassWall2")
+o:value("passwall2", "PassWall2")
 o:value("v2rayN/9.99", "v2rayN")
 
 o = s:option(ListValue, "chain_proxy", translate("Chain Proxy"))
