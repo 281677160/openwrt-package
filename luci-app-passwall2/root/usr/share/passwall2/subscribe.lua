@@ -44,8 +44,7 @@ local ss_type_default = get_core("ss_type", {{has_ss,"shadowsocks-libev"},{has_s
 local trojan_type_default = get_core("trojan_type", {{has_singbox,"sing-box"},{has_xray,"xray"}})
 local vmess_type_default = get_core("vmess_type", {{has_xray,"xray"},{has_singbox,"sing-box"}})
 local vless_type_default = get_core("vless_type", {{has_xray,"xray"},{has_singbox,"sing-box"}})
-local hysteria2_type_default = get_core("hysteria2_type", {{has_hysteria2,"hysteria2"},{has_singbox,"sing-box"}})
-
+local hysteria2_type_default = get_core("hysteria2_type", {{has_hysteria2,"hysteria2"},{has_singbox,"sing-box"},{has_xray,"xray"}})
 local domain_strategy_default = uci:get(appname, "@global_subscribe[0]", "domain_strategy") or ""
 local domain_strategy_node = ""
 local preproxy_node_group, to_node_group, chain_node_type = "", "", ""
@@ -423,8 +422,12 @@ local function get_subscribe_info(cfgid, value)
 		return
 	end
 	value = value:gsub("%s+", "")
-	local expired_date = value:match("套餐到期：(.+)")
-	local rem_traffic = value:match("剩余流量：(.+)")
+	local date_patterns = {"套餐到期：(.+)", "过期时间：(.+)", "有效期至：(.+)", "到期时间：(.+)", "截止日期：(.+)"}
+	local expired_date
+	for _, p in ipairs(date_patterns) do expired_date = value:match(p) or expired_date end
+	local rem_patterns = {"剩余流量：(.+)", "流量剩余：(.+)", "可用流量：(.+)", "套餐剩余：(.+)"}
+	local rem_traffic
+	for _, p in ipairs(rem_patterns) do rem_traffic = value:match(p) or rem_traffic end
 	subscribe_info[cfgid] = subscribe_info[cfgid] or {expired_date = "", rem_traffic = ""}
 	if expired_date then
 		subscribe_info[cfgid]["expired_date"] = expired_date
@@ -1372,8 +1375,9 @@ local function processData(szType, content, add_mode, group)
 		result.hysteria2_tls_pinSHA256 = params.pinSHA256
 		result.hysteria2_hop = params.mport
 
-		if hysteria2_type_default == "sing-box" and has_singbox then
-			result.type = 'sing-box'
+		if (hysteria2_type_default == "sing-box" and has_singbox) or (hysteria2_type_default == "xray" and has_xray) then
+			local is_singbox = hysteria2_type_default == "sing-box" and has_singbox
+			result.type = is_singbox and 'sing-box' or 'Xray'
 			result.protocol = "hysteria2"
 			if params["obfs-password"] or params["obfs_password"] then
 				result.hysteria2_obfs_type = "salamander"
