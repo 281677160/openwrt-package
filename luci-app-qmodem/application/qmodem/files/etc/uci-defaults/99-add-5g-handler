@@ -27,6 +27,12 @@ modem_settings()
 		uci set qmodem.pcie0.alias="wwan1"
 		uci commit qmodem
 		;;
+	feiyan,m60k63)
+		#usb slot 2-1
+		add_usb_slot_cfg "wwan0" "2-1" "wwan0" "" "" "5g-power" "0" "1" "5"\
+		#set led script
+		uci set qmodem.wwan0.led_script="m60k63"
+		;;
 	hiveton,h5000m)
 		#usb slot
 		uci set qmodem.usb0="modem-slot"
