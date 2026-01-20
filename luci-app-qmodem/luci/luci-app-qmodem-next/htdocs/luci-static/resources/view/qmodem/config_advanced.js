@@ -309,7 +309,7 @@ return view.extend({
 
 			var radioContainer = E('div', { 'class': 'cbi-value-field' });
 			availableModes.forEach(function(mode) {
-				var radioWrapper = E('div', { 'style': 'margin: 5px 0;' });
+				var radioWrapper = E('div', { 'style': 'margin: 5px 0; display: flex;' });
 				var radio = E('input', {
 					'type': 'radio',
 					'name': 'mode_' + modem.id,

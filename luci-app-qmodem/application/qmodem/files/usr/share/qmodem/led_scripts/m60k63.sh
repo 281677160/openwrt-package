@@ -28,15 +28,17 @@ update_cfg(){
 	config_get ALIAS "$MODEM_CFG" alias
 	config_get USE_UBUS "$MODEM_CFG" use_ubus
 	[ "$USE_UBUS" = "1" ] && use_ubus_flag="-u"
-	config_load network
+}
+
+update_netdev(){
 	# if alias is set, network config name is alias else modem_cfg name
+	config_load network
 	if [ -n "$ALIAS" ]; then
 		config_get NET_DEV "$ALIAS" ifname
 	else
 		config_get NET_DEV "$MODEM_CFG" ifname
 	fi
 }
-
 last_siminserted=""
 last_netstat=""
 
@@ -146,7 +148,7 @@ main() {
 		signal="0"
 	fi
 	
-	netstat="${is_nr}_${signal}"
+	netstat="${NET_DEV}_${is_nr}_${signal}"
 	if [ "$netstat" = "$last_netstat" ]; then
 		# there's no update, return
 		return
@@ -197,6 +199,7 @@ if [ "$ON_OFF" = "off" ]; then
 	exit 0
 fi
 while true; do
+	update_netdev
 	main
 	internet_led
 	sleep 5s
