@@ -1,6 +1,7 @@
 -- Licensed to the public under the GNU General Public License v3.
 require "luci.http"
 require "luci.sys"
+require "nixio.fs"
 require "luci.dispatcher"
 require "luci.model.uci"
 local uci = require "luci.model.uci".cursor()
@@ -11,6 +12,31 @@ local server_count = 0
 -- 确保正确判断程序是否存在
 local function is_finded(e)
     return luci.sys.exec(string.format('type -t -p "%s" 2>/dev/null', e)) ~= ""
+end
+
+-- 优化 CBI UI（新版 LuCI 专用）
+local function optimize_cbi_ui()
+	luci.http.write([[
+		<script type="text/javascript">
+			// 修正上移、下移按钮名称
+			document.querySelectorAll("input.btn.cbi-button.cbi-button-up").forEach(function(btn) {
+				btn.value = "]] .. translate("Move up") .. [[";
+			});
+			document.querySelectorAll("input.btn.cbi-button.cbi-button-down").forEach(function(btn) {
+				btn.value = "]] .. translate("Move down") .. [[";
+			});
+			// 删除控件和说明之间的多余换行
+			document.querySelectorAll("div.cbi-value-description").forEach(function(descDiv) {
+				var prev = descDiv.previousSibling;
+				while (prev && prev.nodeType === Node.TEXT_NODE && prev.textContent.trim() === "") {
+					prev = prev.previousSibling;
+				}
+				if (prev && prev.nodeType === Node.ELEMENT_NODE && prev.tagName === "BR") {
+					prev.remove();
+				}
+			});
+		</script>
+	]])
 end
 
 local has_ss_rust = is_finded("sslocal") or is_finded("ssserver")
@@ -48,7 +74,7 @@ o = s:option(Flag, "auto_update", translate("Auto Update"))
 o.rmempty = false
 o.description = translate("Auto Update Server subscription, GFW list and CHN route")
 
-o = s:option(ListValue, "auto_update_week_time", translate("Update Time (Every Week)"))
+o = s:option(ListValue, "auto_update_week_time", translate("Update cycle (Day/Week)"))
 o:value('*', translate("Every Day"))
 o:value("1", translate("Every Monday"))
 o:value("2", translate("Every Tuesday"))
@@ -61,7 +87,7 @@ o.default = "*"
 o.rmempty = true
 o:depends("auto_update", "1")
 
-o = s:option(ListValue, "auto_update_day_time", translate("Update time (every day)"))
+o = s:option(ListValue, "auto_update_day_time", translate("Regular update (Hour)"))
 for t = 0, 23 do
 	o:value(t, t .. ":00")
 end
@@ -69,7 +95,7 @@ o.default = 2
 o.rmempty = true
 o:depends("auto_update", "1")
 
-o = s:option(ListValue, "auto_update_min_time", translate("Update Interval (min)"))
+o = s:option(ListValue, "auto_update_min_time", translate("Regular update (Min)"))
 for i = 0, 59 do
     o:value(i, i .. ":00")
 end
@@ -117,6 +143,7 @@ o.inputstyle = "reload"
 o.description = translate("Update subscribe url list first")
 o.write = function()
 	uci:commit("shadowsocksr")
+	luci.sys.exec("rm -rf /tmp/sub_md5_*")
 	luci.http.redirect(luci.dispatcher.build_url("admin", "services", "shadowsocksr", "servers"))
 end
 
@@ -151,9 +178,19 @@ o.write = function()
 	end)
 	uci:save("shadowsocksr")
 	uci:commit("shadowsocksr")
+	for file in nixio.fs.glob("/tmp/sub_md5_*") do
+		nixio.fs.remove(file)
+	end
 	luci.http.redirect(luci.dispatcher.build_url("admin", "services", "shadowsocksr", "delete"))
 	return
 end
+
+o = s:option(Value, "user_agent", translate("User-Agent"))
+o.default = "v2rayN/9.99"
+o:value("curl", "Curl")
+o:value("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0", "Edge for Linux")
+o:value("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36 Edg/122.0.0.0", "Edge for Windows")
+o:value("v2rayN/9.99", "v2rayN")
 
 -- [[ Servers Manage ]]--
 s = m:section(TypedSection, "servers")
@@ -167,6 +204,12 @@ function s.create(...)
 	if sid then
 		luci.http.redirect(s.extedit % sid)
 		return
+	end
+end
+s.render = function(self, ...)
+	Map.render(self, ...)
+	if type(optimize_cbi_ui) == "function" then
+		optimize_cbi_ui()
 	end
 end
 

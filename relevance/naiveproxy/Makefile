@@ -5,13 +5,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=naiveproxy
-PKG_REAL_VERSION:=131.0.6778.86-1
+PKG_REAL_VERSION:=143.0.7499.109-2
 PKG_VERSION:=$(subst -,.,$(PKG_REAL_VERSION))
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_REAL_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/klzgrad/naiveproxy/tar.gz/v$(PKG_REAL_VERSION)?
-PKG_HASH:=9f912ce03c7f1023e7774291c2bdd0a0c998832e49ed0d998bffa7714317e9f4
+PKG_HASH:=07e3a44a73c92cc9df347b12a23a2420458b31917a7f6dfdb06e18590d9c1aea
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_REAL_VERSION)
 
 PKG_LICENSE:=BSD 3-Clause
@@ -41,7 +41,7 @@ define Package/naiveproxy
   SUBMENU:=Web Servers/Proxies
   TITLE:=Make a fortune quietly
   URL:=https://github.com/klzgrad/naiveproxy
-  DEPENDS:=@!(arc||armeb||mips||mips64||powerpc||TARGET_gemini) +libatomic
+  DEPENDS:=@!(arc||armeb||loongarch64||mips||mips64||powerpc||TARGET_gemini) +libatomic
 endef
 
 define Package/naiveproxy/description
@@ -57,22 +57,22 @@ ifneq ($(CONFIG_CCACHE),)
   export naive_ccache_flags=cc_wrapper="$(CCACHE)"
 endif
 
-CLANG_VER:=20-init-6794-g3dbd929e-1
+CLANG_VER:=22-init-8940-g4d4cb757-84
 CLANG_FILE:=clang-llvmorg-$(CLANG_VER).tar.xz
 define Download/CLANG
 	URL:=https://commondatastorage.googleapis.com/chromium-browser-clang/Linux_x64
 	URL_FILE:=$(CLANG_FILE)
 	FILE:=$(CLANG_FILE)
-	HASH:=ce5dea9d2f304d0f3ab07200cd2608711578f7254bf6e685bea8381c248b7686
+	HASH:=f6a487ffd0e56ba7a39b063d85d1f8ff7846514f50635785730cffb7368872ce
 endef
 
-PGO_VER:=6778-1731431875-75e60acd68a20cf9cc2c5d6dfbb65ee7b4e60752-a75a9b0cd4f8d4a3bb5d3446daa63b14105e852e
+PGO_VER:=7499-1764697213-c882935fa3cd65518c410503710d1c1528e41260-abb34356235cd297f57c1bb9c272d7f54dbe3bd8
 PGO_FILE:=chrome-linux-$(PGO_VER).profdata
 define Download/PGO_PROF
 	URL:=https://storage.googleapis.com/chromium-optimization-profiles/pgo_profiles
 	URL_FILE:=$(PGO_FILE)
 	FILE:=$(PGO_FILE)
-	HASH:=93ae3d2a51eb03b8314523cde26d2324998e29e60452b242bca33afdc604bc12
+	HASH:=f983a4c13f1a4bffd2dca0b741b77c5bf57d67549a674df5854e935b16e9cf93
 endef
 
 define Build/Prepare
@@ -92,7 +92,7 @@ endef
 define Build/Configure
 	( \
 		pushd "$(PKG_BUILD_DIR)/src" ; \
-		. ../init_env.sh "$(ARCH)" $(CPU_TYPE) $(CPU_SUBTYPE) "$(TOOLCHAIN_DIR)" ; \
+		. ../init_env.sh "$(ARCH)" $(CPU_TYPE) $(CPU_SUBTYPE) "$(TOOLCHAIN_ROOT_DIR)" ; \
 		export naive_flags+=" $$$${naive_ccache_flags}" ; \
 		mkdir -p "out" ; \
 		gn gen "out/Release" --args="$$$${naive_flags}" --script-executable="$(PYTHON)" ; \

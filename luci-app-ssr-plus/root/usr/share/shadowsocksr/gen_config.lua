@@ -4,11 +4,11 @@ local ucursor = require "luci.model.uci".cursor()
 local json = require "luci.jsonc"
 
 local server_section = arg[1]
-local proto = arg[2] or "tcp"
-local local_port = arg[3] or "0"
-local socks_port = arg[4] or "0"
+local proto          = arg[2] or "tcp"
+local local_port     = arg[3] or "0"
+local socks_port     = arg[4] or "0"
 
-local chain = arg[5] or "0"
+local chain          = arg[5] or "0"
 local chain_local_port = string.split(chain, "/")[2] or "0"
 
 local server = ucursor:get_all("shadowsocksr", server_section)
@@ -16,6 +16,9 @@ local socks_server = ucursor:get_all("shadowsocksr", "@socks5_proxy[0]") or {}
 local xray_fragment = ucursor:get_all("shadowsocksr", "@global_xray_fragment[0]") or {}
 local xray_noise = ucursor:get_all("shadowsocksr", "@xray_noise_packets[0]") or {}
 local outbound_settings = nil
+
+local node_id = server_section
+local remarks = server.alias or ""
 
 function vmess_vless()
 	outbound_settings = {
@@ -28,8 +31,12 @@ function vmess_vless()
 						id = server.vmess_id,
 						alterId = (server.v2ray_protocol == "vmess" or not server.v2ray_protocol) and tonumber(server.alter_id) or nil,
 						security = (server.v2ray_protocol == "vmess" or not server.v2ray_protocol) and server.security or nil,
-						encryption = (server.v2ray_protocol == "vless") and server.vless_encryption or nil,
-						flow = (((server.xtls == '1') or (server.tls == '1') or (server.reality == '1')) and (((server.tls_flow ~= "none") and server.tls_flow) or ((server.xhttp_tls_flow ~= "none") and server.xhttp_tls_flow))) or nil
+						testpre = (server.v2ray_protocol == "vless" or not server.v2ray_protocol) and tonumber(server.preconns) or nil,
+						encryption = (server.v2ray_protocol == "vless" or (not server.v2ray_protocol and server.vless_encryption)) and (server.vless_encryption or "none") or nil,
+						flow = (server.v2ray_protocol == "vless" and (server.xtls == "1" or server.tls == "1" or server.reality == "1"
+								or (server.vless_encryption and server.vless_encryption ~= "" and server.vless_encryption ~= "none")) and (
+								server.transport == "raw" or server.transport == "tcp" or server.transport == "xhttp" or server.transport == "splithttp") and (
+								server.tls_flow and server.tls_flow ~= "none")) and server.tls_flow or nil
 					}
 				}
 			}
@@ -81,8 +88,15 @@ function wireguard()
 			}
 		},
 		noKernelTun = (server.kernelmode == "1") and true or false,
-		reserved = {server.reserved} or nil,
+		reserved = server.reserved and { server.reserved } or nil,
 		mtu = tonumber(server.mtu)
+	}
+end
+function xray_hysteria2()
+	outbound_settings = {
+		version = (server.v2ray_protocol == "hysteria2") and 2 or nil,
+		address = server.server,
+		port = tonumber(server.server_port)
 	}
 end
 local outbound = {}
@@ -114,6 +128,9 @@ function outbound:handleIndex(index)
 		end,
 		wireguard = function()
 			wireguard()
+		end,
+		hysteria2 = function()
+			xray_hysteria2()
 		end
 	}
 	if switch[index] then
@@ -201,22 +218,34 @@ end
 	-- 传出连接
 	Xray.outbounds = {
 		{
-			protocol = server.v2ray_protocol,
+			protocol = (server.v2ray_protocol == "hysteria2") and "hysteria" or server.v2ray_protocol,
 			settings = outbound_settings,
 			-- 底层传输配置
 			streamSettings = (server.v2ray_protocol ~= "wireguard") and {
-				network = server.transport or "tcp",
+				network = (server.v2ray_protocol == "hysteria2") and "hysteria" or (server.transport or "raw"),
 				security = (server.xtls == '1') and "xtls" or (server.tls == '1') and "tls" or (server.reality == '1') and "reality" or nil,
 				tlsSettings = (server.tls == '1') and {
 					-- tls
-					alpn = (server.transport == "xhttp" and server.xhttp_alpn ~= "") and server.xhttp_alpn or server.tls_alpn,
+					alpn = (server.tls_alpn and server.tls_alpn ~= "") and (function()
+						local alpn = {}
+						string.gsub(server.tls_alpn, '[^,]+', function(w)
+							table.insert(alpn, w)
+						end)
+						if #alpn > 0 then
+							return alpn
+						else
+							return nil
+						end
+					end)() or nil,
 					fingerprint = server.fingerprint,
-					allowInsecure = (server.insecure == "1"),
+					allowInsecure = (server.insecure == "1" or server.insecure == true or server.insecure == "true"),
 					serverName = server.tls_host,
 					certificates = server.certificate and {
 						usage = "verify",
 						certificateFile = server.certpath
 					} or nil,
+					echConfigList = (server.enable_ech == "1") and server.ech_config or nil,
+					echForceQuery = (server.enable_ech == "1") and (server.ech_ForceQuery or "none") or nil
 				} or nil,
 				xtlsSettings = (server.xtls == '1') and server.tls_host and {
 					-- xtls
@@ -225,17 +254,17 @@ end
 					minVersion = "1.3"
 				} or nil,
 				realitySettings = (server.reality == '1') and {
-					alpn =  (server.transport == "xhttp" and server.xhttp_alpn ~= "") and server.xhttp_alpn or nil,
 					publicKey = server.reality_publickey,
-					shortId = server.reality_shortid,
-					spiderX = server.reality_spiderx,
+					shortId = server.reality_shortid or "",
+					spiderX = server.reality_spiderx or "",
 					fingerprint = server.fingerprint,
+					mldsa65Verify = (server.enable_mldsa65verify == '1') and server.reality_mldsa65verify or nil,
 					serverName = server.tls_host
 				} or nil,
 				rawSettings = (server.transport == "raw" or server.transport == "tcp") and {
 					-- tcp
 					header = {
-						type = server.tcp_guise or "none",
+						type = server.tcp_guise,
 						request = (server.tcp_guise == "http") and {
 							-- request
 							path = {server.http_path} or {"/"},
@@ -257,8 +286,8 @@ end
 				} or nil,
 				wsSettings = (server.transport == "ws") and (server.ws_path or server.ws_host or server.tls_host) and {
 					-- ws
-					Host = server.ws_host or server.tls_host or nil,
-					path = server.ws_path,
+					host = server.ws_host or server.tls_host or nil,
+					path = server.ws_path or "/",
 					maxEarlyData = tonumber(server.ws_ed) or nil,
 					earlyDataHeaderName = server.ws_ed_header or nil
 				} or nil,
@@ -267,24 +296,26 @@ end
 					host = (server.httpupgrade_host or server.tls_host) or nil,
 					path = server.httpupgrade_path or ""
 				} or nil,
-				splithttpSettings = (server.transport == "splithttp") and {
-					-- splithttp
-					host = (server.splithttp_host or server.tls_host) or nil,
-					path = server.splithttp_path or "/"
-				} or nil,
-				xhttpSettings = (server.transport == "xhttp") and {
+				xhttpSettings = (server.transport == "xhttp" or server.transport == "splithttp") and {
 					-- xhttp
 					mode = server.xhttp_mode or "auto",
 					host = (server.xhttp_host or server.tls_host) or nil,
 					path = server.xhttp_path or "/",
 					extra = (server.enable_xhttp_extra == "1" and server.xhttp_extra) and (function()
 						local success, parsed = pcall(json.parse, server.xhttp_extra)
-							if success then
-								return parsed.extra or parsed
-							else
-								return nil
+						if not success or not parsed then return nil end
+						-- 如果包含 "extra" 节，就使用它，否则直接使用 tbl
+						local tbl = parsed.extra or parsed
+						-- 枚举第1层字段，如果值为空表或 nil 就删除(简单容错)
+						for k, v in pairs(tbl) do
+							if type(v) == "table" and next(v) == nil then
+								tbl[k] = nil
+							elseif v == nil then
+								tbl[k] = nil
 							end
-						end)() or nil
+						end
+						return tbl
+					end)() or nil
 				} or nil,
 				httpSettings = (server.transport == "h2") and {
 					-- h2
@@ -308,21 +339,66 @@ end
 					permit_without_stream = (server.permit_without_stream == "1") and true or nil,
 					initial_windows_size = tonumber(server.initial_windows_size) or nil
 				} or nil,
+				hysteriaSettings = (server.v2ray_protocol == "hysteria2") and {
+					-- hysteria2
+					version = 2,
+					auth = server.hy2_auth,
+					congestion = server.hy2_tcpcongestion or nil,
+					up = tonumber(server.uplink_capacity) and tonumber(server.uplink_capacity) .. " mbps" or nil,
+					down = tonumber(server.downlink_capacity) and tonumber(server.downlink_capacity) .. " mbps" or nil,
+					udphop = (server.flag_port_hopping == "1") and {
+						port = string.gsub(server.port_range, ":", "-"),
+						interval = (function()
+							local v = tonumber((server.hopinterval or "30"):match("^%d+"))
+							return (v and v >= 5) and v or 30
+							end)()
+					} or nil,
+					initStreamReceiveWindow = (server.flag_quicparam == "1" and server.initstreamreceivewindow) and tonumber(server.initstreamreceivewindow) or nil,
+					maxStreamReceiveWindow = (server.flag_quicparam == "1" and server.maxstreamreceivewindow) and tonumber(server.maxstreamreceivewindow) or nil,
+					initConnectionReceiveWindow = (server.flag_quicparam == "1" and server.initconnreceivewindow) and tonumber(server.initconnreceivewindow) or nil,
+					maxConnectionReceiveWindow = (server.flag_quicparam == "1" and server.maxconnreceivewindow) and tonumber(server.maxconnreceivewindow) or nil,
+					maxIdleTimeout = (server.flag_quicparam == "1" and (function()
+						local timeoutStr = tostring(server.maxidletimeout or "")
+						local timeout = tonumber(timeoutStr:match("^%d+"))
+						if timeout and timeout >= 4 and timeout <= 120 then
+							return timeout
+						end
+					end)()) or 30,
+					keepAlivePeriod = (server.flag_quicparam == "1" and server.keepaliveperiod) and tonumber(server.keepaliveperiod) or nil,
+					disablePathMTUDiscovery = (server.flag_quicparam == "1" and tostring(server.disablepathmtudiscovery) == "1") and true or nil
+				} or nil,
+				udpmasks = (server.flag_obfs == "1" and (server.v2ray_protocol == "hysteria2" and server.obfs_type and server.obfs_type ~= "")) and {
+					{
+						type = server.obfs_type,
+						settings = server.salamander and {
+							password = server.salamander
+						} or nil
+					}
+				} or nil,
 				sockopt = {
 					mark = 250,
-					tcpFastOpen = ((server.transport == "xhttp" and server.tcpfastopen == "1") and true or false) or (server.transport ~= "xhttp") and nil, -- XHTTP Tcp Fast Open
+					tcpFastOpen = (function()
+						if server.transport == "xhttp" then
+							return (server.fast_open == "1") and true or false
+						elseif server.v2ray_protocol == "hysteria2" then
+							return (server.fast_open == "1") and true or nil
+						else
+							return nil
+						end
+					end)(), -- XHTTP Tcp Fast Open
 					tcpMptcp = (server.mptcp == "1") and true or nil, -- MPTCP
 					Penetrate = (server.mptcp == "1") and true or nil, -- Penetrate MPTCP
 					tcpcongestion = server.custom_tcpcongestion, -- 连接服务器节点的 TCP 拥塞控制算法
-					dialerProxy = (xray_fragment.fragment == "1" or xray_fragment.noise == "1") and "dialerproxy" or nil
+					dialerProxy = (xray_fragment.fragment == "1" or xray_fragment.noise == "1") and
+					              ((remarks ~= nil and remarks ~= "") and (node_id .. "." .. remarks) or node_id) or nil
 				}
 			} or nil,
-			mux = (server.v2ray_protocol ~= "wireguard") and {
+			mux = (server.v2ray_protocol ~= "hysteria2" and server.v2ray_protocol ~= "wireguard") and {
 				-- mux
-				enabled = (server.mux == "1" or server.xmux == "1") and true or false, -- Mux
-				concurrency = (server.mux == "1" and ((server.concurrency ~= "0") and tonumber(server.concurrency) or 8)) or (server.xmux == "1" and -1) or nil, -- TCP 最大并发连接数
-				xudpConcurrency = ((server.xudpConcurrency ~= "0") and tonumber(server.xudpConcurrency)) or nil, -- UDP 最大并发连接数
-				xudpProxyUDP443 = (server.mux == "1") and server.xudpProxyUDP443 or nil -- 对被代理的 UDP/443 流量处理方式
+				enabled = (server.mux == "1"), -- Mux
+				concurrency = (server.mux == "1" and (tonumber(server.concurrency) or -1)) or nil, -- TCP 最大并发连接数
+				xudpConcurrency = (server.mux == "1" and (tonumber(server.xudpConcurrency) or 16)) or nil, -- UDP 最大并发连接数
+				xudpProxyUDP443 = (server.mux == "1" and (server.xudpProxyUDP443 or "reject")) or nil -- 对被代理的 UDP/443 流量处理方式
 			} or nil
 		}
 	}
@@ -331,26 +407,36 @@ end
 if xray_fragment.fragment ~= "0" or (xray_fragment.noise ~= "0" and xray_noise.enabled ~= "0") then
 	table.insert(Xray.outbounds, {
 		protocol = "freedom",
-		tag = "dialerproxy",
+		tag = (remarks ~= nil and remarks ~= "") and (node_id .. "." .. remarks) or node_id,
 		settings = {
 			domainStrategy = (xray_fragment.noise == "1" and xray_noise.enabled == "1") and xray_noise.domainStrategy,
 			fragment = (xray_fragment.fragment == "1") and {
 				packets = (xray_fragment.fragment_packets ~= "") and xray_fragment.fragment_packets or nil,
 				length = (xray_fragment.fragment_length ~= "") and xray_fragment.fragment_length or nil,
-				interval = (xray_fragment.fragment_interval ~= "") and xray_fragment.fragment_interval or nil
+				interval = (xray_fragment.fragment_interval ~= "") and xray_fragment.fragment_interval or nil,
+				maxSplit = (xray_fragment.fragment_maxsplit ~= "") and xray_fragment.fragment_maxsplit or nil
 			} or nil,
 			noises = (xray_fragment.noise == "1" and xray_noise.enabled == "1") and {
 				{
 					type = xray_noise.type,
 					packet = xray_noise.packet,
-					delay = xray_noise.delay:find("-") and xray_noise.delay or tonumber(xray_noise.delay)
+					delay = xray_noise.delay:find("-") and xray_noise.delay or tonumber(xray_noise.delay),
+					applyTo = xray_noise.applyto
 				}
 			} or nil
 		},
 		streamSettings = {
 			sockopt = {
 			mark = 250,
-			tcpFastOpen = ((server.transport == "xhttp" and server.tcpfastopen == "1") and true or false) or (server.transport ~= "xhttp") and nil, -- XHTTP Tcp Fast Open
+			tcpFastOpen = (function()
+				if server.transport == "xhttp" then
+					return (server.fast_open == "1") and true or false
+				elseif server.v2ray_protocol == "hysteria2" then
+					return (server.fast_open == "1") and true or nil
+				else
+					return nil
+				end
+			end)(), -- XHTTP Tcp Fast Open
 			tcpMptcp = (server.mptcp == "1") and true or nil, -- MPTCP
 			Penetrate = (server.mptcp == "1") and true or nil, -- Penetrate MPTCP
 			tcpcongestion = server.custom_tcpcongestion -- 连接服务器节点的 TCP 拥塞控制算法
@@ -379,12 +465,23 @@ local trojan = {
 		cipher = cipher,
 		cipher_tls13 = cipher13,
 		sni = server.tls_host,
-		alpn = server.tls_alpn or {"h2", "http/1.1"},
+		alpn = (server.tls == "1") and (function()
+			local alpn = {}
+			if server.tls_alpn and server.tls_alpn ~= "" then
+				string.gsub(server.tls_alpn, '[^,]+', function(w)
+					table.insert(alpn, w)
+				end)
+			end
+			if #alpn > 0 then
+				return alpn
+			else
+				return nil
+			end
+		end)() or {"h2", "http/1.1"},
 		curve = "",
 		reuse_session = true,
 		session_ticket = (server.tls_sessionTicket == "1") and true or false
 	},
-	udp_timeout = 60,
 	tcp = {
 		-- tcp
 		no_delay = true,
@@ -412,39 +509,54 @@ local ss = {
 	reuse_port = true
 }
 local hysteria2 = {
-	server = (server.server_port and (server.port_range and (server.server .. ":" .. server.server_port .. "," .. server.port_range) or (server.server .. ":" .. server.server_port) or (server.port_range and server.server .. ":" .. server.port_range or server.server .. ":443"))),
+	server = (
+		server.server_port and 
+		(
+			server.port_range and 
+			(server.server .. ":" .. server.server_port .. "," .. string.gsub(server.port_range, ":", "-")) 
+			or 
+			(server.server .. ":" .. server.server_port)
+		) 
+		or 
+		(
+			server.port_range and 
+			server.server .. ":" .. string.gsub(server.port_range, ":", "-") 
+			or 
+			server.server and server.server .. ":443"
+		)
+	),
 	bandwidth = (server.uplink_capacity or server.downlink_capacity) and {
-	up = tonumber(server.uplink_capacity) and tonumber(server.uplink_capacity) .. " mbps" or nil,
-	down = tonumber(server.downlink_capacity) and tonumber(server.downlink_capacity) .. " mbps" or nil 
-	},
+		up = tonumber(server.uplink_capacity) and tonumber(server.uplink_capacity) .. " mbps" or nil,
+		down = tonumber(server.downlink_capacity) and tonumber(server.downlink_capacity) .. " mbps" or nil 
+	} or nil,
 	socks5 = (proto:find("tcp") and tonumber(socks_port) and tonumber(socks_port) ~= 0) and {
 		listen = "0.0.0.0:" .. tonumber(socks_port),
-		disable_udp = false
+		disableUDP = false
 	} or nil,
-	transport = (server.transport_protocol) and {
-		type = (server.transport_protocol) or udp,
+	transport = server.transport_protocol and {
+		type = server.transport_protocol or "udp",
 		udp = (server.port_range and (server.hopinterval) and {
-                        hopInterval = (server.port_range and (tonumber(server.hopinterval) .. "s") or nil)
-                } or nil)
-        } or nil,
+			hopInterval = (server.port_range and (tonumber(server.hopinterval) .. "s") or nil)
+		} or nil)
+	} or nil,
 --[[
 	tcpTProxy = (proto:find("tcp") and local_port ~= "0") and {
-					listen = "0.0.0.0:" .. tonumber(local_port)
+		listen = "0.0.0.0:" .. tonumber(local_port)
 	} or nil,
 ]]--
 	tcpRedirect = (proto:find("tcp") and local_port ~= "0") and {
-					listen = "0.0.0.0:" .. tonumber(local_port)
+		listen = "0.0.0.0:" .. tonumber(local_port)
 	} or nil,
 	udpTProxy = (proto:find("udp") and local_port ~= "0") and {
-					listen = "0.0.0.0:" .. tonumber(local_port)
+		listen = "0.0.0.0:" .. tonumber(local_port)
 	} or nil,
 	obfs = (server.flag_obfs == "1") and {
-				type = server.obfs_type,
-				salamander = { password = server.salamander }
+		type = server.obfs_type,
+		salamander = { password = server.salamander }
 	} or nil,
 	quic = (server.flag_quicparam == "1" ) and {
 		initStreamReceiveWindow = (server.initstreamreceivewindow and server.initstreamreceivewindow or nil),
-		maxStreamReceiveWindow = (server.maxstreamseceivewindow and server.maxstreamseceivewindow or nil),
+		maxStreamReceiveWindow = (server.maxstreamreceivewindow and server.maxstreamreceivewindow or nil),
 		initConnReceiveWindow = (server.initconnreceivewindow and server.initconnreceivewindow or nil),
 		maxConnReceiveWindow = (server.maxconnreceivewindow and server.maxconnreceivewindow or nil),
 		maxIdleTimeout = (tonumber(server.maxidletimeout) and tonumber(server.maxidletimeout) .. "s" or nil),
@@ -452,14 +564,39 @@ local hysteria2 = {
 		disablePathMTUDiscovery = (server.disablepathmtudiscovery == "1") and true or false
 	} or nil,
 	auth = server.hy2_auth,
-	tls = (server.tls_host) and {
+	tls = (server.tls_host and server.tls_host ~= "") and {
 		sni = server.tls_host,
-		--alpn = server.tls_alpn or nil,
+		alpn = (server.tls_alpn and server.tls_alpn ~= "") and (function()
+			local alpn = {}
+			string.gsub(server.tls_alpn, '[^,]+', function(w)
+				table.insert(alpn, w)
+			end)
+			if #alpn > 0 then
+				return alpn
+			else
+				return nil
+			end
+		end)() or nil,
+		--sni = server.tls_host or (server.tls_host and server.tls_alpn) or nil,
 		insecure = (server.insecure == "1") and true or false,
-		pinSHA256 = (server.insecure == "1") and server.pinsha256 or nil
+		pinSHA256 = server.pinsha256 or nil
 	} or {
 		sni = server.server,
-		insecure = (server.insecure == "1") and true or false
+		alpn = (server.type == "hysteria2") and (function()
+			local alpn = {}
+			if server.tls_alpn and server.tls_alpn ~= "" then
+				string.gsub(server.tls_alpn, '[^,]+', function(w)
+					table.insert(alpn, w)
+				end)
+			end
+			if #alpn > 0 then
+				return alpn
+			else
+				return nil
+			end
+		end)() or nil,
+		insecure = (server.insecure == "1") and true or false,
+		pinSHA256 = server.pinsha256 or nil
 	},
 	fast_open = (server.fast_open == "1") and true or false,
 	lazy = (server.lazy_mode == "1") and true or false
@@ -495,7 +632,7 @@ local chain_sslocal = {
 	} or {{ 
 			protocol = "socks",
 			local_address = "0.0.0.0",
-			ocal_port = tonumber(socks_port)
+			local_port = tonumber(socks_port)
 			}},
 		servers = {
 			{
@@ -556,7 +693,19 @@ local tuic = {
 			timeout = server.timeout and server.timeout .. "s" or nil,
 			gc_interval = server.gc_interval and server.gc_interval .. "s" or nil,
 			gc_lifetime = server.gc_lifetime and server.gc_lifetime .. "s" or nil,
-			alpn = server.tls_alpn,
+			alpn = (server.tuic_alpn and server.tuic_alpn ~= "") and (function()
+				local alpn = {}
+				string.gsub(server.tuic_alpn, '[^,]+', function(w)
+					table.insert(alpn, w)
+				end)
+				if #alpn > 0 then
+					return alpn
+				else
+					return nil
+				end
+			end)() or nil,
+			ipstack_prefer = (server.tuic_dual_stack == "1") and server.ipstack_prefer or nil,
+			skip_cert_verify = (server.insecure == "1" or server.insecure == true or server.insecure == "true"),
 			disable_sni = (server.disable_sni == "1") and true or false,
 			zero_rtt_handshake = (server.zero_rtt_handshake == "1") and true or false,
 			send_window = tonumber(server.send_window),

@@ -1,5 +1,31 @@
 local m, s, o
 local uci = require "luci.model.uci".cursor()
+
+-- 获取 LAN IP 地址
+function lanip()
+	local lan_ip
+
+	-- 尝试从 UCI 直接读取
+	lan_ip = luci.sys.exec("uci -q get network.lan.ipaddr 2>/dev/null | awk -F'/' '{print $1}' | tr -d '\\n'")
+
+	-- 尝试从 LAN 接口信息中读取（优先 ifname，再 fallback 到 device）
+	if not lan_ip or lan_ip == "" then
+		lan_ip = luci.sys.exec([[
+ip -4 addr show $(uci -q -p /tmp/state get network.lan.ifname || uci -q -p /tmp/state get network.lan.device) 2>/dev/null \
+  | grep -w 'inet' | awk '{print $2}' | cut -d'/' -f1 | grep -v '^127\.' | head -n1 | tr -d '\n']])
+	end
+
+	-- 取任意一个 global IPv4 地址
+	if not lan_ip or lan_ip == "" then
+		lan_ip = luci.sys.exec([[
+ip -4 addr show scope global 2>/dev/null \
+  | grep -w 'inet' | awk '{print $2}' | cut -d'/' -f1 | grep -v '^127\.' | head -n1 | tr -d '\n']])
+	end
+
+	return lan_ip
+end
+
+local lan_ip = lanip()
 local server_table = {}
 local type_table = {}
 local function is_finded(e)
@@ -77,9 +103,20 @@ o.description = translate("Customize Netflix IP Url")
 o:depends("netflix_enable", "1")
 
 o = s:option(ListValue, "shunt_dns_mode", translate("DNS Query Mode For Shunt Mode"))
-o:value("1", translate("Use DNS2SOCKS query and cache"))
+if is_finded("dns2socks") then
+	o:value("1", translate("Use DNS2SOCKS query and cache"))
+end
+if is_finded("dns2socks-rust") then
+	o:value("2", translate("Use DNS2SOCKS-RUST query and cache"))
+end
 if is_finded("mosdns") then
-o:value("2", translate("Use MOSDNS query"))
+	o:value("3", translate("Use MosDNS query"))
+end
+if is_finded("dnsproxy") then
+	o:value("4", translate("Use DNSPROXY query and cache"))
+end
+if is_finded("chinadns-ng") then
+	o:value("5", translate("Use ChinaDNS-NG query and cache"))
 end
 o:depends("netflix_enable", "1")
 o.default = 1
@@ -97,23 +134,101 @@ o:value("4.2.2.3:53", translate("Level 3 Public DNS (4.2.2.3)"))
 o:value("4.2.2.4:53", translate("Level 3 Public DNS (4.2.2.4)"))
 o:value("1.1.1.1:53", translate("Cloudflare DNS (1.1.1.1)"))
 o:depends("shunt_dns_mode", "1")
+o:depends("shunt_dns_mode", "2")
 o.description = translate("Custom DNS Server format as IP:PORT (default: 8.8.4.4:53)")
 o.datatype = "ip4addrport"
 
-o = s:option(ListValue, "shunt_mosdns_dnsserver", translate("Anti-pollution DNS Server"))
+o = s:option(Value, "shunt_mosdns_dnsserver", translate("Anti-pollution DNS Server"))
 o:value("tcp://8.8.4.4:53,tcp://8.8.8.8:53", translate("Google Public DNS"))
 o:value("tcp://208.67.222.222:53,tcp://208.67.220.220:53", translate("OpenDNS"))
 o:value("tcp://209.244.0.3:53,tcp://209.244.0.4:53", translate("Level 3 Public DNS-1 (209.244.0.3-4)"))
 o:value("tcp://4.2.2.1:53,tcp://4.2.2.2:53", translate("Level 3 Public DNS-2 (4.2.2.1-2)"))
 o:value("tcp://4.2.2.3:53,tcp://4.2.2.4:53", translate("Level 3 Public DNS-3 (4.2.2.3-4)"))
 o:value("tcp://1.1.1.1:53,tcp://1.0.0.1:53", translate("Cloudflare DNS"))
-o:depends("shunt_dns_mode", "2")
-o.description = translate("Custom DNS Server for mosdns")
+o:depends("shunt_dns_mode", "3")
+o.description = translate("Custom DNS Server format as tcp://IP:PORT or tls://DOMAIN:PORT (tcp://8.8.8.8 or tls://dns.google:853)")
 
-o = s:option(Flag, "shunt_mosdns_ipv6", translate("Disable IPv6 In MOSDNS Query Mode (Shunt Mode)"))
-o:depends("shunt_dns_mode", "2")
+o = s:option(Flag, "shunt_mosdns_ipv6", translate("Disable IPv6 In MosDNS Query Mode (Shunt Mode)"))
+o:depends("shunt_dns_mode", "3")
 o.rmempty = false
 o.default = "0"
+
+if is_finded("dnsproxy") then
+	o = s:option(ListValue, "shunt_parse_method", translate("Select DNS parse Mode"))
+	o.description = translate(
+    	"<ul>" ..
+    	"<li>" .. translate("When use DNS list file, please ensure list file exists and is formatted correctly.") .. "</li>" ..
+    	"<li>" .. translate("Tips: Dnsproxy DNS Parse List Path:") ..
+    	" <a href='http://" .. lan_ip .. "/cgi-bin/luci/admin/services/shadowsocksr/control' target='_blank'>" ..
+    	translate("Click here to view or manage the DNS list file") .. "</a>" .. "</li>" ..
+    	"</ul>"
+	)
+	o:value("single_dns", translate("Set Single DNS"))
+	o:value("parse_file", translate("Use DNS List File"))
+	o:depends("shunt_dns_mode", "4")
+	o.rmempty = true
+	o.default = "single_dns"
+
+	o = s:option(Value, "dnsproxy_shunt_forward", translate("Anti-pollution DNS Server"))
+	o:value("sdns://AgUAAAAAAAAABzguOC40LjQgsKKKE4EwvtIbNjGjagI2607EdKSVHowYZtyvD9iPrkkHOC44LjQuNAovZG5zLXF1ZXJ5", translate("Google DNSCrypt SDNS"))
+	o:value("sdns://AgcAAAAAAAAAACC2vD25TAYM7EnyCH8Xw1-0g5OccnTsGH9vQUUH0njRtAxkbnMudHduaWMudHcKL2Rucy1xdWVyeQ", translate("TWNIC-101 DNSCrypt SDNS"))
+	o:value("sdns://AgcAAAAAAAAADzE4NS4yMjIuMjIyLjIyMiAOp5Svj-oV-Fz-65-8H2VKHLKJ0egmfEgrdPeAQlUFFA8xODUuMjIyLjIyMi4yMjIKL2Rucy1xdWVyeQ", translate("dns.sb DNSCrypt SDNS"))
+	o:value("sdns://AgMAAAAAAAAADTE0OS4xMTIuMTEyLjkgsBkgdEu7dsmrBT4B4Ht-BQ5HPSD3n3vqQ1-v5DydJC8SZG5zOS5xdWFkOS5uZXQ6NDQzCi9kbnMtcXVlcnk", translate("Quad9 DNSCrypt SDNS"))
+	o:value("sdns://AQMAAAAAAAAAETk0LjE0MC4xNC4xNDo1NDQzINErR_JS3PLCu_iZEIbq95zkSV2LFsigxDIuUso_OQhzIjIuZG5zY3J5cHQuZGVmYXVsdC5uczEuYWRndWFyZC5jb20", translate("AdGuard DNSCrypt SDNS"))
+	o:value("sdns://AgcAAAAAAAAABzEuMC4wLjGgENk8mGSlIfMGXMOlIlCcKvq7AVgcrZxtjon911-ep0cg63Ul-I8NlFj4GplQGb_TTLiczclX57DvMV8Q-JdjgRgSZG5zLmNsb3VkZmxhcmUuY29tCi9kbnMtcXVlcnk", translate("Cloudflare DNSCrypt SDNS"))
+	o:value("sdns://AgcAAAAAAAAADjEwNC4xNi4yNDkuMjQ5ABJjbG91ZGZsYXJlLWRucy5jb20KL2Rucy1xdWVyeQ", translate("cloudflare-dns.com DNSCrypt SDNS"))
+	o:depends("shunt_parse_method", "single_dns")
+	o.description = translate("Custom DNS Server (support: IP:Port or tls://IP:Port or https://IP/dns-query and other format).")
+
+	o = s:option(ListValue, "shunt_upstreams_logic_mode", translate("Defines the upstreams logic mode"))
+	o.description = translate(
+    	"<ul>" ..
+    	"<li>" .. translate("Defines the upstreams logic mode, possible values: load_balance, parallel, fastest_addr (default: load_balance).") .. "</li>" .. "<li>" .. translate("When two or more DNS servers are deployed, enable this function.") .. "</li>" ..
+    	"</ul>"
+	)
+	o:value("load_balance", translate("load_balance"))
+	o:value("parallel", translate("parallel"))
+	o:value("fastest_addr", translate("fastest_addr"))
+	o:depends("shunt_parse_method", "parse_file")
+	o.rmempty = true
+	o.default = "load_balance"
+
+	o = s:option(Flag, "shunt_dnsproxy_ipv6", translate("Disable IPv6 query mode"))
+	o.description = translate("When disabled, all AAAA requests are not resolved.")
+	o:depends("shunt_parse_method", "single_dns")
+	o:depends("shunt_parse_method", "parse_file")
+	o.rmempty = false
+	o.default = "1"
+end
+
+if is_finded("chinadns-ng") then
+	o = s:option(Value, "chinadns_ng_shunt_dnsserver", translate("Anti-pollution DNS Server For Shunt Mode"))
+	o:value("8.8.4.4:53", translate("Google Public DNS (8.8.4.4)"))
+	o:value("8.8.8.8:53", translate("Google Public DNS (8.8.8.8)"))
+	o:value("208.67.222.222:53", translate("OpenDNS (208.67.222.222)"))
+	o:value("208.67.220.220:53", translate("OpenDNS (208.67.220.220)"))
+	o:value("209.244.0.3:53", translate("Level 3 Public DNS (209.244.0.3)"))
+	o:value("209.244.0.4:53", translate("Level 3 Public DNS (209.244.0.4)"))
+	o:value("4.2.2.1:53", translate("Level 3 Public DNS (4.2.2.1)"))
+	o:value("4.2.2.2:53", translate("Level 3 Public DNS (4.2.2.2)"))
+	o:value("4.2.2.3:53", translate("Level 3 Public DNS (4.2.2.3)"))
+	o:value("4.2.2.4:53", translate("Level 3 Public DNS (4.2.2.4)"))
+	o:value("1.1.1.1:53", translate("Cloudflare DNS (1.1.1.1)"))
+	o:depends("shunt_dns_mode", "5")
+	o.description = translate(
+    	"<ul>" ..
+    	"<li>" .. translate("Custom DNS Server format as IP:PORT (default: 8.8.4.4:53)") .. "</li>" .. 
+    	"<li>" .. translate("Muitiple DNS server can saperate with ','") .. "</li>" ..
+    	"</ul>"
+	)
+
+	o = s:option(ListValue, "chinadns_ng_shunt_proto", translate("ChinaDNS-NG shunt query protocol"))
+	o:value("none", translate("UDP/TCP upstream"))
+	o:value("tcp", translate("TCP upstream"))
+	o:value("udp", translate("UDP upstream"))
+	o:value("tls", translate("DoT upstream (Need use wolfssl version)"))
+	o:depends("shunt_dns_mode", "5")
+end
 
 o = s:option(Flag, "apple_optimization", translate("Apple domains optimization"), translate("For Apple domains equipped with Chinese mainland CDN, always responsive to Chinese CDN IP addresses"))
 o.rmempty = false
@@ -134,10 +249,9 @@ o = s:option(Flag, "adblock", translate("Enable adblock"))
 o.rmempty = false
 
 o = s:option(Value, "adblock_url", translate("adblock_url"))
-o:value("https://raw.githubusercontent.com/neodevpro/neodevhost/master/lite_dnsmasq.conf", translate("NEO DEV HOST Lite"))
-o:value("https://raw.githubusercontent.com/neodevpro/neodevhost/master/dnsmasq.conf", translate("NEO DEV HOST Full"))
+o:value("https://raw.githubusercontent.com/neodevpro/neodevhost/master/dnsmasq.conf", translate("NEO DEV HOST"))
 o:value("https://anti-ad.net/anti-ad-for-dnsmasq.conf", translate("anti-AD"))
-o.default = "https://raw.githubusercontent.com/neodevpro/neodevhost/master/lite_dnsmasq.conf"
+o.default = "https://raw.githubusercontent.com/neodevpro/neodevhost/master/dnsmasq.conf"
 o:depends("adblock", "1")
 o.description = translate("Support AdGuardHome and DNSMASQ format list")
 
@@ -172,7 +286,7 @@ o.cfgvalue = function(self, section)
     if enabled == "0" then
         return m:get(section, "old_server")
     end
-    return Value.cfgvalue(self, section) -- Default to `same` when enabled
+    return Value.cfgvalue(self, section)-- Default to `same` when enabled
 end
 
 o.write = function(self, section, value)
@@ -203,7 +317,7 @@ for key, server_type in pairs(type_table) do
         o:depends("server", key)
     end
 end
-o:depends({server = "same", disable = true}) 
+o:depends({server = "same", disable = true})
 
 -- Socks User
 o = s:option(Value, "socks5_user", translate("Socks5 User"), translate("Only when Socks5 Auth Mode is password valid, Mandatory."))
@@ -226,7 +340,7 @@ for key, server_type in pairs(type_table) do
         o:depends("server", key)
     end
 end
-o:depends({server = "same", disable = true}) 
+o:depends({server = "same", disable = true})
 end
 
 -- Local Port
@@ -237,77 +351,89 @@ o.rmempty = false
 
 -- [[ fragmen Settings ]]--
 if is_finded("xray") then
-s = m:section(TypedSection, "global_xray_fragment", translate("Xray Fragment Settings"))
-s.anonymous = true
+	s = m:section(TypedSection, "global_xray_fragment", translate("Xray Fragment Settings"))
+	s.anonymous = true
 
-o = s:option(Flag, "fragment", translate("Fragment"), translate("TCP fragments, which can deceive the censorship system in some cases, such as bypassing SNI blacklists."))
-o.default = 0
+	o = s:option(Flag, "fragment", translate("Fragment"), translate("TCP fragments, which can deceive the censorship system in some cases, such as bypassing SNI blacklists."))
+	o.default = 0
 
-o = s:option(ListValue, "fragment_packets", translate("Fragment Packets"), translate("\"1-3\" is for segmentation at TCP layer, applying to the beginning 1 to 3 data writes by the client. \"tlshello\" is for TLS client hello packet fragmentation."))
-o.default = "tlshello"
-o:value("tlshello", "tlshello")
-o:value("1-1", "1-1")
-o:value("1-2", "1-2")
-o:value("1-3", "1-3")
-o:value("1-5", "1-5")
-o:depends("fragment", true)
+	o = s:option(ListValue, "fragment_packets", translate("Fragment Packets"), translate("\"1-3\" is for segmentation at TCP layer, applying to the beginning 1 to 3 data writes by the client. \"tlshello\" is for TLS client hello packet fragmentation."))
+	o.default = "tlshello"
+	o:value("tlshello", "tlshello")
+	o:value("1-1", "1-1")
+	o:value("1-2", "1-2")
+	o:value("1-3", "1-3")
+	o:value("1-5", "1-5")
+	o:depends("fragment", true)
 
-o = s:option(Value, "fragment_length", translate("Fragment Length"), translate("Fragmented packet length (byte)"))
-o.default = "100-200"
-o:depends("fragment", true)
+	o = s:option(Value, "fragment_length", translate("Fragment Length"), translate("Fragmented packet length (byte)"))
+	o.default = "100-200"
+	o:depends("fragment", true)
 
-o = s:option(Value, "fragment_interval", translate("Fragment Interval"), translate("Fragmentation interval (ms)"))
-o.default = "10-20"
-o:depends("fragment", true)
+	o = s:option(Value, "fragment_interval", translate("Fragment Interval"), translate("Fragmentation interval (ms)"))
+	o.default = "10-20"
+	o:depends("fragment", true)
 
-o = s:option(Flag, "noise", translate("Noise"), translate("UDP noise, Under some circumstances it can bypass some UDP based protocol restrictions."))
-o.default = 0
+	o = s:option(Value, "fragment_maxsplit", translate("Max Split"), translate("Limit the maximum number of splits."))
+	o.default = "100-200"
+	o:depends("fragment", true)
 
-s = m:section(TypedSection, "xray_noise_packets", translate("Xray Noise Packets"))
-s.description = translate(
-    "<font style='color:red'>" .. translate("To send noise packets, select \"Noise\" in Xray Settings.") .. "</font>" ..
-    "<br/><font><b>" .. translate("For specific usage, see:") .. "</b></font>" ..
-    "<a href='https://xtls.github.io/config/outbounds/freedom.html' target='_blank'>" ..
-    "<font style='color:green'><b>" .. translate("Click to the page") .. "</b></font></a>")
-s.template = "cbi/tblsection"
-s.sortable = true
-s.anonymous = true
-s.addremove = true
+	o = s:option(Flag, "noise", translate("Noise"), translate("UDP noise, Under some circumstances it can bypass some UDP based protocol restrictions."))
+	o.default = 0
 
-s.remove = function(self, section)
-	for k, v in pairs(self.children) do
-		v.rmempty = true
-		v.validate = nil
+	s = m:section(TypedSection, "xray_noise_packets", translate("Xray Noise Packets"))
+	s.description = translate(
+		"<font style='color:red'>" .. translate("To send noise packets, select \"Noise\" in Xray Settings.") .. "</font>" ..
+		"<br/><font><b>" .. translate("For specific usage, see:") .. "</b></font>" ..
+		"<a href='https://xtls.github.io/config/outbounds/freedom.html' target='_blank'>" ..
+		"<font style='color:green'><b>" .. translate("Click to the page") .. "</b></font></a>")
+	s.template = "cbi/tblsection"
+	s.sortable = true
+	s.anonymous = true
+	s.addremove = true
+
+	s.remove = function(self, section)
+		for k, v in pairs(self.children) do
+			v.rmempty = true
+			v.validate = nil
+		end
+		TypedSection.remove(self, section)
 	end
-	TypedSection.remove(self, section)
-end
 
-o = s:option(Flag, "enabled", translate("Enable"))
-o.default = 1
-o.rmempty = false
+	o = s:option(Flag, "enabled", translate("Enable"))
+	o.default = 1
+	o.rmempty = false
 
-o = s:option(ListValue, "type", translate("Type"))
-o.default = "base64"
-o:value("rand", "rand")
-o:value("str", "str")
-o:value("base64", "base64")
+	o = s:option(ListValue, "type", translate("Type"))
+	o.default = "base64"
+	o:value("rand", "rand")
+	o:value("str", "str")
+	o:value("hex", "hex")
+	o:value("base64", "base64")
 
-o = s:option(Value, "domainStrategy", translate("Domain Strategy"))
-o.default = "UseIP"
-o:value("AsIs", "AsIs")
-o:value("UseIP", "UseIP")
-o:value("UseIPv4", "UseIPv4")
-o:value("ForceIP", "ForceIP")
-o:value("ForceIPv4", "ForceIPv4")
-o.rmempty = false
+	o = s:option(Value, "domainStrategy", translate("Domain Strategy"))
+	o.default = "UseIP"
+	o:value("AsIs", "AsIs")
+	o:value("UseIP", "UseIP")
+	o:value("UseIPv4", "UseIPv4")
+	o:value("ForceIP", "ForceIP")
+	o:value("ForceIPv4", "ForceIPv4")
+	o.rmempty = false
 
-o = s:option(Value, "packet", translate("Packet"))
-o.datatype = "minlength(1)"
-o.rmempty = false
+	o = s:option(Value, "packet", translate("Packet"))
+	o.datatype = "minlength(1)"
+	o.rmempty = false
 
-o = s:option(Value, "delay", translate("Delay (ms)"))
-o.datatype = "or(uinteger,portrange)"
-o.rmempty = false
+	o = s:option(Value, "delay", translate("Delay (ms)"))
+	o.datatype = "or(uinteger,portrange)"
+	o.rmempty = false
+
+	o = s:option(Value, "applyto", translate("IP Type"))
+	o.default = "IP"
+	o:value("IP", "ALL")
+	o:value("IPV4", "IPv4")
+	o:value("IPV6", "IPv6")
+	o.rmempty = false
 end
 
 return m

@@ -60,6 +60,12 @@ if Process_list:find("udp.only.ssr.reudp") then
 	reudp_run = 1
 end
 
+--[[
+if Process_list:find("tcp.udp.dual.ssr.retcp") then
+	redir_run = 1
+end
+]]--
+
 if Process_list:find("tcp.only.ssr.retcp") then
 	redir_run = 1
 end
@@ -73,10 +79,23 @@ if Process_list:find("tcp.udp.ssr.retcp") then
 	reudp_run = 1
 end
 
+--[[
+if Process_list:find("nft.ssr.retcp") then
+	redir_run = 1
+end
+]]--
+
 if Process_list:find("local.ssr.retcp") then
 	redir_run = 1
 	sock5_run = 1
 end
+
+--[[
+if Process_list:find("local.nft.ssr.retcp") then
+	redir_run = 1
+	sock5_run = 1
+end
+]]--
 
 if Process_list:find("local.udp.ssr.retcp") then
 	reudp_run = 1
@@ -92,7 +111,11 @@ if Process_list:find("ssr.server") then
 	server_run = 1
 end
 
-if Process_list:find("ssrplus/bin/dns2tcp") or Process_list:find("ssrplus/bin/mosdns") or (Process_list:find("ssrplus.dns") and Process_list:find("dns2socks.127.0.0.1.*127.0.0.1.5335")) then
+if  Process_list:find("ssrplus/bin/dns2tcp") or
+    Process_list:find("ssrplus/bin/mosdns") or
+    Process_list:find("dnsproxy.*127.0.0.1.*5335") or
+    Process_list:find("chinadns.*127.0.0.1.*5335") or
+    (Process_list:find("ssrplus.dns") and Process_list:find("dns2socks.*127.0.0.1.*127.0.0.1.5335")) then
 	pdnsd_run = 1
 end
 
