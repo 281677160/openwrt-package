@@ -8,6 +8,8 @@ if not arg[1] or not m:get(arg[1]) then
 	luci.http.redirect(api.url("acl"))
 end
 
+m:append(Template(appname .. "/cbi/nodes_listvalue_com"))
+
 local sys = api.sys
 
 local port_validate = function(self, value, t)
@@ -198,8 +200,12 @@ local NODE = m:get("@global[0]", "node")
 o = s:option(ListValue, "node", "<a style='color: red'>" .. translate("Node") .. "</a>")
 if GLOBAL_ENABLED == "1" and NODE then
 	o:value("", translate("Use global config") .. "(" .. api.get_node_name(NODE) .. ")")
+	o.group = {""}
+else
+	o.group = {}
 end
 o:depends({ _hide_node_option = "1",  ['!reverse'] = true })
+o.template = appname .. "/cbi/nodes_listvalue"
 
 o = s:option(DummyValue, "_hide_dns_option", "")
 o.template = "passwall2/cbi/hidevalue"
@@ -219,7 +225,7 @@ local TCP_REDIR_PORTS = m:get("@global_forwarding[0]", "tcp_redir_ports")
 o = s:option(Value, "tcp_redir_ports", translate("TCP Redir Ports"))
 o:value("", translate("Use global config") .. "(" .. TCP_REDIR_PORTS .. ")")
 o:value("1:65535", translate("All"))
-o:value("22,25,53,143,465,587,853,993,995,80,443", translate("Common Use"))
+o:value("22,25,53,80,143,443,465,587,853,873,993,995,5222,8080,8443,9418", translate("Common Use"))
 o:value("80,443", "80,443")
 o.validate = port_validate
 o:depends({ _hide_node_option = "1",  ['!reverse'] = true })
@@ -231,6 +237,13 @@ o:value("", translate("Use global config") .. "(" .. UDP_REDIR_PORTS .. ")")
 o:value("1:65535", translate("All"))
 o.validate = port_validate
 o:depends({ _hide_node_option = "1",  ['!reverse'] = true })
+
+o = s:option(DummyValue, "tips", "　")
+o.rawhtml = true
+o.cfgvalue = function(t, n)
+	return string.format('<font color="red">%s</font>',
+	translate("The port settings support single ports and ranges.<br>Separate multiple ports with commas (,).<br>Example: 21,80,443,1000:2000."))
+end
 
 o = s:option(ListValue, "direct_dns_query_strategy", translate("Direct Query Strategy"))
 o.default = "UseIP"
@@ -273,7 +286,7 @@ o:value("https://8.8.8.8/dns-query", "Google 8888")
 o:value("https://9.9.9.9/dns-query", "Quad9-Recommended 9.9.9.9")
 o:value("https://149.112.112.112/dns-query", "Quad9-Recommended 149.112.112.112")
 o:value("https://208.67.222.222/dns-query", "OpenDNS")
-o:value("https://dns.adguard.com/dns-query,176.103.130.130", "AdGuard")
+o:value("https://dns.adguard.com/dns-query,94.140.14.14", "AdGuard")
 o:value("https://doh.libredns.gr/dns-query,116.202.176.26", "LibreDNS")
 o:value("https://doh.libredns.gr/ads,116.202.176.26", "LibreDNS (No Ads)")
 o.default = "https://1.1.1.1/dns-query"
@@ -296,12 +309,9 @@ o:depends("remote_dns_protocol", "tcp")
 o:depends("remote_dns_protocol", "doh")
 o:depends("remote_dns_protocol", "udp")
 
-o = s:option(Flag, "remote_fakedns", "FakeDNS", translate("Use FakeDNS work in the shunt domain that proxy."))
+o = s:option(Flag, "remote_fakedns", "FakeDNS", translate("Use FakeDNS work in the domain that proxy."))
 o.default = "0"
 o.rmempty = false
-o:depends("remote_dns_protocol", "tcp")
-o:depends("remote_dns_protocol", "doh")
-o:depends("remote_dns_protocol", "udp")
 
 o = s:option(ListValue, "remote_dns_query_strategy", translate("Remote Query Strategy"))
 o.default = "UseIPv4"
@@ -326,10 +336,19 @@ o.remove = function(self, section)
 	end
 end
 
+local o_node = s.fields["node"]
+
 for k, v in pairs(nodes_table) do
-	s.fields["node"]:value(v.id, v["remark"])
+	o_node:value(v.id, v["remark"])
+	o_node.group[#o_node.group+1] = (v.group and v.group ~= "") and v.group or translate("default")
 	if v.type == "Xray" then
 		s.fields["_xray_node"]:depends({ node = v.id })
+	end
+	if v.node_type == "normal" or v.protocol == "_balancing" or v.protocol == "_urltest" then
+		--Shunt node has its own separate options.
+		s.fields["remote_fakedns"]:depends({ node = v.id, remote_dns_protocol = "tcp" })
+		s.fields["remote_fakedns"]:depends({ node = v.id, remote_dns_protocol = "doh" })
+		s.fields["remote_fakedns"]:depends({ node = v.id, remote_dns_protocol = "udp" })
 	end
 end
 

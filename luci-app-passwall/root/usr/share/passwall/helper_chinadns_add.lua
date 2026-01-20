@@ -106,13 +106,15 @@ local setflag = (NFTFLAG == "1") and "inet@passwall@" or ""
 
 local only_global = (DEFAULT_MODE == "proxy" and CHNLIST == "0" and GFWLIST == "0") and 1
 
+local force_https_soa = uci:get(appname, "@global[0]", "force_https_soa") or 1
+
 config_lines = {
 	LOG_FILE ~= "/dev/null" and "verbose" or "",
-	"bind-addr 127.0.0.1",
+	"bind-addr ::",
 	"bind-port " .. LISTEN_PORT,
 	"china-dns " .. DNS_LOCAL,
 	"trust-dns " .. DNS_TRUST,
-	"filter-qtype 65"
+	tonumber(force_https_soa) == 1 and "filter-qtype 65" or ""
 }
 
 for i = 1, 6 do
@@ -164,16 +166,22 @@ local file_vpslist = TMP_ACL_PATH .. "/vpslist"
 if not is_file_nonzero(file_vpslist) then
 	local f_out = io.open(file_vpslist, "w")
 	local written_domains = {}
-	uci:foreach(appname, "nodes", function(t)
-		local function process_address(address)
-			if address == "engage.cloudflareclient.com" then return end
-			if datatypes.hostname(address) and not written_domains[address] then
-				f_out:write(address .. "\n")
-				written_domains[address] = true
-			end
+	local function process_address(address)
+		if address == "engage.cloudflareclient.com" then return end
+		if datatypes.hostname(address) and not written_domains[address] then
+			f_out:write(address .. "\n")
+			written_domains[address] = true
 		end
+	end
+	uci:foreach(appname, "nodes", function(t)
 		process_address(t.address)
 		process_address(t.download_address)
+	end)
+	uci:foreach(appname, "subscribe_list", function(t)  --订阅链接
+		local url, _ = api.get_domain_port_from_url(t.url or "")
+		if url and url ~= "" then
+			process_address(url)
+		end
 	end)
 	f_out:close()
 end

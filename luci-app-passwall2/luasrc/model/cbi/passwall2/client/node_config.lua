@@ -9,6 +9,9 @@ if not arg[1] or not m:get(arg[1]) then
 	luci.http.redirect(api.url("node_list"))
 end
 
+m:append(Template(appname .. "/cbi/nodes_multivalue_com"))
+m:append(Template(appname .. "/cbi/nodes_listvalue_com"))
+
 s = m:section(NamedSection, arg[1], "nodes", "")
 s.addremove = false
 s.dynamic = false
@@ -21,6 +24,36 @@ o.value = arg[1]
 o = s:option(Value, "remarks", translate("Node Remarks"))
 o.default = translate("Remarks")
 o.rmempty = false
+
+o = s:option(Value, "group", translate("Group Name"))
+o.default = ""
+o:value("", translate("default"))
+local groups = {}
+m.uci:foreach(appname, "nodes", function(s)
+	if s[".name"] ~= arg[1] then
+		if s.group and s.group ~= "" then
+			groups[s.group] = true
+		end
+	end
+end)
+for k, v in pairs(groups) do
+	o:value(k)
+end
+o.write = function(self, section, value)
+	value = api.trim(value)
+	local lower = value:lower()
+
+	if lower == "" or lower == "default" then
+		return m:del(section, self.option)
+	end
+
+	for _, v in ipairs(self.keylist or {}) do
+		if v:lower() == lower then
+			return m:set(section, self.option, v)
+		end
+	end
+	m:set(section, self.option, value)
+end
 
 local fs = require "nixio.fs"
 local types_dir = "/usr/lib/lua/luci/model/cbi/passwall2/client/type/"

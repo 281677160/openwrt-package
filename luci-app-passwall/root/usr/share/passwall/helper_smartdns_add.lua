@@ -23,6 +23,9 @@ local DEFAULT_PROXY_MODE = var["-DEFAULT_PROXY_MODE"]
 local NO_PROXY_IPV6 = var["-NO_PROXY_IPV6"]
 local NO_LOGIC_LOG = var["-NO_LOGIC_LOG"]
 local NFTFLAG = var["-NFTFLAG"]
+local SUBNET = var["-SUBNET"]
+local LISTEN_PORT = var["-LISTEN_PORT"]
+local LOCAL_PORT = var["-LOCAL_PORT"]
 
 local uci = api.uci
 local sys = api.sys
@@ -107,9 +110,9 @@ if not fs.access(FLAG_PATH) then
 end
 
 local LOCAL_EXTEND_ARG = ""
-if LOCAL_GROUP == "nil" then
+if LOCAL_GROUP == "null" then
 	LOCAL_GROUP = nil
-	log("  * 注意：国内分组名未设置，可能会导致 DNS 分流错误！")
+	log("  * 注意：国内分组名未设置，直连 DNS 将无法查询！")
 else
 	--从smartdns配置中读取参数
 	local custom_conf_path = "/etc/smartdns/custom.conf"
@@ -120,14 +123,15 @@ else
 		{key = "response_mode", config_key = "response-mode", prefix = "-r ", default = "first-ping"},
 		{key = "rr_ttl", config_key = "rr-ttl", prefix = "-rr-ttl "},
 		{key = "rr_ttl_min", config_key = "rr-ttl-min", prefix = "-rr-ttl-min "},
-		{key = "rr_ttl_max", config_key = "rr-ttl-max", prefix = "-rr-ttl-max "}
+		{key = "rr_ttl_max", config_key = "rr-ttl-max", prefix = "-rr-ttl-max "},
+		{key = "rr_ttl_reply_max", config_key = "rr-ttl-reply-max", prefix = "-rr-ttl-reply-max "}
 	}
 	-- 从 custom.conf 中读取值，以最后出现的值为准
 	local custom_config = {}
 	local f_in = io.open(custom_conf_path, "r")
 	if f_in then
 		for line in f_in:lines() do
-			line = line:match("^%s*(.-)%s*$")
+			line = api.trim(line)
 			if line ~= "" and not line:match("^#") then
 				local param, value = line:match("^(%S+)%s+(%S+)$")
 				if param and value then custom_config[param] = value end
@@ -160,46 +164,71 @@ if not REMOTE_GROUP or REMOTE_GROUP == "nil" then
 	sys.call('sed -i "/passwall/d" /etc/smartdns/custom.conf >/dev/null 2>&1')
 end
 
+local force_https_soa = uci:get(appname, "@global[0]", "force_https_soa") or 1
 local proxy_server_name = "passwall-proxy-server"
 config_lines = {
-	"force-qtype-SOA 65",
+	tonumber(LISTEN_PORT) ~= 0 and "bind [::]:" .. LISTEN_PORT .. "@lo" or "",
+	(tonumber(LOCAL_PORT) ~= 0 and LOCAL_GROUP) and "bind [::]:" .. LOCAL_PORT .. "@lo -group " ..  LOCAL_GROUP or "",
+	tonumber(force_https_soa) == 1 and "force-qtype-SOA 65" or "force-qtype-SOA -,65",
 	"server 114.114.114.114 -bootstrap-dns",
-	DNS_MODE == "socks" and string.format("proxy-server socks5://%s -name %s", REMOTE_PROXY_SERVER, proxy_server_name) or nil
+	DNS_MODE == "socks" and string.format("proxy-server socks5://%s -name %s", REMOTE_PROXY_SERVER, proxy_server_name) or ""
 }
 if DNS_MODE == "socks" then
-	string.gsub(REMOTE_DNS, '[^' .. "|" .. ']+', function(w)
-		local server_dns = w
-		local server_param = string.format("server %s -group %s -proxy %s", "%s", REMOTE_GROUP, proxy_server_name)
-		server_param = server_param .. " -exclude-default-group"
+	for w in string.gmatch(REMOTE_DNS, '[^|]+') do
+		local server_dns = api.trim(w)
+		local server_param
 
-		local isHTTPS = w:find("https://")
-		if isHTTPS and isHTTPS == 1 then
-			local http_host = nil
-			local url = w
-			local port = 443
-			local s = api.split(w, ",")
-			if s and #s > 1 then
-				url = s[1]
-				local dns_ip = s[2]
-				local host_port = api.get_domain_from_url(s[1])
-				if host_port and #host_port > 0 then
-					http_host = host_port
-					local s2 = api.split(host_port, ":")
-					if s2 and #s2 > 1 then
-						http_host = s2[1]
-						port = s2[2]
-					end 
-					url = url:gsub(http_host, dns_ip)
+		local dnsType = string.match(server_dns, "^(.-)://")
+		dnsType = dnsType and string.lower(dnsType) or nil
+		local dnsServer = string.match(server_dns, "://(.+)") or server_dns
+
+		if dnsType and dnsType ~= "" and dnsType ~= "udp" then
+			if dnsType == "tcp" then
+				server_param = "server-tcp " .. dnsServer
+			elseif dnsType == "tls" then
+				server_param = "server-tls " .. dnsServer
+			elseif dnsType == "quic" then
+				server_param = "server-quic " .. dnsServer
+			elseif dnsType == "https" or dnsType == "h3" then
+				local http_host = nil
+				local url = w
+				local port = 443
+				local s = api.split(w, ",")
+				if s and #s > 1 then
+					url = s[1]
+					local dns_ip = s[2]
+					local host_port = api.get_domain_from_url(s[1])
+					if host_port and #host_port > 0 then
+						http_host = host_port
+						local s2 = api.split(host_port, ":")
+						if s2 and #s2 > 1 then
+							http_host = s2[1]
+							port = s2[2]
+						end 
+						url = url:gsub(http_host, dns_ip)
+					end
 				end
+				server_dns = url
+				if http_host then
+					server_dns = server_dns .. " -http-host " .. http_host
+				end
+				server_param = (dnsType == "https" and "server-https " or "server-h3 ") .. server_dns
 			end
-			server_dns = url
-			if http_host then
-				server_dns = server_dns .. " -http-host " .. http_host
-			end
+		else
+			server_param = "server " .. dnsServer
+
 		end
-		server_param = string.format(server_param, server_dns)
+
+		if not api.is_local_ip(w) then
+			server_param = server_param .. " -proxy " .. proxy_server_name
+		end
+
+		server_param = server_param .. " -group " .. REMOTE_GROUP .. " -exclude-default-group"
+		if SUBNET and SUBNET ~= "" and SUBNET ~= "0" then
+			server_param = server_param .. " -subnet " .. SUBNET
+		end
 		table.insert(config_lines, server_param)
-	end)
+	end
 	REMOTE_FAKEDNS = 0
 else
 	local server_param = string.format("server %s -group %s -exclude-default-group", TUN_DNS:gsub("#", ":"), REMOTE_GROUP)
@@ -280,16 +309,22 @@ local file_vpslist = TMP_ACL_PATH .. "/vpslist"
 if not is_file_nonzero(file_vpslist) then
 	local f_out = io.open(file_vpslist, "w")
 	local written_domains = {}
-	uci:foreach(appname, "nodes", function(t)
-		local function process_address(address)
-			if address == "engage.cloudflareclient.com" then return end
-			if datatypes.hostname(address) and not written_domains[address] then
-				f_out:write(address .. "\n")
-				written_domains[address] = true
-			end
+	local function process_address(address)
+		if address == "engage.cloudflareclient.com" then return end
+		if datatypes.hostname(address) and not written_domains[address] then
+			f_out:write(address .. "\n")
+			written_domains[address] = true
 		end
+	end
+	uci:foreach(appname, "nodes", function(t)
 		process_address(t.address)
 		process_address(t.download_address)
+	end)
+	uci:foreach(appname, "subscribe_list", function(t)  --订阅链接
+		local url, _ = api.get_domain_port_from_url(t.url or "")
+		if url and url ~= "" then
+			process_address(url)
+		end
 	end)
 	f_out:close()
 end
@@ -630,4 +665,4 @@ end
 
 fs.symlink(TMP_CONF_FILE, SMARTDNS_CONF)
 sys.call(string.format('echo "conf-file %s" >> /etc/smartdns/custom.conf', string.gsub(SMARTDNS_CONF, appname, appname .. "*")))
-log("  - 请让SmartDNS作为Dnsmasq的上游或重定向！")
+log("  - SmartDNS已作为Dnsmasq上游，如果你自行配置了错误的DNS流程，将会导致域名(直连/代理域名)分流失效！！！")

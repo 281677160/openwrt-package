@@ -17,16 +17,6 @@ function get_ip_port_from(str)
 	return result_ip, result_port
 end
 
-local new_port
-local function get_new_port()
-	if new_port then
-		new_port = tonumber(sys.exec(string.format("echo -n $(/usr/share/%s/app.sh get_new_port %s tcp)", appname, new_port + 1)))
-	else
-		new_port = tonumber(sys.exec(string.format("echo -n $(/usr/share/%s/app.sh get_new_port auto tcp)", appname)))
-	end
-	return new_port
-end
-
 local var = api.get_args(arg)
 local haproxy_path = var["-path"]
 local haproxy_conf = var["-conf"]
@@ -93,7 +83,7 @@ string.gsub(haproxy_dns, '[^' .. "," .. ']+', function(w)
 	if not s:find(":") then
 		s = s .. ":53"
 	end
-	mydns = mydns .. (index > 1 and "\n" or "") .. "    " .. string.format("nameserver dns%s %s", index, s)
+	mydns = mydns .. (index > 1 and "\n" or "") .. "	" .. string.format("nameserver dns%s %s", index, s)
 end)
 haproxy_config = haproxy_config:gsub("{{dns}}",  mydns)
 
@@ -118,7 +108,7 @@ uci:foreach(appname, "haproxy_config", function(t)
 			if health_check_type == "passwall_logic" then
 				if server_node.type ~= "Socks" then
 					local relay_port = server_node.port
-					new_port = get_new_port()
+					local new_port = api.get_new_port()
 					local config_file = string.format("haproxy_%s_%s.json", t[".name"], new_port)
 					sys.call(string.format('/usr/share/%s/app.sh run_socks "%s"> /dev/null',
 						appname,
@@ -180,25 +170,34 @@ listen %s
 ]], port, port))
 	end
 
+	local count_M, count_B = 1, 1
 	for i, o in ipairs(listens[port]) do
-		local remark = o.server_remark
+		local remark = o.server_remark or ""
+		-- 防止重名导致无法运行
+		if tostring(o.backup) ~= "1" then
+			remark = "M" .. count_M .. "-" .. remark
+			count_M = count_M + 1
+		else
+			remark = "B" .. count_B .. "-" .. remark
+			count_B = count_B + 1
+		end
 		local server = o.server_address .. ":" .. o.server_port
 		local server_conf = "server {{remark}} {{server}} weight {{weight}} {{resolvers}} check inter {{inter}} rise 1 fall 3 {{backup}}"
 		server_conf = server_conf:gsub("{{remark}}", remark)
 		server_conf = server_conf:gsub("{{server}}", server)
-		server_conf = server_conf:gsub("{{weight}}",  o.lbweight)
+		server_conf = server_conf:gsub("{{weight}}", o.lbweight)
 		local resolvers = "resolvers mydns"
 		if api.is_ip(o.server_address) then
 			resolvers = ""
 		end
-		server_conf = server_conf:gsub("{{resolvers}}",  resolvers)
-		server_conf = server_conf:gsub("{{inter}}",  tonumber(health_check_inter) .. "s")
-		server_conf = server_conf:gsub("{{backup}}",  o.backup == "1" and "backup" or "")
+		server_conf = server_conf:gsub("{{resolvers}}", resolvers)
+		server_conf = server_conf:gsub("{{inter}}", tonumber(health_check_inter) .. "s")
+		server_conf = server_conf:gsub("{{backup}}", tostring(o.backup) == "1" and "backup" or "")
 
-		f_out:write("    " .. server_conf .. "\n")
+		f_out:write("	" .. server_conf .. "\n")
 
 		if o.export ~= "0" then
-			sys.call(string.format("/usr/share/passwall/app.sh add_ip2route %s %s", o.origin_address, o.export))
+			sys.call(string.format(". /usr/share/passwall/utils.sh ; add_ip2route %s %s", o.origin_address, o.export))
 		end
 
 		log(string.format("  | - 出口节点：%s:%s，权重：%s", o.origin_address, o.origin_port, o.lbweight))

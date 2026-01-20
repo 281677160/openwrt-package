@@ -33,7 +33,7 @@ end
 function gen_config(var)
 	local node_id = var["-node"]
 	if not node_id then
-		print("-node 不能为空")
+		print("-node Cannot be empty!")
 		return
 	end
 	local node = uci:get_all("passwall2", node_id)
@@ -54,7 +54,7 @@ function gen_config(var)
 	local server = server_host .. ":" .. server_port
 
 	if (node.hysteria2_hop) then
-		server = server .. "," .. node.hysteria2_hop
+		server = server .. "," .. string.gsub(node.hysteria2_hop, ":", "-")
 	end
 
 	local config = {

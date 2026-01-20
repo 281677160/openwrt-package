@@ -19,6 +19,9 @@ msgstr "连接失败"
 msgid "Touch Check"
 msgstr "点我检测"
 
+msgid "TLS handshake test, latency for reference only"
+msgstr "TLS握手测试，延时仅供参考"
+
 msgid "Kernel Unsupported"
 msgstr "内核不支持"
 
@@ -51,6 +54,9 @@ msgstr "规则列表"
 
 msgid "Access control"
 msgstr "访问控制"
+
+msgid "Watch Logs"
+msgstr "查看日志"
 
 msgid "Node Config"
 msgstr "节点配置"
@@ -97,6 +103,9 @@ msgstr "Socks 配置"
 msgid "Socks Node"
 msgstr "Socks 节点"
 
+msgid "Current Node"
+msgstr "当前节点"
+
 msgid "Listen Port"
 msgstr "监听端口"
 
@@ -115,8 +124,8 @@ msgstr "DNS分流"
 msgid "Domestic group name"
 msgstr "国内分组名"
 
-msgid "You only need to configure domestic DNS packets in SmartDNS and set it redirect or as Dnsmasq upstream, and fill in the domestic DNS group name here."
-msgstr "您只需要在SmartDNS配置好国内DNS分组，并设置重定向或作为Dnsmasq上游，此处填入国内DNS分组名。"
+msgid "You only need to configure domestic DNS packets in SmartDNS, and fill in the domestic DNS group name here."
+msgstr "您只需要在SmartDNS配置好国内DNS分组，并在此处填入国内DNS分组名。"
 
 msgid "Filter Mode"
 msgstr "过滤模式"
@@ -129,9 +138,6 @@ msgstr "TCP 节点必须是 '%s' 类型才能使用 FakeDNS。"
 
 msgid "Direct DNS"
 msgstr "直连 DNS"
-
-msgid "Direct DNS DoT"
-msgstr "直连 DNS DoT"
 
 msgid "Remote DNS"
 msgstr "远程 DNS"
@@ -162,9 +168,6 @@ msgstr "请求协议"
 
 msgid "Remote DNS DoH"
 msgstr "远程 DNS DoH"
-
-msgid "Remote DNS DoT"
-msgstr "远程 DNS DoT"
 
 msgid "Notify the DNS server when the DNS query is notified, the location of the client (cannot be a private IP address)."
 msgstr "用于 DNS 查询时通知 DNS 服务器，客户端所在的地理位置（不能是私有 IP 地址）。"
@@ -226,6 +229,15 @@ msgstr "DNS 重定向"
 msgid "Force special DNS server to need proxy devices."
 msgstr "强制需要代理的设备使用专用 DNS 服务器。"
 
+msgid "Clear IPSET on Reboot"
+msgstr "重启清空 IPSET"
+
+msgid "Clear NFTSET on Reboot"
+msgstr "重启清空 NFTSET"
+
+msgid "Clear IPSET/NFTSET on service reboot. This may increase reboot time."
+msgstr "重启服务时清空 IPSET/NFTSET，可能会延长重启时间。"
+
 msgid "Clear IPSET"
 msgstr "清空 IPSET"
 
@@ -234,6 +246,12 @@ msgstr "清空 NFTSET"
 
 msgid "Try this feature if the rule modification does not take effect."
 msgstr "如果修改规则后没有生效，请尝试此功能。"
+
+msgid "Force HTTPS SOA"
+msgstr "停用 HTTPS 记录解析"
+
+msgid "Force queries with qtype 65 to respond with an SOA record."
+msgstr "强制使 qtype 65 查询返回 SOA。"
 
 msgid "Are you sure to hide?"
 msgstr "你确定要隐藏吗？"
@@ -337,6 +355,9 @@ msgstr "客户端代理"
 msgid "When selected, devices in LAN can transparent proxy. Otherwise, it will not be proxy. But you can still use access control to allow the designated device to proxy."
 msgstr "当勾选时，局域网内的设备可以透明代理。否则，将不代理。但您仍然可以使用访问控制允许指定的设备代理。"
 
+msgid "Missing components, transparent proxy is unavailable."
+msgstr "缺少组件，透明代理不可用。"
+
 msgid "Want different devices to use different proxy modes/ports/nodes? Please use access control."
 msgstr "希望不同设备使用不同的代理模式/端口/节点？请使用访问控制。"
 
@@ -349,11 +370,8 @@ msgstr "添加节点"
 msgid "Add the node via the link"
 msgstr "通过链接添加节点"
 
-msgid "Share Link"
-msgstr "分享链接"
-
-msgid "Not a subscription link!!!"
-msgstr "不是订阅链接！！！"
+msgid "Enter share links, one per line. Subscription links are not supported!"
+msgstr "输入分享链接，支持多个节点，每行一个。请勿输入订阅链接！"
 
 msgid "Please enter the correct link."
 msgstr "请输入正确的链接。"
@@ -375,6 +393,9 @@ msgstr "置顶"
 
 msgid "Select"
 msgstr "选择"
+
+msgid "Selected:"
+msgstr "已选："
 
 msgid "DeSelect"
 msgstr "反选"
@@ -409,6 +430,15 @@ msgstr "节点备注"
 msgid "Add Mode"
 msgstr "添加方式"
 
+msgid "Save Order"
+msgstr "保存当前顺序"
+
+msgid "Saved current page order successfully."
+msgstr "保存当前页面顺序成功。"
+
+msgid "Drag to reorder"
+msgstr "拖动以重排"
+
 msgid "Type"
 msgstr "类型"
 
@@ -430,7 +460,7 @@ msgstr "负载均衡策略"
 msgid "Fallback Node"
 msgstr "后备节点"
 
-msgid "Use Custome Probe URL"
+msgid "Use Custom Probe URL"
 msgstr "使用自定义探测网址"
 
 msgid "By default the built-in probe URL will be used, enable this option to use a custom probe URL."
@@ -445,8 +475,14 @@ msgstr "用于检测连接状态的网址。"
 msgid "Probe Interval"
 msgstr "探测间隔"
 
-msgid "The interval between initiating probes. The time format is numbers + units, such as '10s', '2h45m', and the supported time units are <code>ns</code>, <code>us</code>, <code>ms</code>, <code>s</code>, <code>m</code>, <code>h</code>, which correspond to nanoseconds, microseconds, milliseconds, seconds, minutes, and hours, respectively."
-msgstr "发起探测的间隔。时间格式为数字+单位，比如<code>&quot;10s&quot;</code>, <code>&quot;2h45m&quot;</code>，支持的时间单位有 <code>ns</code>，<code>us</code>，<code>ms</code>，<code>s</code>，<code>m</code>，<code>h</code>，分别对应纳秒、微秒、毫秒、秒、分、时。"
+msgid "The interval between initiating probes."
+msgstr "发起探测的间隔。"
+
+msgid "The time format is numbers + units, such as '10s', '2h45m', and the supported time units are <code>s</code>, <code>m</code>, <code>h</code>, which correspond to seconds, minutes, and hours, respectively."
+msgstr "时间格式为数字+单位，比如<code>&quot;10s&quot;</code>, <code>&quot;2h45m&quot;</code>，支持的时间单位有 <code>s</code>，<code>m</code>，<code>h</code>，分别对应秒、分、时。"
+
+msgid "When the unit is not filled in, it defaults to seconds."
+msgstr "未填写单位时，默认为秒。"
 
 msgid "Preferred Node Count"
 msgstr "优选节点数量"
@@ -525,6 +561,9 @@ msgstr "导出分享URL"
 
 msgid "Generate QRCode"
 msgstr "生成二维码"
+
+msgid "Export Config File"
+msgstr "导出配置文件"
 
 msgid "Import Finished"
 msgstr "导入完成："
@@ -623,7 +662,10 @@ msgid "Lazy Start"
 msgstr "延迟启动"
 
 msgid "Encrypt Method"
-msgstr "加密"
+msgstr "加密方式"
+
+msgid "Encrypt Key"
+msgstr "加密密钥"
 
 msgid "Latency"
 msgstr "延迟"
@@ -633,6 +675,9 @@ msgstr "自动检测延迟"
 
 msgid "Show server address and port"
 msgstr "显示服务器地址和端口"
+
+msgid "URL Test Address"
+msgstr "URL 测试地址"
 
 msgid "URL Test"
 msgstr "URL 测试"
@@ -709,6 +754,9 @@ msgstr "UDP 不转发端口"
 msgid "Fill in the ports you don't want to be forwarded by the agent, with the highest priority."
 msgstr "填写你不希望被代理转发的端口，优先级最高。"
 
+msgid "The port settings support single ports and ranges.<br>Separate multiple ports with commas (,).<br>Example: 21,80,443,1000:2000."
+msgstr "以上端口设置支持单端口和端口范围。<br>多个端口用英文逗号(,)隔开。<br>例：21,80,443,1000:2000。"
+
 msgid "TCP Proxy Drop Ports"
 msgstr "TCP 转发屏蔽端口"
 
@@ -732,6 +780,9 @@ msgstr "常用的"
 
 msgid "Only Web"
 msgstr "仅网页"
+
+msgid "default"
+msgstr "默认"
 
 msgid "Default"
 msgstr "默认"
@@ -847,6 +898,9 @@ msgstr "节点"
 msgid "Node Address"
 msgstr "节点地址"
 
+msgid "Node address cannot be empty."
+msgstr "节点地址不能为空。"
+
 msgid "Node Port"
 msgstr "节点端口"
 
@@ -876,6 +930,9 @@ msgstr "强制更新"
 
 msgid "Manually update"
 msgstr "手动更新"
+
+msgid "Update Options"
+msgstr "更新选项"
 
 msgid "The latest version: %s, currently does not support automatic update, if you need to update, please compile or download the ipk and then manually install."
 msgstr "最新版本：%s，目前暂不支持自动更新，如需更新，请自行编译或下载 ipk 然后手动安装。"
@@ -954,6 +1011,15 @@ msgstr "Geo 规则文件目录"
 
 msgid "This variable specifies a directory where geoip.dat and geosite.dat files are."
 msgstr "此变量指定 geoip.dat 和 geosite.dat 文件所在的目录。"
+
+msgid "Generate Rule List from Geo"
+msgstr "从 Geo 文件生成规则"
+
+msgid "Generate rule lists such as GFW, China domains, and China IP ranges based on Geo files."
+msgstr "根据 Geo 文件生成规则列表，包括 GFW、中国域名和中国 IP 段等。"
+
+msgid "When manually updating with this option enabled, rules will be regenerated from existing Geo files even if no new version is available."
+msgstr "启用此选项后手动更新时,即使没有新版本也会从现有 Geo 文件重新生成规则。"
 
 msgid "Enable Geo Data Parsing"
 msgstr "开启 Geo 数据解析"
@@ -1045,8 +1111,14 @@ msgstr "订阅网址"
 msgid "Subscribe URL Access Method"
 msgstr "订阅网址访问方式"
 
-msgid "Please input the subscription url first, save and submit before manual subscription."
-msgstr "请输入订阅网址保存应用后再手动订阅。"
+msgid "When adding a new subscription, please save and apply before manually subscribing. If you only change the subscription URL, you can subscribe manually, and the system will save it automatically."
+msgstr "新增订阅请先保存并应用后再手动订阅；如仅修改订阅地址，可直接手动订阅，系统将自动保存。"
+
+msgid "Please save and apply before manually subscribing."
+msgstr "请先保存并应用后再手动订阅。"
+
+msgid "Subscribe URL cannot be empty."
+msgstr "订阅网址不能为空。"
 
 msgid "Subscribe via proxy"
 msgstr "通过代理订阅"
@@ -1063,11 +1135,20 @@ msgstr "删除所有订阅节点"
 msgid "Delete the subscribed node"
 msgstr "删除已订阅的节点"
 
+msgid "Are you sure you want to delete all subscribed nodes?"
+msgstr "您确定要删除所有已订阅的节点吗？"
+
 msgid "Manual subscription All"
-msgstr "手动订阅全部"
+msgstr "手动订阅全部链接"
 
 msgid "This remark already exists, please change a new remark."
 msgstr "此备注已存在，请改一个新的备注。"
+
+msgid "Remark cannot be empty."
+msgstr "备注不能为空。"
+
+msgid "URL cannot be empty."
+msgstr "网址不能为空。"
 
 msgid "Filter keyword Mode"
 msgstr "过滤关键字模式"
@@ -1192,8 +1273,20 @@ msgstr "完整匹配: 由'full:'开始，余下部分是一个域名。当此域
 msgid "Pre-defined domain list: Begining with 'geosite:' and the rest is a name, such as geosite:google or geosite:cn."
 msgstr "预定义域名列表：由'geosite:'开头，余下部分是一个名称，如geosite:google或者geosite:cn。"
 
+msgid "Sing-Box is compatible with Geo rules and rule-set. rule-set begin with 'rule-set:remote:' or 'rule-set:local:'."
+msgstr "Sing-Box 可兼容 Geo 规则和规则集，规则集由 'rule-set:remote:' 或 'rule-set:local:' 开始。"
+
+msgid "Such as:"
+msgstr "例如："
+
 msgid "Annotation: Begining with #"
 msgstr "注释: 由 # 开头"
+
+msgid "Invert match result."
+msgstr "反选匹配结果。"
+
+msgid "Only support Sing-Box."
+msgstr "只支持 Sing-Box。"
 
 msgid "IP: such as '127.0.0.1'."
 msgstr "IP: 形如'127.0.0.1'。"
@@ -1228,11 +1321,20 @@ msgstr "本地端口"
 msgid "Fast Open"
 msgstr "快速打开"
 
+msgid "Pre-connections"
+msgstr "预连接"
+
+msgid "Number of early established connections to reduce latency."
+msgstr "预连接的数量，用于降低延迟。"
+
 msgid "Need node support required"
 msgstr "需要节点支持"
 
 msgid "plugin"
 msgstr "插件"
+
+msgid "Supports custom SIP003 plugins, Make sure the plugin is installed."
+msgstr "支持自定义 SIP003 插件，请确保插件已安装。"
 
 msgid "opts"
 msgstr "插件选项"
@@ -1282,6 +1384,9 @@ msgstr "本地地址"
 msgid "Decimal numbers separated by \",\" or Base64-encoded strings."
 msgstr "用“,”隔开的十进制数字或 Base64 编码字符串。"
 
+msgid "Camouflage Domain"
+msgstr "伪装域名"
+
 msgid "Camouflage Type"
 msgstr "伪装类型"
 
@@ -1296,6 +1401,9 @@ msgstr "原版Trojan只支持'tls'，请选择'tls'。"
 
 msgid "Transfer mode"
 msgstr "传输模式"
+
+msgid "Do not send server name in ClientHello."
+msgstr "不要在 ClientHello 中发送服务器名称。"
 
 msgid "Domain"
 msgstr "域名"
@@ -1357,11 +1465,11 @@ msgstr "TUIC socks5 服务器可以从外部接收的最大数据包大小（以
 msgid "Set if the listening socket should be dual-stack"
 msgstr "设置监听套接字为双栈"
 
-msgid "<br />none: default, no masquerade, data sent is packets with no characteristics.<br />srtp: disguised as an SRTP packet, it will be recognized as video call data (such as FaceTime).<br />utp: packets disguised as uTP will be recognized as bittorrent downloaded data.<br />wechat-video: packets disguised as WeChat video calls.<br />dtls: disguised as DTLS 1.2 packet.<br />wireguard: disguised as a WireGuard packet. (not really WireGuard protocol)"
-msgstr "<br />none：默认值，不进行伪装，发送的数据是没有特征的数据包。<br />srtp：伪装成 SRTP 数据包，会被识别为视频通话数据（如 FaceTime）。<br />utp：伪装成 uTP 数据包，会被识别为 BT 下载数据。<br />wechat-video：伪装成微信视频通话的数据包。<br />dtls：伪装成 DTLS 1.2 数据包。<br />wireguard：伪装成 WireGuard 数据包。(并不是真正的 WireGuard 协议)"
+msgid "<br />none: default, no masquerade, data sent is packets with no characteristics.<br />srtp: disguised as an SRTP packet, it will be recognized as video call data (such as FaceTime).<br />utp: packets disguised as uTP will be recognized as bittorrent downloaded data.<br />wechat-video: packets disguised as WeChat video calls.<br />dtls: disguised as DTLS 1.2 packet.<br />wireguard: disguised as a WireGuard packet. (not really WireGuard protocol)<br />dns: Disguising traffic as DNS requests."
+msgstr "<br />none：默认值，不进行伪装，发送的数据是没有特征的数据包。<br />srtp：伪装成 SRTP 数据包，会被识别为视频通话数据（如 FaceTime）。<br />utp：伪装成 uTP 数据包，会被识别为 BT 下载数据。<br />wechat-video：伪装成微信视频通话的数据包。<br />dtls：伪装成 DTLS 1.2 数据包。<br />wireguard：伪装成 WireGuard 数据包。(并不是真正的 WireGuard 协议)<br />dns：把流量伪装成 DNS 请求。"
 
-msgid "A legal file path. This file must not exist before running."
-msgstr "一个合法的文件路径。在运行之前，这个文件必须不存在。"
+msgid "Use it together with the DNS disguised type. You can fill in any domain."
+msgstr "配合伪装类型 DNS 使用，可随便填一个域名。"
 
 msgid "Auth"
 msgstr "身份认证"
@@ -1387,8 +1495,8 @@ msgstr "节点数量"
 msgid "You can only set up a maximum of %s nodes for the time being, Used for access control."
 msgstr "目前最多只能设置 %s 个节点，用于给访问控制使用。"
 
-msgid "Firewall tools"
-msgstr "防火墙工具"
+msgid "Prefer firewall tools"
+msgstr "首选防火墙工具"
 
 msgid "IPv6 TProxy"
 msgstr "IPv6 透明代理(TProxy)"
@@ -1663,17 +1771,23 @@ msgstr "协议参数。如果启用会随机浪费流量。"
 msgid "Protocol parameter. Enable length block encryption."
 msgstr "协议参数。启用长度块加密。"
 
-msgid "ECH Config"
-msgstr "ECH 密钥"
+msgid "TLS Chain Fingerprint (SHA256)"
+msgstr "TLS 证书链指纹（SHA256）"
 
-msgid "ECH Key"
+msgid "Once set, connects only when the server’s chain fingerprint matches."
+msgstr "设置后，仅在服务器证书链指纹匹配时连接。"
+
+msgid "ECH Config"
 msgstr "ECH 配置"
 
-msgid "PQ signature schemes"
-msgstr "后量子对等证书签名方案"
+msgid "ECH Key"
+msgstr "ECH 密钥"
 
-msgid "Disable adaptive sizing of TLS records"
-msgstr "禁用 TLS 记录的自适应大小调整"
+msgid "ECH Query Policy"
+msgstr "ECH 查询策略"
+
+msgid "Controls the policy used when performing DNS queries for ECH configuration."
+msgstr "控制使用 DNS 查询 ECH 配置时的策略。"
 
 msgid "Enable Multipath TCP, need to be enabled in both server and client configuration."
 msgstr "启用 Multipath TCP，需在服务端和客户端配置中同时启用。"
@@ -1702,6 +1816,18 @@ msgstr "分片间隔"
 msgid "Fragmentation interval (ms)"
 msgstr "分片间隔（ms）"
 
+msgid "Max Split"
+msgstr "最大分片数"
+
+msgid "Limit the maximum number of splits."
+msgstr "限制分片的最大数量。"
+
+msgid "Split handshake data into multiple TLS records for better censorship evasion. Low overhead. Recommended to enable first."
+msgstr "将握手数据拆分为多个 TLS 记录，提升抗封锁能力，几乎不增加延迟，建议优先启用。"
+
+msgid "Split handshake into multiple TCP segments. Enhances obfuscation. May increase delay. Use only if needed."
+msgstr "将 TLS 握手数据分为多个 TCP 包发送，提高伪装性，可能增加延迟，仅在封锁严重时使用。"
+
 msgid "Noise"
 msgstr "噪声"
 
@@ -1720,6 +1846,9 @@ msgstr "数据包"
 msgid "Delay (ms)"
 msgstr "延迟（ms）"
 
+msgid "IP Type"
+msgstr "IP 类型"
+
 msgid "If is domain name, The requested domain name will be resolved to IP before connect."
 msgstr "如果是域名，域名将在请求发出之前解析为 IP。"
 
@@ -1731,6 +1860,15 @@ msgstr "落地节点"
 
 msgid "Only support a layer of proxy."
 msgstr "仅支持一层代理。"
+
+msgid ""
+"Chained proxy works only with Xray or Sing-box nodes.<br>"
+"The chained node must be the same type as your subscription node (Xray with Xray, Sing-box with Sing-box).<br>"
+"You can only use manual or imported nodes as chained nodes."
+msgstr ""
+"链式代理仅支持 Xray 与 Sing-box 节点。<br>"
+"链式节点需与订阅节点类型一致（Xray 对应 Xray，Sing-box 对应 Sing-box）。<br>"
+"仅支持手动添加或导入的节点用作链式节点。"
 
 msgid "Only work with using the %s node."
 msgstr "与使用 %s 节点时生效。"
@@ -1744,8 +1882,8 @@ msgstr "总行数："
 msgid "Read List"
 msgstr "读取列表"
 
-msgid "Log Maint"
-msgstr "日志维护"
+msgid "Maintain"
+msgstr "维护"
 
 msgid "Backup and Restore"
 msgstr "备份还原"
@@ -1780,14 +1918,20 @@ msgstr "恢复默认配置"
 msgid "Do Reset"
 msgstr "执行重置"
 
+msgid "Please select a file first."
+msgstr "请先选择一个文件。"
+
+msgid "Invalid file type. Please upload a .tar.gz file."
+msgstr "文件类型无效，请上传一个 .tar.gz 文件。"
+
+msgid "File size exceeds 10MB limit."
+msgstr "文件大小超过 10MB 限制。"
+
 msgid "Do you want to restore the client to default settings?"
 msgstr "是否要恢复客户端默认配置？"
 
 msgid "Are you sure you want to restore the client to default settings?"
 msgstr "是否真的要恢复客户端默认配置？"
-
-msgid "Settings have been successfully saved and applied!"
-msgstr "设置已成功保存并应用!"
 
 msgid "_urltest"
 msgstr "URLTest"
@@ -1801,9 +1945,6 @@ msgstr "要测试的节点列表，<a target='_blank' href='https://sing-box.sag
 msgid "Test interval"
 msgstr "测试间隔"
 
-msgid "The test interval in seconds."
-msgstr "测试间隔时间（单位：秒）。"
-
 msgid "Test interval must be less or equal than idle timeout."
 msgstr "测试间隔时间必须小于或等于空闲超时时间。"
 
@@ -1816,8 +1957,8 @@ msgstr "测试容差时间（单位：毫秒）。"
 msgid "Idle timeout"
 msgstr "空闲超时"
 
-msgid "The idle timeout in seconds."
-msgstr "空闲超时时间（单位：秒）。"
+msgid "The idle timeout."
+msgstr "空闲超时时间。"
 
 msgid "Interrupt existing connections"
 msgstr "中断现有连接"
@@ -1830,6 +1971,15 @@ msgstr "端口跳跃范围"
 
 msgid "Format as 1000:2000 or 1000-2000 Multiple groups are separated by commas (,)."
 msgstr "格式为：1000:2000 或 1000-2000 多组时用逗号(,)隔开。"
+
+msgid "Use Custom Config"
+msgstr "使用自定义配置"
+
+msgid "Custom Config"
+msgstr "自定义配置"
+
+msgid "Must be JSON text!"
+msgstr "必须是 JSON 文本内容！"
 
 msgid "Geo View"
 msgstr "Geo 查询"
@@ -1869,3 +2019,39 @@ msgstr "可以通过输入 GeoIP/Geosite，提取它们所包含的域名/IP。"
 
 msgid "Use the GeoIP/Geosite query function to verify if the entered Geo rules are correct."
 msgstr "利用 GeoIP/Geosite 查询功能，可以验证输入的 Geo 规则是否正确。"
+
+msgid "Private Key Passphrase"
+msgstr "私钥指纹"
+
+msgid "Host Key"
+msgstr "主机密钥"
+
+msgid "Accept any if empty."
+msgstr "留空则不校验。"
+
+msgid "Host Key Algorithms"
+msgstr "主机密钥算法"
+
+msgid "Client Version"
+msgstr "客户端版本"
+
+msgid "Random version will be used if empty."
+msgstr "如留空，则使用随机版本。"
+
+msgid "The configured type also applies to the core specified when manually importing nodes."
+msgstr "配置的类型同样适用于手动导入节点时所指定的核心程序。"
+
+msgid "Group Name"
+msgstr "分组名"
+
+msgid "Reassign Group"
+msgstr "调整分组"
+
+msgid "Reassign Node Group"
+msgstr "调整节点分组"
+
+msgid "Currently using %s node"
+msgstr "当前使用的 %s 节点"
+
+msgid "Search nodes..."
+msgstr "搜索节点…"
