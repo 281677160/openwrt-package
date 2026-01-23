@@ -234,6 +234,27 @@ var getRcStatus = rpc.declare({
 	expect: { }
 });
 
+var callGetSimSwitchCapabilities = rpc.declare({
+	object: 'qmodem',
+	method: 'get_sim_switch_capabilities',
+	params: ['config_section'],
+	expect: { }
+});
+
+var callGetSimSlot = rpc.declare({
+	object: 'qmodem',
+	method: 'get_sim_slot',
+	params: ['config_section'],
+	expect: { }
+});
+
+var callSetSimSlot = rpc.declare({
+	object: 'qmodem',
+	method: 'set_sim_slot',
+	params: ['config_section', 'slot'],
+	expect: { }
+});
+
 return L.Class.extend({
 	// Get modem base information
 	getBaseInfo: function(section) {
@@ -465,5 +486,20 @@ return L.Class.extend({
 			default:
 				return value;
 		}
+	},
+
+	// Get SIM switch support
+	callGetSimSwitchCapabilities: function(section) {
+		return callGetSimSwitchCapabilities(section);
+	},
+
+	// Get current SIM slot
+	getSimSlot: function(section) {
+		return callGetSimSlot(section);
+	},
+
+	// Set SIM slot
+	setSimSlot: function(section, slot) {
+		return callSetSimSlot(section, slot);
 	}
 });
