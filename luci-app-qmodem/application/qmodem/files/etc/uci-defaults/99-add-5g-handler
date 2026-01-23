@@ -60,6 +60,9 @@ modem_settings()
 		uci set qmodem.m2_u3.ethernet_5g="cpewan0"
 		uci commit qmodem
 		;;
+	huasifei,wh3000-pro)
+		add_usb_slot_cfg "5g0" "2-1.4" "wwan0" "" "" "modem_power" "0" "1" "6"
+		;;
 	huasifei,ws1610)
 		#m2 usb3.0 
 		#(slot 2)

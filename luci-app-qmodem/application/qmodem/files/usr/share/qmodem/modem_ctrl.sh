@@ -2,16 +2,16 @@
 source /usr/share/libubox/jshn.sh
 method=$1
 config_section=$2
-at_port=$(uci get qmodem.$config_section.at_port)
-override_at_port=$(uci get qmodem.$config_section.override_at_port)
+at_port=$(uci -q get qmodem.$config_section.at_port)
+override_at_port=$(uci -q get qmodem.$config_section.override_at_port)
 [ -n "$override_at_port" ] && at_port=$override_at_port
-uci -q get qmodem.$config_section.sms_at_port >/dev/null && sms_at_port=$(uci get qmodem.$config_section.sms_at_port)
-vendor=$(uci get qmodem.$config_section.manufacturer)
-platform=$(uci get qmodem.$config_section.platform)
-pdp_index=$(uci get qmodem.$config_section.pdp_index)
-[ -z "$pdp_index" ] && pdp_index=$(uci get qmodem.$config_section.suggest_pdp_index)
-use_ubus=$(uci get qmodem.$config_section.use_ubus)
-modem_path=$(uci get qmodem.$config_section.path)
+uci -q get qmodem.$config_section.sms_at_port >/dev/null && sms_at_port=$(uci -q get qmodem.$config_section.sms_at_port)
+vendor=$(uci -q get qmodem.$config_section.manufacturer)
+platform=$(uci -q get qmodem.$config_section.platform)
+pdp_index=$(uci -q get qmodem.$config_section.pdp_index)
+[ -z "$pdp_index" ] && pdp_index=$(uci -q get qmodem.$config_section.suggest_pdp_index)
+use_ubus=$(uci -q get qmodem.$config_section.use_ubus)
+modem_path=$(uci -q get qmodem.$config_section.path)
 modem_slot=$(basename $modem_path)
 
 [ -z "$pdp_index" ] && {
@@ -81,25 +81,25 @@ get_at_cfg(){
     done
     json_close_array
     json_add_array ports
-    ports=$(uci get qmodem.$config_section.ports)
+    ports=$(uci -q get qmodem.$config_section.ports)
     for port in $ports; do
         json_add_string "" "$port"
     done
     json_close_array
     json_add_array valid_ports
-    v_ports=$(uci get qmodem.$config_section.valid_at_ports)
+    v_ports=$(uci -q get qmodem.$config_section.valid_at_ports)
     for port in $v_ports; do
         json_add_string "" "$port"
     done
     json_close_array
-    override_at_port=$(uci get qmodem.$config_section.override_at_port)
-    at_port=$(uci get qmodem.$config_section.at_port)
+    override_at_port=$(uci -q get qmodem.$config_section.override_at_port)
+    at_port=$(uci -q get qmodem.$config_section.at_port)
     [ -n "$override_at_port" ] && at_port=$override_at_port
     json_add_string using_port "$at_port"
     json_add_array cmds
     
     # Determine language and select appropriate AT commands file
-    lang=$(uci get luci.main.lang 2>/dev/null || echo "en")
+    lang=$(uci -q get luci.main.lang 2>/dev/null || echo "en")
     case "$lang" in
         zh*|cn|auto)
             at_commands_file="/usr/share/qmodem/at_commands_zh.json"
@@ -289,6 +289,16 @@ case $method in
     "sim_info")
         cache_file="/tmp/cache_$1_$2"
         try_cache 10 $cache_file sim_info
+        ;;
+    #sim_switch
+    "get_sim_switch_capabilities")
+        get_sim_switch_capabilities
+        ;;
+    "get_sim_slot")
+        get_sim_slot
+        ;;
+    "set_sim_slot")
+        set_sim_slot $3
         ;;
 esac
 json_dump

@@ -1714,3 +1714,25 @@ EOF
         ;;
     esac
 }
+
+# get sim switch capabilities
+sim_switch_capabilities(){
+    json_add_string "supportSwitch" "1"
+    json_add_array "simSlots"
+    json_add_string "" "1"
+    json_add_string "" "2"
+    json_close_array
+}
+
+get_sim_slot(){
+    local at_command="AT+QUIMSLOT?"
+	sim_slot=$(at $at_port $at_command | grep "+QUIMSLOT:" | awk -F' ' '{print $2}' | sed 's/\r//g')
+    json_add_string "sim_slot" "$sim_slot"
+}
+
+set_sim_slot(){
+    local sim_slot_param=$1
+    local at_command="AT+QUIMSLOT=$sim_slot_param"
+    response=$(at $at_port $at_command)
+    json_add_string "result" "$response"
+}
