@@ -688,6 +688,9 @@ set_sms_storage()
     json_add_string "result" "$res"
 }
 
+get_sim_switch_capabilities(){
+    json_add_string "supportSwitch" "0"
+}
 
 get_global_disabled_features()
 {

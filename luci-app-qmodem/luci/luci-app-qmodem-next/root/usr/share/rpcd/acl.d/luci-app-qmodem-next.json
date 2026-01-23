@@ -4,42 +4,10 @@
 		"read": {
 			"ubus": {
 				"qmodem": [
-					"base_info",
-					"cell_info",
-					"clear_dial_log",
-					"dial_status",
-					"get_at_cfg",
-					"get_copyright",
-					"get_dial_log",
-					"get_disabled_features",
-					"get_dns",
-					"get_imei",
-					"get_lockband",
-					"get_mode",
-					"get_neighborcell",
-					"get_network_prefer",
-					"get_reboot_caps",
-					"get_connect_status",
-					"get_sms",
-					"info",
-					"network_info",
-					"remove_modem",
-					"sim_info",
-					"scan_all",
-					"scan_pcie",
-					"scan_usb",
-					"get_pcie_devices",
-					"get_usb_devices",
-					"get_leds",
-					"get_network_interfaces",
-					"get_tty_ports",
-					"get_available_devices"
+					"*"
 				],
 				"qmodem_sms": [
-					"list_sms",
-					"get_conversation",
-					"get_sent_history",
-					"delete_sms"
+					"*"
 				],
 				"rc" : [ "list" ,"init"],
 				"uci": [ "qmodem", "sms_forwarder" ]

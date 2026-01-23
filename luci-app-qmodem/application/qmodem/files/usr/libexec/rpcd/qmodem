@@ -291,7 +291,17 @@ case "$1" in
     "get_available_devices": {},
     "get_leds": {},
     "get_network_interfaces": {},
-    "get_tty_ports": {}
+    "get_tty_ports": {},
+    "get_sim_switch_capabilities": {
+        "config_section": "string"
+    },
+    "get_sim_slot": {
+        "config_section": "string"
+    },
+    "set_sim_slot": {
+        "config_section": "string",
+        "slot": "string"
+    }
 }
 EOF
         ;;
@@ -309,7 +319,8 @@ EOF
             get_disabled_features|get_dns|get_imei|get_lockband|get_mode|\
             get_neighborcell|get_network_prefer|get_reboot_caps|get_sms|\
             get_at_cfg|clear_dial_log|dial_status|get_dial_log|get_connect_status|\
-            remove_modem)
+            remove_modem|\
+            get_sim_switch_capabilities|get_sim_slot)
                 # Execute method
                 case "$2" in
                     base_info)
@@ -437,6 +448,16 @@ EOF
                         json_init
                         /usr/share/qmodem/modem_scan.sh remove "$config_section" >/dev/null 2>&1
                         json_add_string status "$?"
+                        json_dump
+                        ;;
+                    get_sim_switch_capabilities)
+                        json_init
+                        sim_switch_capabilities
+                        json_dump
+                        ;;
+                    get_sim_slot)
+                        json_init
+                        get_sim_slot
                         json_dump
                         ;;
                 esac
@@ -610,6 +631,13 @@ EOF
                 storage=$(echo "$input" | jsonfilter -e '@.storage')
                 json_init
                 set_sms_storage "$storage"
+                json_dump
+                ;;
+
+            set_sim_slot)
+                slot=$(echo "$input" | jsonfilter -e '@.slot')
+                json_init
+                set_sim_slot "$slot"
                 json_dump
                 ;;
             
