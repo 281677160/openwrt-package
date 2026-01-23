@@ -586,6 +586,10 @@ msgstr ""
 msgid "Current Preference"
 msgstr ""
 
+#: view/qmodem/sim_switch.js:126
+msgid "Current SIM Slot"
+msgstr ""
+
 #: view/qmodem/sms_forward.js:260
 msgid "Custom PushDeer API endpoint, leave empty to use default"
 msgstr ""
@@ -895,6 +899,10 @@ msgstr ""
 msgid "Error loading IMEI: %s"
 msgstr ""
 
+#: view/qmodem/sim_switch.js:155
+msgid "Error loading SIM switch information: %s"
+msgstr ""
+
 #: view/qmodem/sms.js:265
 msgid "Error loading SMS: "
 msgstr ""
@@ -941,6 +949,10 @@ msgstr ""
 
 #: view/qmodem/config_advanced.js:974
 msgid "Error scanning neighbor cells: %s"
+msgstr ""
+
+#: view/qmodem/sim_switch.js:208
+msgid "Error switching SIM slot: %s"
 msgstr ""
 
 #: view/qmodem/network_config.js:572
@@ -1101,6 +1113,10 @@ msgstr ""
 #: view/qmodem/network_config.js:123
 #: view/qmodem/network_config.js:782
 msgid "Failed to stop QModem Network: "
+msgstr ""
+
+#: view/qmodem/sim_switch.js:201
+msgid "Failed to switch SIM slot. Please check modem status."
 msgstr ""
 
 #: view/qmodem/config_advanced.js:810
@@ -1439,6 +1455,7 @@ msgstr ""
 #: view/qmodem/network_config.js:212
 #: view/qmodem/network_config.js:300
 #: view/qmodem/network_config.js:872
+#: view/qmodem/sim_switch.js:87
 #: view/qmodem/sms.js:184
 #: view/qmodem/sms.js:200
 #: view/qmodem/sms.js:208
@@ -1662,6 +1679,7 @@ msgstr ""
 #: view/qmodem/config_advanced.js:27
 #: view/qmodem/debug.js:27
 #: view/qmodem/overview.js:486
+#: view/qmodem/sim_switch.js:31
 #: view/qmodem/sms.js:65
 #: view/qmodem/sms_conversation.js:83
 msgid "Modem Name"
@@ -1839,6 +1857,7 @@ msgstr ""
 
 #: view/qmodem/config_advanced.js:15
 #: view/qmodem/debug.js:15
+#: view/qmodem/sim_switch.js:15
 msgid "No modem configured."
 msgstr ""
 
@@ -1895,8 +1914,16 @@ msgstr ""
 msgid "None (All bands unlocked)"
 msgstr ""
 
+#: view/qmodem/sim_switch.js:123
+msgid "Not Supported"
+msgstr ""
+
 #: view/qmodem/config_advanced.js:618
 msgid "Not available"
+msgstr ""
+
+#: view/qmodem/sim_switch.js:191
+msgid "Note: Some modems may require a reboot for the change to take effect."
 msgstr ""
 
 #: view/qmodem/network_config.js:353
@@ -2306,6 +2333,10 @@ msgstr ""
 msgid "Restarts the modem firmware without power cycling. Faster but may not resolve all issues."
 msgstr ""
 
+#: view/qmodem/sim_switch.js:100
+msgid "Result"
+msgstr ""
+
 #: vendor/fibocom.sh:431
 #: vendor/foxconn.sh:306
 #: vendor/gosuncn.sh:134
@@ -2441,6 +2472,18 @@ msgstr ""
 msgid "SIM Status"
 msgstr ""
 
+#: view/qmodem/sim_switch.js:19
+msgid "SIM Switch"
+msgstr ""
+
+#: view/qmodem/sim_switch.js:85
+msgid "SIM Switch Status"
+msgstr ""
+
+#: view/qmodem/sim_switch.js:188
+msgid "SIM slot switched to Slot %s successfully."
+msgstr ""
+
 #: view/qmodem/settings.js:315
 msgid "SMS AT Port"
 msgstr ""
@@ -2546,6 +2589,10 @@ msgstr ""
 
 #: view/qmodem/config_advanced.js:361
 msgid "Select Networks"
+msgstr ""
+
+#: view/qmodem/sim_switch.js:93
+msgid "Select SIM Slot"
 msgstr ""
 
 #: view/qmodem/settings.js:230
@@ -2661,6 +2708,11 @@ msgstr ""
 msgid "Slot"
 msgstr ""
 
+#: view/qmodem/sim_switch.js:136
+#: view/qmodem/sim_switch.js:167
+msgid "Slot %s"
+msgstr ""
+
 #: view/qmodem/settings.js:403
 msgid "Slot ID"
 msgstr ""
@@ -2719,6 +2771,14 @@ msgstr ""
 msgid "Sunday"
 msgstr ""
 
+#: view/qmodem/sim_switch.js:121
+msgid "Support"
+msgstr ""
+
+#: view/qmodem/sim_switch.js:123
+msgid "Supported"
+msgstr ""
+
 #: view/qmodem/settings.js:347
 msgid "Supported Modes"
 msgstr ""
@@ -2734,6 +2794,14 @@ msgstr ""
 #: view/qmodem/network_config.js:381
 #: view/qmodem/network_config.js:458
 msgid "Swisscom (CH)"
+msgstr ""
+
+#: view/qmodem/sim_switch.js:23
+msgid "Switch between SIM card slots. Note: Some modems may require a reboot after switching SIM slots."
+msgstr ""
+
+#: view/qmodem/sim_switch.js:177
+msgid "Switching SIM slot..."
 msgstr ""
 
 #: view/qmodem/network_config.js:410
@@ -2793,6 +2861,10 @@ msgstr ""
 
 #: view/qmodem/network_config.js:492
 msgid "The metric value is used to determine the priority of the route. The smaller the value, the higher the priority. Cannot duplicate."
+msgstr ""
+
+#: view/qmodem/sim_switch.js:150
+msgid "This modem does not support SIM switching."
 msgstr ""
 
 #: qmodem/sms.js:212

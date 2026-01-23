@@ -84,6 +84,17 @@
 			"acl": [ "luci-app-qmodem-next" ]
 		}
 	},
+	"admin/modem/qmodem/sim_switch": {
+		"title": "SIM Switch",
+		"order": 5.6,
+		"action": {
+			"type": "view",
+			"path": "qmodem/sim_switch"
+		},
+		"depends": {
+			"acl": [ "luci-app-qmodem-next" ]
+		}
+	},
 	"admin/modem/qmodem/settings": {
 		"title": "QModem Settings",
 		"order": 6,

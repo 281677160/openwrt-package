@@ -1,0 +1,189 @@
+# Translation template for luci-app-qmodem-monitor
+
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: view/qmodem/monitor.js
+msgid "QModem Monitor Configuration"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Configure monitoring methods and actions for modem connectivity."
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Global Monitor Settings"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Enable Monitor (Global)"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Service Control"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Monitor service started"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Monitor service stopped"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Monitor service restarted"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Failed to start monitor: "
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Failed to stop monitor: "
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Failed to restart monitor: "
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Modem Monitor Configuration"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Monitor Configuration"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Modem"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Enable"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Method"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Actions"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Monitor Method"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Ping"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Ping target to check connectivity"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "HTTP Request"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "HTTP request to check connectivity"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Ping Type"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "IP Address / Domain"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Target IP / Domain"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Enter an IP address or domain name. Note: Using a domain name may cause false disconnection detection if DNS resolution fails."
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Gateway"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "DNS Server"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Target IP"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "IP Version"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "URL"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Check Interval (seconds)"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Failure Threshold"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Number of consecutive failures before triggering actions"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Switch SIM Slot"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Switch to another SIM slot"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Send AT Commands"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Send AT commands to modem"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Run Scripts"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Run custom scripts"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "AT Commands"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "AT commands to send when action is triggered"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Script Paths"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Scripts to execute when action is triggered"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Actions to perform when monitor threshold is reached"
+msgstr ""
+
+#: menu
+msgid "Monitor"
+msgstr ""
