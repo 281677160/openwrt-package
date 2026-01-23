@@ -2353,3 +2353,83 @@ msgstr "物理小区ID（载波聚合）"
 # Source: generic.sh:264
 msgid "UL Bandwidth (CA)"
 msgstr "上行带宽（载波聚合）"
+
+# Source: view/qmodem/sim_switch.js
+msgid "SIM Switch"
+msgstr "SIM卡切换"
+
+# Source: view/qmodem/sim_switch.js
+msgid "Switch between SIM card slots. Note: Some modems may require a reboot after switching SIM slots."
+msgstr "在SIM卡槽之间切换。注意：某些调制解调器在切换SIM卡槽后可能需要重启。"
+
+# Source: view/qmodem/sim_switch.js
+msgid "SIM Switch Status"
+msgstr "SIM卡切换状态"
+
+# Source: view/qmodem/sim_switch.js
+msgid "Select SIM Slot"
+msgstr "选择SIM卡槽"
+
+# Source: view/qmodem/sim_switch.js
+msgid "Support"
+msgstr "支持"
+
+# Source: view/qmodem/sim_switch.js
+msgid "Supported"
+msgstr "支持"
+
+# Source: view/qmodem/sim_switch.js
+msgid "Not Supported"
+msgstr "不支持"
+
+# Source: view/qmodem/sim_switch.js
+msgid "Current SIM Slot"
+msgstr "当前SIM卡槽"
+
+# Source: view/qmodem/sim_switch.js
+msgid "Slot 1"
+msgstr "卡槽1"
+
+# Source: view/qmodem/sim_switch.js
+msgid "Slot 2"
+msgstr "卡槽2"
+
+# Source: view/qmodem/sim_switch.js
+msgid "SIM Slot 1"
+msgstr "SIM卡槽1"
+
+# Source: view/qmodem/sim_switch.js
+msgid "SIM Slot 2"
+msgstr "SIM卡槽2"
+
+# Source: view/qmodem/sim_switch.js
+msgid "This modem does not support SIM switching."
+msgstr "此调制解调器不支持SIM卡切换。"
+
+# Source: view/qmodem/sim_switch.js
+msgid "Switching SIM slot..."
+msgstr "正在切换SIM卡槽..."
+
+# Source: view/qmodem/sim_switch.js
+msgid "SIM slot switched to Slot %s successfully."
+msgstr "SIM卡槽已成功切换到卡槽%s。"
+
+# Source: view/qmodem/sim_switch.js
+msgid "Note: Some modems may require a reboot for the change to take effect."
+msgstr "注意：某些调制解调器可能需要重启才能使更改生效。"
+
+# Source: view/qmodem/sim_switch.js
+msgid "Failed to switch SIM slot. Please check modem status."
+msgstr "切换SIM卡槽失败。请检查调制解调器状态。"
+
+# Source: view/qmodem/sim_switch.js
+msgid "Error switching SIM slot: %s"
+msgstr "切换SIM卡槽时出错：%s"
+
+# Source: view/qmodem/sim_switch.js
+msgid "Error loading SIM switch information: %s"
+msgstr "加载SIM卡切换信息时出错：%s"
+
+# Source: view/qmodem/sim_switch.js
+msgid "Result"
+msgstr "结果"

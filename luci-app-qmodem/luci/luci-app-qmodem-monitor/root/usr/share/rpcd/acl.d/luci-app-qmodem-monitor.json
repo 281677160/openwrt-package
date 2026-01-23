@@ -1,0 +1,17 @@
+{
+	"luci-app-qmodem-monitor": {
+		"description": "Grant access to QModem Monitor application",
+		"read": {
+			"ubus": {
+				"rc": [ "list", "init" ]
+			},
+			"uci": [ "qmodem" ]
+		},
+		"write": {
+			"ubus": {
+				"luci": [ "setInitAction" ]
+			},
+			"uci": [ "qmodem" ]
+		}
+	}
+}
