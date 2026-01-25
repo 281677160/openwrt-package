@@ -73,6 +73,7 @@ end
 m:append(Template(appname .. "/global/status"))
 
 local global_cfgid = m:get("@global[0]")[".name"]
+
 s = m:section(TypedSection, "global")
 s.anonymous = true
 s.addremove = false
@@ -89,29 +90,34 @@ o.template = appname .. "/cbi/nodes_listvalue"
 o:value("", translate("Close"))
 o.group = {""}
 
--- Shunt
+local node_id = m.uci:get(appname, global_cfgid, "node")
+local node = node_id and m.uci:get_all(appname, node_id) or {}
+
+-- Shunt Start
 if (has_singbox or has_xray) and #nodes_table > 0 then
-	local function get_cfgvalue(shunt_node_id, option)
-		return function(self, section)
-			return m:get(shunt_node_id, option)
-		end
-	end
-	local function get_write(shunt_node_id, option)
-		return function(self, section, value)
-			if s.fields["node"]:formvalue(section) == shunt_node_id then
-				m:set(shunt_node_id, option, value)
+	if #normal_list > 0 and node.protocol == "_shunt" then
+		local v = node
+		if v then
+			local function get_cfgvalue(shunt_node_id, option)
+				return function(self, section)
+					return m:get(shunt_node_id, option)
+				end
 			end
-		end
-	end
-	local function get_remove(shunt_node_id, option)
-		return function(self, section)
-			if s.fields["node"]:formvalue(section) == shunt_node_id then
-				m:del(shunt_node_id, option)
+			local function get_write(shunt_node_id, option)
+				return function(self, section, value)
+					if s.fields["node"]:formvalue(section) == shunt_node_id then
+						m:set(shunt_node_id, option, value)
+					end
+				end
 			end
-		end
-	end
-	if #normal_list > 0 then
-		for k, v in pairs(shunt_list) do
+			local function get_remove(shunt_node_id, option)
+				return function(self, section)
+					if s.fields["node"]:formvalue(section) == shunt_node_id then
+						m:del(shunt_node_id, option)
+					end
+				end
+			end
+			v.id = v[".name"]
 			local vid = v.id
 			-- shunt node type, Sing-Box or Xray
 			local type = s:taboption("Main", ListValue, vid .. "-type", translate("Type"))
@@ -182,10 +188,10 @@ if (has_singbox or has_xray) and #nodes_table > 0 then
 					o.write = get_write(v.id, id)
 					o.remove = get_remove(v.id, id)
 					o:depends("node", v.id)
-					o:value("", translate("Close"))
-					o:value("_default", translate("Default"))
+					o:value("", translate("Close (Not use)"))
+					o:value("_default", translate("Use default node"))
 					o:value("_direct", translate("Direct Connection"))
-					o:value("_blackhole", translate("Blackhole"))
+					o:value("_blackhole", translate("Blackhole (Block)"))
 					o.template = appname .. "/cbi/nodes_listvalue"
 					o.group = {"","","",""}
 
@@ -193,8 +199,8 @@ if (has_singbox or has_xray) and #nodes_table > 0 then
 					pt.cfgvalue = get_cfgvalue(v.id, id .. "_proxy_tag")
 					pt.write = get_write(v.id, id .. "_proxy_tag")
 					pt.remove = get_remove(v.id, id .. "_proxy_tag")
-					pt:value("", translate("Close"))
-					pt:value("main", translate("Preproxy Node"))
+					o:value("", translate("Close (Not use)"))
+					pt:value("main", translate("Use preproxy node"))
 
 					local fakedns_tag = s:taboption("Main", Flag, vid .. "-".. id .. "_fakedns", string.format('* <a style="color:red">%s</a>', e.remarks .. " " .. "FakeDNS"), translate("Use FakeDNS work in the domain that proxy."))
 					fakedns_tag.cfgvalue = get_cfgvalue(v.id, id .. "_fakedns")
@@ -238,7 +244,7 @@ if (has_singbox or has_xray) and #nodes_table > 0 then
 			o:depends("node", v.id)
 			o.default = "_direct"
 			o:value("_direct", translate("Direct Connection"))
-			o:value("_blackhole", translate("Blackhole"))
+			o:value("_blackhole", translate("Blackhole (Block)"))
 			o.template = appname .. "/cbi/nodes_listvalue"
 			o.group = {"",""}
 			for k1, v1 in pairs(socks_list) do
@@ -267,8 +273,8 @@ if (has_singbox or has_xray) and #nodes_table > 0 then
 			o.cfgvalue = get_cfgvalue(v.id, id)
 			o.write = get_write(v.id, id)
 			o.remove = get_remove(v.id, id)
-			o:value("", translate("Close"))
-			o:value("main", translate("Preproxy Node"))
+			o:value("", translate("Close (Not use)"))
+			o:value("main", translate("Use preproxy node"))
 			for k1, v1 in pairs(normal_list) do
 				if v1.protocol ~= "_balancing" and v1.protocol ~= "_urltest" then
 					o:depends({ [vid .. "-default_node"] = v1.id, [vid .. "-preproxy_enabled"] = "1" })
@@ -532,6 +538,11 @@ for k, v in pairs(nodes_table) do
 	end
 end
 
-m:append(Template(appname .. "/global/footer"))
+local footer = Template(appname .. "/global/footer")
+footer.api = api
+footer.global_cfgid = global_cfgid
+footer.shunt_list = api.jsonc.stringify(shunt_list)
+
+m:append(footer)
 
 return m
