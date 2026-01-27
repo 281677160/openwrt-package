@@ -259,3 +259,75 @@ msgstr "启用"
 #: view/qmodem/monitor.js
 msgid "Disable"
 msgstr "禁用"
+
+#: view/qmodem/monitor.js
+msgid "User Scripts Management"
+msgstr "用户脚本管理"
+
+#: view/qmodem/monitor.js
+msgid "Security Warning"
+msgstr "安全警告"
+
+#: view/qmodem/monitor.js
+msgid "User scripts run with root privileges. Only upload scripts from trusted sources. Malicious scripts can damage your system or compromise security. Review script contents before uploading."
+msgstr "用户脚本将以root权限运行。请仅上传来自可信来源的脚本。恶意脚本可能会损坏您的系统或危及安全。上传前请仔细检查脚本内容。"
+
+#: view/qmodem/monitor.js
+msgid "Upload Script"
+msgstr "上传脚本"
+
+#: view/qmodem/monitor.js
+msgid "Please select a file to upload"
+msgstr "请选择要上传的文件"
+
+#: view/qmodem/monitor.js
+msgid "Invalid file type. Only .sh, .py, and .lua files are allowed."
+msgstr "无效的文件类型。仅允许上传 .sh、.py 和 .lua 文件。"
+
+#: view/qmodem/monitor.js
+msgid "Script uploaded successfully: "
+msgstr "脚本上传成功："
+
+#: view/qmodem/monitor.js
+msgid "Failed to upload script: "
+msgstr "脚本上传失败："
+
+#: view/qmodem/monitor.js
+msgid "Upload"
+msgstr "上传"
+
+#: view/qmodem/monitor.js
+msgid "Scripts will be uploaded to "
+msgstr "脚本将上传至 "
+
+#: view/qmodem/monitor.js
+msgid ". Allowed types: .sh, .py, .lua"
+msgstr "。允许的类型：.sh、.py、.lua"
+
+#: view/qmodem/monitor.js
+msgid "Uploaded Scripts"
+msgstr "已上传的脚本"
+
+#: view/qmodem/monitor.js
+msgid "No scripts uploaded yet"
+msgstr "暂无已上传的脚本"
+
+#: view/qmodem/monitor.js
+msgid "Delete"
+msgstr "删除"
+
+#: view/qmodem/monitor.js
+msgid "Are you sure you want to delete this script?"
+msgstr "确定要删除此脚本吗？"
+
+#: view/qmodem/monitor.js
+msgid "Script deleted successfully: "
+msgstr "脚本删除成功："
+
+#: view/qmodem/monitor.js
+msgid "Failed to delete script: "
+msgstr "脚本删除失败："
+
+#: view/qmodem/monitor.js
+msgid "Scripts to execute when action is triggered. You can upload scripts in the User Scripts Management section above."
+msgstr "触发动作时要执行的脚本。您可以在上方的用户脚本管理部分上传脚本。"
