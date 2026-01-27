@@ -181,7 +181,79 @@ msgid "Scripts to execute when action is triggered"
 msgstr ""
 
 #: view/qmodem/monitor.js
+msgid "Scripts to execute when action is triggered. You can upload scripts in the User Scripts Management section above."
+msgstr ""
+
+#: view/qmodem/monitor.js
 msgid "Actions to perform when monitor threshold is reached"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "User Scripts Management"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Security Warning"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "User scripts run with root privileges. Only upload scripts from trusted sources. Malicious scripts can damage your system or compromise security. Review script contents before uploading."
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Upload Script"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Please select a file to upload"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Invalid file type. Only .sh, .py, and .lua files are allowed."
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Script uploaded successfully: "
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Failed to upload script: "
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Upload"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Scripts will be uploaded to "
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid ". Allowed types: .sh, .py, .lua"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Uploaded Scripts"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "No scripts uploaded yet"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Delete"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Are you sure you want to delete this script?"
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Script deleted successfully: "
+msgstr ""
+
+#: view/qmodem/monitor.js
+msgid "Failed to delete script: "
 msgstr ""
 
 #: menu

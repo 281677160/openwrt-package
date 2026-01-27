@@ -5,6 +5,7 @@
 'require rpc';
 'require ui';
 'require poll';
+'require fs';
 
 var callInitAction = rpc.declare({
 	object: 'luci',
@@ -19,6 +20,19 @@ var callRcStatus = rpc.declare({
 	params: ['name'],
 	expect: { }
 });
+
+var USER_SCRIPTS_PATH = '/usr/share/qmodem/user_scripts';
+
+// Helper function to list scripts
+function listUserScripts() {
+	return fs.list(USER_SCRIPTS_PATH).then(function(entries) {
+		return Array.isArray(entries) ? entries.filter(function(e) {
+			return e.type === 'file';
+		}) : [];
+	}).catch(function() {
+		return [];
+	});
+}
 
 // Monitor method definitions with their specific parameters
 var monitorMethods = {
@@ -99,9 +113,11 @@ return view.extend({
 		var self = this;
 		return Promise.all([
 			uci.load('qmodem'),
-			callRcStatus('qmodem_monitor')
+			callRcStatus('qmodem_monitor'),
+			listUserScripts()
 		]).then(function(results) {
 			self.rcStatusData = results[1];
+			self.userScripts = results[2] || [];
 			return results;
 		});
 	},
@@ -255,6 +271,138 @@ return view.extend({
 			return E('div', { id: 'rc-control-container' }, buttons);
 		}, this);
 
+		// User Scripts Management Section
+		s = m.section(form.NamedSection, 'main', 'main', _('User Scripts Management'));
+		s.anonymous = true;
+
+		// Security Warning
+		o = s.option(form.DummyValue, '_security_warning', _('Security Warning'));
+		o.rawhtml = true;
+		o.cfgvalue = function() {
+			return E('div', { 'class': 'cbi-value-description', 'style': 'color: #c00; padding: 10px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-bottom: 10px;' }, [
+				E('strong', {}, '⚠️ ' + _('Security Warning') + ': '),
+				E('span', {}, _('User scripts run with root privileges. Only upload scripts from trusted sources. Malicious scripts can damage your system or compromise security. Review script contents before uploading.'))
+			]);
+		};
+
+		// Script Upload
+		o = s.option(form.DummyValue, '_script_upload', _('Upload Script'));
+		o.rawhtml = true;
+		o.cfgvalue = L.bind(function() {
+			var uploadContainer = E('div', { 'class': 'cbi-value-field' }, [
+				E('input', {
+					'type': 'file',
+					'id': 'script-file-input',
+					'accept': '.sh,.py,.lua',
+					'style': 'margin-right: 10px;'
+				}),
+				E('button', {
+					'class': 'cbi-button cbi-button-action',
+					'id': 'upload-script-btn',
+					'click': ui.createHandlerFn(this, function() {
+						var fileInput = document.getElementById('script-file-input');
+						var file = fileInput.files[0];
+						
+						if (!file) {
+							ui.addNotification(null, E('p', _('Please select a file to upload')), 'error');
+							return;
+						}
+						
+						// Validate file extension
+						var fileName = file.name;
+						var validExtensions = ['.sh', '.py', '.lua'];
+						var hasValidExt = validExtensions.some(function(ext) {
+							return fileName.toLowerCase().endsWith(ext);
+						});
+						
+						if (!hasValidExt) {
+							ui.addNotification(null, E('p', _('Invalid file type. Only .sh, .py, and .lua files are allowed.')), 'error');
+							return;
+						}
+						
+						// Sanitize filename - only allow alphanumeric, dash, underscore, dot
+						var sanitizedName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+						
+						var reader = new FileReader();
+						reader.onload = function(e) {
+							var content = e.target.result;
+							var destPath = USER_SCRIPTS_PATH + '/' + sanitizedName;
+							
+							// First create directory if not exists using fs.exec
+							fs.exec('/bin/mkdir', ['-p', USER_SCRIPTS_PATH]).then(function() {
+								// Write file content
+								return fs.write(destPath, content);
+							}).then(function() {
+								// Set execute permission
+								return fs.exec('/bin/chmod', ['+x', destPath]);
+							}).then(function() {
+								ui.addNotification(null, E('p', _('Script uploaded successfully: ') + sanitizedName));
+								// Refresh the script list
+								return listUserScripts();
+							}).then(function(scripts) {
+								self.userScripts = scripts;
+								// Update the script list display
+								self.updateScriptList();
+							}).catch(function(err) {
+								ui.addNotification(null, E('p', _('Failed to upload script: ') + (err.message || err)), 'error');
+							});
+						};
+						reader.readAsText(file);
+					})
+				}, _('Upload'))
+			]);
+			
+			return E('div', {}, [
+				uploadContainer,
+				E('div', { 'class': 'cbi-value-description', 'style': 'margin-top: 5px;' }, 
+					_('Scripts will be uploaded to ') + USER_SCRIPTS_PATH + _('. Allowed types: .sh, .py, .lua'))
+			]);
+		}, this);
+
+		// Current Scripts List
+		o = s.option(form.DummyValue, '_script_list', _('Uploaded Scripts'));
+		o.rawhtml = true;
+		o.cfgvalue = L.bind(function() {
+			var scripts = this.userScripts || [];
+			
+			if (scripts.length === 0) {
+				return E('div', { 'id': 'user-scripts-list' }, [
+					E('em', {}, _('No scripts uploaded yet'))
+				]);
+			}
+			
+			var listItems = scripts.map(function(script) {
+				return E('div', { 'class': 'script-item', 'style': 'display: flex; align-items: center; padding: 5px 0; border-bottom: 1px solid #eee;' }, [
+					E('span', { 'style': 'flex: 1; font-family: monospace;' }, USER_SCRIPTS_PATH + '/' + script.name),
+					E('button', {
+						'class': 'cbi-button cbi-button-negative',
+						'style': 'margin-left: 10px;',
+						'data-script': script.name,
+						'click': ui.createHandlerFn(self, function(ev) {
+							var scriptName = ev.target.getAttribute('data-script');
+							var scriptPath = USER_SCRIPTS_PATH + '/' + scriptName;
+							
+							if (!confirm(_('Are you sure you want to delete this script?') + '\n' + scriptPath)) {
+								return;
+							}
+							
+							fs.remove(scriptPath).then(function() {
+								ui.addNotification(null, E('p', _('Script deleted successfully: ') + scriptName));
+								return listUserScripts();
+							}).then(function(scripts) {
+								self.userScripts = scripts;
+								self.updateScriptList();
+							}).catch(function(err) {
+								ui.addNotification(null, E('p', _('Failed to delete script: ') + (err.message || err)), 'error');
+							});
+						})
+					}, _('Delete'))
+				]);
+			});
+			
+			return E('div', { 'id': 'user-scripts-list' }, listItems);
+		}, this);
+
 		// Per-Modem Monitor Configuration
 		s = m.section(form.GridSection, 'modem-device', _('Modem Monitor Configuration'));
 		s.anonymous = false;
@@ -380,11 +528,62 @@ return view.extend({
 		// Scripts for run_scripts action
 		o = s.option(form.DynamicList, 'script', _('Script Paths'));
 		o.modalonly = true;
-		o.placeholder = '/usr/bin/my_script.sh';
-		o.description = _('Scripts to execute when action is triggered');
+		o.placeholder = '/usr/share/qmodem/user_scripts/my_script.sh';
+		o.description = _('Scripts to execute when action is triggered. You can upload scripts in the User Scripts Management section above.');
 		o.depends({ 'monitor_action': /run_scripts/ });
+		
+		// Add uploaded scripts as datalist suggestions
+		if (self.userScripts && self.userScripts.length > 0) {
+			self.userScripts.forEach(function(script) {
+				o.value(USER_SCRIPTS_PATH + '/' + script.name);
+			});
+		}
 
 		return m.render();
+	},
+
+	updateScriptList: function() {
+		var self = this;
+		var listContainer = document.getElementById('user-scripts-list');
+		if (!listContainer) return;
+		
+		listContainer.innerHTML = '';
+		var scripts = this.userScripts || [];
+		
+		if (scripts.length === 0) {
+			listContainer.appendChild(E('em', {}, _('No scripts uploaded yet')));
+			return;
+		}
+		
+		scripts.forEach(function(script) {
+			var item = E('div', { 'class': 'script-item', 'style': 'display: flex; align-items: center; padding: 5px 0; border-bottom: 1px solid #eee;' }, [
+				E('span', { 'style': 'flex: 1; font-family: monospace;' }, USER_SCRIPTS_PATH + '/' + script.name),
+				E('button', {
+					'class': 'cbi-button cbi-button-negative',
+					'style': 'margin-left: 10px;',
+					'data-script': script.name,
+					'click': ui.createHandlerFn(self, function(ev) {
+						var scriptName = ev.target.getAttribute('data-script');
+						var scriptPath = USER_SCRIPTS_PATH + '/' + scriptName;
+						
+						if (!confirm(_('Are you sure you want to delete this script?') + '\n' + scriptPath)) {
+							return;
+						}
+						
+						fs.remove(scriptPath).then(function() {
+							ui.addNotification(null, E('p', _('Script deleted successfully: ') + scriptName));
+							return listUserScripts();
+						}).then(function(scripts) {
+							self.userScripts = scripts;
+							self.updateScriptList();
+						}).catch(function(err) {
+							ui.addNotification(null, E('p', _('Failed to delete script: ') + (err.message || err)), 'error');
+						});
+					})
+				}, _('Delete'))
+			]);
+			listContainer.appendChild(item);
+		});
 	},
 
 	updateRcStatus: function() {
