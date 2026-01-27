@@ -589,6 +589,9 @@ EOF
                 imei=$(echo "$input" | jsonfilter -e '@.imei')
                 json_init
                 json_add_string imei "$imei"
+                json_add_object result
+                json_add_string status "1"
+                json_close_object
                 set_imei "$imei"
                 json_dump
                 ;;
