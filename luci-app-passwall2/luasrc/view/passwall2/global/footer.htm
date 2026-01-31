@@ -129,7 +129,7 @@ local api = self.api
 		hiddenSelect.addEventListener("change", function(el){
 			let new_val = el.target.value
 			const new_hasItem = shunt_list.find(element => element.id == new_val);
-			if (new_hasItem || (o_hasItem && !new_hasItem)) {
+			if (new_hasItem) {
 				XHR.get('<%=api.url("update_node")%>', {
 					id: "<%=self.global_cfgid%>",
 					data: JSON.stringify({
@@ -144,8 +144,18 @@ local api = self.api
 						alert("<%:Error%>");
 					}
 				});
+			} else {
+				try { document.getElementById("tab.passwall2.<%=self.global_cfgid%>.Shunt").style.display = "none"; } catch (error) {}
+				try { document.querySelector('li[data-tab*="Shunt"]').style.display = "none"; } catch (error) {}
 			}
 		});
+		let shunt_taboption = document.getElementById("container.passwall2.<%=self.global_cfgid%>.Shunt");
+		if (shunt_taboption) {
+			let shunt_option_list = document.getElementById("cbi-passwall2-shunt_option_list");
+			if (shunt_option_list) {
+				shunt_taboption.appendChild(shunt_option_list);
+			}
+		}
 		go();
 	});
 	//setTimeout("go()", 1000);

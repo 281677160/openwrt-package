@@ -550,10 +550,10 @@
     "huawei": {
         "hisilicon": [
             {
-                "Set Current SIM to Slot 1 > AT^SIMSWITCH=1": "AT^SIMSWITCH=1"
+                "Set Current SIM to Slot 0 > AT^SCICHG=0,1": "AT^SCICHG=0,1"
             },
             {
-                "Set Current SIM to Slot 2 > AT^SIMSWITCH=0": "AT^SIMSWITCH=0"
+                "Set Current SIM to Slot 1 > AT^SCICHG=1,0": "AT^SCICHG=1,0"
             },
             {
                 "Query Network Information > AT^SYSINFOEX": "AT^SYSINFOEX"
