@@ -20,6 +20,7 @@ local geoip_url = uci:get(name, "@global_rules[0]", "geoip_url") or "https://git
 local geosite_url = uci:get(name, "@global_rules[0]", "geosite_url") or "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat"
 local asset_location = uci:get(name, "@global_rules[0]", "v2ray_location_asset") or "/usr/share/v2ray/"
 asset_location = asset_location:match("/$") and asset_location or (asset_location .. "/")
+local backup_path = "/tmp/bak_v2ray/"
 
 if arg3 == "cron" then
 	arg2 = nil
@@ -98,7 +99,7 @@ local function fetch_geofile(geo_name, geo_type, url)
 			local content = f:read("*l")
 			f:close()
 			if content then
-				content = content:gsub(down_filename, tmp_path)
+				content = content:gsub("(%x+)%s+.+", "%1  " .. tmp_path)
 				f = io.open(sha_path, "w")
 				if f then
 					f:write(content)
@@ -128,7 +129,8 @@ local function fetch_geofile(geo_name, geo_type, url)
 	if sret_tmp == 200 then
 		if sha_verify then
 			if verify_sha256(sha_path) then
-				sys.call(string.format("mkdir -p %s && cp -f %s %s", asset_location, tmp_path, asset_path))
+				sys.call(string.format("mkdir -p %s && mv -f %s %s", backup_path, asset_path, backup_path))
+				sys.call(string.format("mkdir -p %s && mv -f %s %s", asset_location, tmp_path, asset_path))
 				reboot = 1
 				log(1, api.i18n.translatef("%s update success.", geo_type))
 			else
@@ -140,7 +142,8 @@ local function fetch_geofile(geo_name, geo_type, url)
 				log(1, api.i18n.translatef("%s version is the same and does not need to be updated.", geo_type))
 				return 0
 			end
-			sys.call(string.format("mkdir -p %s && cp -f %s %s", asset_location, tmp_path, asset_path))
+			sys.call(string.format("mkdir -p %s && mv -f %s %s", backup_path, asset_path, backup_path))
+			sys.call(string.format("mkdir -p %s && mv -f %s %s", asset_location, tmp_path, asset_path))
 			reboot = 1
 			log(1, api.i18n.translatef("%s update success.", geo_type))
 		end
