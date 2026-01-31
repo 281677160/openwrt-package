@@ -899,7 +899,7 @@ msgstr ""
 msgid "Error loading IMEI: %s"
 msgstr ""
 
-#: view/qmodem/sim_switch.js:155
+#: view/qmodem/sim_switch.js:165
 msgid "Error loading SIM switch information: %s"
 msgstr ""
 
@@ -951,7 +951,7 @@ msgstr ""
 msgid "Error scanning neighbor cells: %s"
 msgstr ""
 
-#: view/qmodem/sim_switch.js:208
+#: view/qmodem/sim_switch.js:218
 msgid "Error switching SIM slot: %s"
 msgstr ""
 
@@ -1115,7 +1115,7 @@ msgstr ""
 msgid "Failed to stop QModem Network: "
 msgstr ""
 
-#: view/qmodem/sim_switch.js:201
+#: view/qmodem/sim_switch.js:211
 msgid "Failed to switch SIM slot. Please check modem status."
 msgstr ""
 
@@ -1922,7 +1922,11 @@ msgstr ""
 msgid "Not available"
 msgstr ""
 
-#: view/qmodem/sim_switch.js:191
+#: view/qmodem/sim_switch.js:157
+msgid "Note"
+msgstr ""
+
+#: view/qmodem/sim_switch.js:201
 msgid "Note: Some modems may require a reboot for the change to take effect."
 msgstr ""
 
@@ -2480,7 +2484,7 @@ msgstr ""
 msgid "SIM Switch Status"
 msgstr ""
 
-#: view/qmodem/sim_switch.js:188
+#: view/qmodem/sim_switch.js:198
 msgid "SIM slot switched to Slot %s successfully."
 msgstr ""
 
@@ -2709,7 +2713,7 @@ msgid "Slot"
 msgstr ""
 
 #: view/qmodem/sim_switch.js:136
-#: view/qmodem/sim_switch.js:167
+#: view/qmodem/sim_switch.js:177
 msgid "Slot %s"
 msgstr ""
 
@@ -2800,7 +2804,7 @@ msgstr ""
 msgid "Switch between SIM card slots. Note: Some modems may require a reboot after switching SIM slots."
 msgstr ""
 
-#: view/qmodem/sim_switch.js:177
+#: view/qmodem/sim_switch.js:187
 msgid "Switching SIM slot..."
 msgstr ""
 

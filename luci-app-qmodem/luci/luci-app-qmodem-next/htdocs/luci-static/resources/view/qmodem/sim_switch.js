@@ -150,6 +150,16 @@ return view.extend({
 					_('This modem does not support SIM switching.')));
 			}
 			
+			// Display ExtraInfo if available
+			var extraInfo = supportResult && supportResult.ExtraInfo;
+			if (extraInfo) {
+				statusInfo.push(E('div', { 'style': 'margin-top: 5px; color: #f0ad4e;' }, [
+					E('strong', {}, _('Note') + ': '),
+					E('span', {}, _(extraInfo))
+				]));
+				dom.content(statusField, statusInfo);
+			}
+			
 		}).catch(function(e) {
 			dom.content(statusField, E('span', { 'class': 'error' }, 
 				_('Error loading SIM switch information: %s').format(e.message)));
