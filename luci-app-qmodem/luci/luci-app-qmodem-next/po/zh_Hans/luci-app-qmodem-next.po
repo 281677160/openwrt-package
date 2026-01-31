@@ -2407,6 +2407,14 @@ msgid "This modem does not support SIM switching."
 msgstr "此调制解调器不支持SIM卡切换。"
 
 # Source: view/qmodem/sim_switch.js
+msgid "Note"
+msgstr "注意"
+
+# Source: vendor/huawei.sh
+msgid "Huawei Modem does not support querying SIM slot capabilities via AT commands.Slot display may be incorrect."
+msgstr "华为调制解调器不支持通过AT命令查询SIM卡槽功能，卡槽显示可能不正确。"
+
+# Source: view/qmodem/sim_switch.js
 msgid "Switching SIM slot..."
 msgstr "正在切换SIM卡槽..."
 
