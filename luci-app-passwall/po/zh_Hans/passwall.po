@@ -118,9 +118,6 @@ msgstr "0 为不使用"
 msgid "Same as the tcp node"
 msgstr "与 TCP 节点相同"
 
-msgid "To modify the shunt policy, click the Edit button."
-msgstr "如需调整分流方案，请点击编辑按钮。"
-
 msgid "Current node: %s"
 msgstr "当前节点：%s"
 
@@ -381,9 +378,6 @@ msgstr "添加节点"
 
 msgid "Add the node via the link"
 msgstr "通过链接添加节点"
-
-msgid "Add shunt policy"
-msgstr "添加分流方案"
 
 msgid "Enter share links, one per line. Subscription links are not supported!"
 msgstr "输入分享链接，支持多个节点，每行一个。请勿输入订阅链接！"
@@ -1809,6 +1803,12 @@ msgstr "TLS 证书链指纹（SHA256）"
 
 msgid "Once set, connects only when the server’s chain fingerprint matches."
 msgstr "设置后，仅在服务器证书链指纹匹配时连接。"
+
+msgid "TLS Certificate Name (CertName)"
+msgstr "TLS 证书名称（CertName）"
+
+msgid "TLS is used to verify the leaf certificate name."
+msgstr "TLS 用于验证 leaf 证书的 name。"
 
 msgid "ECH Config"
 msgstr "ECH 配置"

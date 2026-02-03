@@ -98,20 +98,6 @@ o = add_option(Flag, "fakedns", '<a style="color:#FF8C00">FakeDNS</a>' .. " " ..
 	translate("Suitable scenarios for let the node servers get the target domain names.") .. "<br>" ..
 	translate("Such as: DNS unlocking of streaming media, reducing DNS query latency, etc."))
 
-o = add_option(Flag, "write_ipset_direct", translate("Direct DNS result write to IPSet"), translate("Perform the matching direct domain name rules into IP to IPSet/NFTSet, and then connect directly (not entering the core).") .. " " .. translate("Maybe conflict with some special circumstances."))
-o.default = 1
-o.rmempty = false
-
-if api.is_finded("geoview") then
-	o = add_option(Flag, "enable_geoview_ip", translate("Enable GeoIP Data Parsing"))
-	o.default = 1
-	o.rmempty = false
-	o.description = "<ul>"
-		.. "<li>" .. translate("Analyzes and preloads GeoIP data to enhance the shunt performance.") .. "</li>"
-		.. "<li>" .. translate("Note: Increases resource usage.") .. " " .. translate("Maybe conflict with some special circumstances.") .. "</li>"
-		.. "</ul>"
-end
-
 local shunt_rules = {}
 m.uci:foreach(appname, "shunt_rules", function(e)
 	e.id = e[".name"]
