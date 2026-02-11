@@ -20,8 +20,6 @@ CACHE_PATH = "/tmp/etc/passwall2_tmp"
 TMP_PATH = "/tmp/etc/" .. appname
 TMP_IFACE_PATH = TMP_PATH .. "/iface"
 
-NEW_PORT = nil
-
 local lang = uci:get("luci", "main", "lang") or "auto"
 if lang == "auto" then
 	local auto_lang = uci:get(appname, "@global[0]", "auto_lang")
@@ -120,12 +118,7 @@ end
 
 function get_new_port()
 	local cmd_format = ". /usr/share/passwall2/utils.sh ; echo -n $(get_new_port %s tcp,udp)"
-	local set_port = 0
-	if NEW_PORT and tonumber(NEW_PORT) then
-		set_port = tonumber(NEW_PORT) + 1
-	end
-	NEW_PORT = tonumber(sys.exec(string.format(cmd_format, set_port == 0 and "auto" or set_port)))
-	return NEW_PORT
+	return tonumber(sys.exec(string.format(cmd_format, "auto")))
 end
 
 function exec_call(cmd)
@@ -162,6 +155,18 @@ end
 function base64Encode(text)
 	local result = nixio.bin.b64encode(text)
 	return result
+end
+
+function UrlEncode(szText)
+	return szText:gsub("([^%w%-_%.%~])", function(c)
+		return string.format("%%%02X", string.byte(c))
+	end)
+end
+
+function UrlDecode(szText)
+	return szText and szText:gsub("%+", " "):gsub("%%(%x%x)", function(h)
+		return string.char(tonumber(h, 16))
+	end) or nil
 end
 
 -- Extract the domain name and port from the URL (no IP address).
@@ -1426,4 +1431,51 @@ function apply_redirect(m)
 	else
 		sys.call("/bin/rm -f " .. tmp_uci_file)
 	end
+end
+
+function match_node_rule(name, rule)
+	if not name then return false end
+	if not rule or rule == "" then return true end
+	-- split rule by &&
+	local function split_and(expr)
+		local t = {}
+		for part in expr:gmatch("[^&]+") do
+			part = part:gsub("^%s+", ""):gsub("%s+$", "")
+			if part ~= "" then
+				table.insert(t, part)
+			end
+		end
+		return t
+	end
+	-- match single condition
+	local function match_cond(str, cond)
+		if cond == "" then
+			return true
+		end
+		-- exclude: !xxx
+		if cond:sub(1, 1) == "!" then
+			local k = cond:sub(2)
+			if k == "" then return true end
+			return not str:find(k, 1, true)
+		end
+		-- prefix: ^xxx
+		if cond:sub(1, 1) == "^" then
+			local k = cond:sub(2)
+			return str:sub(1, #k) == k
+		end
+		-- suffix: xxx$
+		if cond:sub(-1) == "$" then
+			local k = cond:sub(1, -2)
+			return str:sub(-#k) == k
+		end
+		-- contains
+		return str:find(cond, 1, true) ~= nil
+	end
+	-- AND logic
+	for _, cond in ipairs(split_and(rule)) do
+		if not match_cond(name, cond) then
+			return false
+		end
+	end
+	return true
 end
