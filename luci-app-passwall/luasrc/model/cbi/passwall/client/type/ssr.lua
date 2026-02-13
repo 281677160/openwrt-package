@@ -39,10 +39,6 @@ local ssr_obfs_list = {
 	"tls1.0_session_auth", "tls1.2_ticket_auth"
 }
 
-o = s:option(ListValue, _n("del_protocol")) --始终隐藏，用于删除 protocol
-o:depends({ [_n("__hide")] = "1" })
-o.rewrite_option = "protocol"
-
 o = s:option(Value, _n("address"), translate("Address (Support Domain Name)"))
 
 o = s:option(Value, _n("port"), translate("Port"))
