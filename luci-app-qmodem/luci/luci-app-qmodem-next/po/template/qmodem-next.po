@@ -5,6 +5,11 @@ msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 
+#: vendor/gosuncn.sh:390
+#: vendor/gosuncn.sh:405
+msgid "$1"
+msgstr ""
+
 #: generic.sh:262
 msgid "$arfcn_label"
 msgstr ""
@@ -82,6 +87,7 @@ msgstr ""
 
 #: vendor/fibocom.sh:432
 #: vendor/foxconn.sh:307
+#: vendor/gosuncn.sh:485
 #: vendor/huawei.sh:279
 #: vendor/meig.sh:238
 #: vendor/neoway.sh:161
@@ -260,6 +266,10 @@ msgstr ""
 #: generic.sh:222
 #: vendor/foxconn.sh:582
 #: vendor/foxconn.sh:629
+#: vendor/gosuncn.sh:601
+#: vendor/gosuncn.sh:610
+#: vendor/gosuncn.sh:680
+#: vendor/gosuncn.sh:689
 #: vendor/huawei.sh:383
 #: vendor/huawei.sh:515
 #: vendor/huawei.sh:533
@@ -296,7 +306,7 @@ msgstr ""
 
 #: vendor/fibocom.sh:428
 #: vendor/foxconn.sh:304
-#: vendor/gosuncn.sh:128
+#: vendor/gosuncn.sh:468
 #: vendor/huawei.sh:275
 #: vendor/meig.sh:234
 #: vendor/neoway.sh:157
@@ -331,7 +341,7 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
-#: vendor/gosuncn.sh:141
+#: vendor/gosuncn.sh:508
 msgid "Carrier"
 msgstr ""
 
@@ -353,6 +363,10 @@ msgstr ""
 #: generic.sh:219
 #: vendor/foxconn.sh:578
 #: vendor/foxconn.sh:634
+#: vendor/gosuncn.sh:599
+#: vendor/gosuncn.sh:608
+#: vendor/gosuncn.sh:678
+#: vendor/gosuncn.sh:687
 #: vendor/huawei.sh:379
 #: vendor/huawei.sh:511
 #: vendor/huawei.sh:529
@@ -374,6 +388,8 @@ msgstr ""
 
 #: vendor/fibocom.sh:1416
 #: vendor/foxconn.sh:551
+#: vendor/gosuncn.sh:587
+#: vendor/gosuncn.sh:666
 #: vendor/huawei.sh:373
 #: vendor/huawei.sh:504
 #: vendor/meig.sh:559
@@ -1306,6 +1322,7 @@ msgstr ""
 #: vendor/fibocom.sh:521
 #: vendor/foxconn.sh:276
 #: vendor/foxconn.sh:290
+#: vendor/gosuncn.sh:461
 #: vendor/meig.sh:288
 #: vendor/meig.sh:302
 #: vendor/neoway.sh:218
@@ -1325,6 +1342,8 @@ msgstr ""
 #: vendor/foxconn.sh:274
 #: vendor/foxconn.sh:280
 #: vendor/foxconn.sh:288
+#: vendor/gosuncn.sh:434
+#: vendor/gosuncn.sh:459
 #: vendor/huawei.sh:259
 #: vendor/meig.sh:286
 #: vendor/meig.sh:292
@@ -1348,6 +1367,7 @@ msgstr ""
 #: vendor/fibocom.sh:520
 #: vendor/foxconn.sh:275
 #: vendor/foxconn.sh:289
+#: vendor/gosuncn.sh:460
 #: vendor/huawei.sh:260
 #: vendor/meig.sh:287
 #: vendor/meig.sh:301
@@ -1364,6 +1384,7 @@ msgstr ""
 
 #: vendor/fibocom.sh:502
 #: vendor/foxconn.sh:271
+#: vendor/gosuncn.sh:456
 #: vendor/meig.sh:283
 #: vendor/neoway.sh:213
 #: vendor/quectel.sh:421
@@ -1470,6 +1491,8 @@ msgid "Loading..."
 msgstr ""
 
 #: generic.sh:146
+#: vendor/gosuncn.sh:598
+#: vendor/gosuncn.sh:677
 #: vendor/huawei.sh:575
 #: vendor/meig.sh:622
 #: vendor/neoway.sh:751
@@ -1533,7 +1556,7 @@ msgstr ""
 
 #: vendor/fibocom.sh:430
 #: vendor/foxconn.sh:305
-#: vendor/gosuncn.sh:132
+#: vendor/gosuncn.sh:483
 #: vendor/huawei.sh:277
 #: vendor/meig.sh:236
 #: vendor/neoway.sh:159
@@ -1643,10 +1666,6 @@ msgstr ""
 msgid "Mode set successfully. Please reboot the modem."
 msgstr ""
 
-#: vendor/gosuncn.sh:133
-msgid "Model"
-msgstr ""
-
 #: view/qmodem/settings.js:299
 msgid "Model Name"
 msgstr ""
@@ -1739,6 +1758,7 @@ msgid "NSA Band"
 msgstr ""
 
 #: vendor/fibocom.sh:429
+#: vendor/gosuncn.sh:482
 #: vendor/huawei.sh:276
 #: vendor/meig.sh:235
 #: vendor/neoway.sh:158
@@ -1763,6 +1783,7 @@ msgstr ""
 
 #: vendor/fibocom.sh:566
 #: vendor/foxconn.sh:314
+#: vendor/gosuncn.sh:506
 #: vendor/meig.sh:380
 #: vendor/neoway.sh:287
 #: vendor/quectel.sh:504
@@ -1779,6 +1800,12 @@ msgstr ""
 #: vendor/fibocom.sh:1417
 #: vendor/foxconn.sh:555
 #: vendor/foxconn.sh:628
+#: vendor/gosuncn.sh:591
+#: vendor/gosuncn.sh:597
+#: vendor/gosuncn.sh:606
+#: vendor/gosuncn.sh:670
+#: vendor/gosuncn.sh:676
+#: vendor/gosuncn.sh:685
 #: vendor/huawei.sh:374
 #: vendor/huawei.sh:505
 #: vendor/meig.sh:560
@@ -1799,6 +1826,7 @@ msgstr ""
 
 #: vendor/fibocom.sh:576
 #: vendor/foxconn.sh:323
+#: vendor/gosuncn.sh:507
 #: vendor/meig.sh:381
 #: vendor/neoway.sh:771
 #: vendor/quectel.sh:505
@@ -2024,6 +2052,8 @@ msgstr ""
 #: generic.sh:220
 #: vendor/foxconn.sh:579
 #: vendor/foxconn.sh:635
+#: vendor/gosuncn.sh:609
+#: vendor/gosuncn.sh:688
 #: vendor/huawei.sh:380
 #: vendor/huawei.sh:512
 #: vendor/huawei.sh:530
@@ -2112,6 +2142,8 @@ msgid "Pre Dial Delay"
 msgstr ""
 
 #: generic.sh:149
+#: vendor/gosuncn.sh:600
+#: vendor/gosuncn.sh:679
 #: vendor/huawei.sh:578
 #: vendor/meig.sh:624
 #: vendor/neoway.sh:754
@@ -2187,10 +2219,6 @@ msgstr ""
 msgid "RX Power (dBm)"
 msgstr ""
 
-#: vendor/gosuncn.sh:142
-msgid "Radio Access Technology"
-msgstr ""
-
 #: generic.sh:192
 #: generic.sh:228
 #: vendor/foxconn.sh:590
@@ -2252,6 +2280,12 @@ msgstr ""
 
 #: vendor/fibocom.sh:1457
 #: vendor/foxconn.sh:587
+#: vendor/gosuncn.sh:593
+#: vendor/gosuncn.sh:602
+#: vendor/gosuncn.sh:611
+#: vendor/gosuncn.sh:672
+#: vendor/gosuncn.sh:681
+#: vendor/gosuncn.sh:690
 #: vendor/huawei.sh:563
 #: vendor/neoway.sh:738
 #: vendor/quectel.sh:1682
@@ -2343,7 +2377,7 @@ msgstr ""
 
 #: vendor/fibocom.sh:431
 #: vendor/foxconn.sh:306
-#: vendor/gosuncn.sh:134
+#: vendor/gosuncn.sh:484
 #: vendor/huawei.sh:278
 #: vendor/meig.sh:237
 #: vendor/neoway.sh:160
@@ -2397,7 +2431,7 @@ msgstr ""
 
 #: vendor/fibocom.sh:498
 #: vendor/foxconn.sh:227
-#: vendor/gosuncn.sh:116
+#: vendor/gosuncn.sh:421
 #: vendor/huawei.sh:226
 #: vendor/meig.sh:279
 #: vendor/neoway.sh:209
@@ -2414,6 +2448,7 @@ msgstr ""
 
 #: vendor/fibocom.sh:504
 #: vendor/foxconn.sh:273
+#: vendor/gosuncn.sh:458
 #: vendor/huawei.sh:258
 #: vendor/meig.sh:285
 #: vendor/neoway.sh:215
@@ -2426,7 +2461,7 @@ msgstr ""
 #: vendor/fibocom.sh:518
 #: vendor/foxconn.sh:272
 #: vendor/foxconn.sh:287
-#: vendor/gosuncn.sh:124
+#: vendor/gosuncn.sh:457
 #: vendor/huawei.sh:257
 #: vendor/meig.sh:284
 #: vendor/meig.sh:299
@@ -2450,7 +2485,8 @@ msgstr ""
 #: vendor/foxconn.sh:279
 #: vendor/foxconn.sh:283
 #: vendor/foxconn.sh:286
-#: vendor/gosuncn.sh:123
+#: vendor/gosuncn.sh:433
+#: vendor/gosuncn.sh:455
 #: vendor/huawei.sh:256
 #: vendor/meig.sh:282
 #: vendor/meig.sh:291
@@ -2851,6 +2887,7 @@ msgstr ""
 
 #: vendor/fibocom.sh:408
 #: vendor/foxconn.sh:470
+#: vendor/gosuncn.sh:273
 #: vendor/meig.sh:220
 #: vendor/quectel.sh:338
 #: vendor/sierra.sh:340
@@ -2885,6 +2922,8 @@ msgstr ""
 
 #: generic.sh:182
 #: generic.sh:218
+#: vendor/gosuncn.sh:607
+#: vendor/gosuncn.sh:686
 #: vendor/neoway.sh:732
 #: vendor/telit.sh:765
 msgid "Tracking Area Code"

@@ -1,5 +1,6 @@
 return {
     manufacturers = {
+        gosuncn = "GosunCN",
         quectel = "Quectel",
         simcom = "Simcom",
         sierra = "Sierra Wireless",

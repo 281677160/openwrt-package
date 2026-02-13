@@ -623,6 +623,9 @@ ecm_hang()
             delay=3
             at_command='AT$MYUSBNETACT=0,0'
             ;;
+        "gosuncn")
+            at_command="AT+ZECMCALL=0"
+            ;;
         *)
             at_command="ATI"
             ;;
@@ -879,6 +882,14 @@ at_dial()
                     ;;
             esac
             ;;
+        "gosuncn")
+            case $platform in
+                "lte")
+                    at_command="AT+ZECMCALL=1"
+                    cgdcont_command="AT+CGDCONT=$pdp_index,\"$pdp_type\""$apn_append
+                    ;;
+            esac
+            ;;
     esac
 	m_debug "dialing: vendor:$manufacturer; platform:$platform; driver:$driver; apn:$apn; command:$at_command"
     m_debug "dial_cmd: $at_command; cgdcont_cmd: $cgdcont_command; ppp_auth_cmd: $ppp_auth_command"
@@ -896,7 +907,7 @@ at_dial()
   			at "${at_port}" "${cgdcont_command}"
             [ -n "$ppp_auth_command" ] && at "${at_port}" "$ppp_auth_command"
             [ -n "$nat_cfg" ] && at "${at_port}" "$nat_cfg"
-        	at "$at_port" "$at_command"
+        	at "${at_port}" "$at_command"
 		 	;;
 	esac
 }
