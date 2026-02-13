@@ -9,5 +9,6 @@
     "foxconn" : "foxconn.sh",
     "neoway" : "neoway.sh",
     "telit" : "telit.sh",
-    "nk" : "nk.sh"
+    "nk" : "nk.sh",
+    "gosuncn" : "gosuncn.sh"
 }
