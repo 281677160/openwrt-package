@@ -1,41 +1,74 @@
-# 中文翻译文件
 msgid ""
 msgstr "Content-Type: text/plain; charset=UTF-8\n"
 
-# 应用标题和描述
-msgid "Qfirehose"
-msgstr "固件烧写"
+msgid "QFirehose"
+msgstr "QFirehose"
 
-msgid "Qfirehose is a command-line tool for flashing Qualcomm firmware on OpenWrt."
-msgstr "Qfirehose是一个用于在OpenWrt上烧写高通固件的命令行工具。"
+msgid "Qualcomm firmware flash tool for Quectel modems. Supports firmware directory, zip and 7z packages."
+msgstr "移远（Quectel）模组高通固件烧写工具。支持固件目录、zip 和 7z 压缩包。"
 
-# 界面元素
-msgid "Version"
-msgstr "版本"
+msgid "Tool Version"
+msgstr "工具版本"
+
+msgid "Unknown"
+msgstr "未知"
+
+msgid "Status"
+msgstr "状态"
+
+msgid "Idle"
+msgstr "空闲"
+
+msgid "Flashing"
+msgstr "烧写中"
+
+msgid "Success"
+msgstr "成功"
+
+msgid "Failed"
+msgstr "失败"
+
+msgid "Error"
+msgstr "错误"
+
+msgid "Flashing..."
+msgstr "烧写中..."
 
 msgid "Firmware File"
 msgstr "固件文件"
 
-msgid "Upgrade package directory path"
-msgstr "升级包目录路径"
+msgid "Upload firmware or enter path..."
+msgstr "上传固件或输入路径..."
+
+msgid "Select File"
+msgstr "选择文件"
+
+msgid "Uploading..."
+msgstr "上传中..."
+
+msgid "File uploaded successfully."
+msgstr "文件上传成功。"
+
+msgid "File upload failed."
+msgstr "文件上传失败。"
+
+msgid "Supports .zip, .7z packages and firmware directories"
+msgstr "支持 .zip、.7z 压缩包和固件目录"
+
+msgid "Device Settings"
+msgstr "设备设置"
 
 msgid "Communication Port"
 msgstr "通讯端口"
 
-msgid "Diagnose port, will auto-detect if not specified"
-msgstr "通讯端口，如果不指定将自动检测"
-
 msgid "USB Device"
-msgstr "USB设备"
-
-msgid "When multiple modules exist on the board, use -s specify which module you want to upgrade"
-msgstr "当主板上存在多个模块时，使用-s指定要升级的模块"
+msgstr "USB 设备"
 
 msgid "Device Type"
 msgstr "设备类型"
 
-msgid "Device Type, default nand, support emmc/ufs"
-msgstr "设备类型，默认为NAND，支持eMMC/UFS"
+msgid "Auto Detect"
+msgstr "自动检测"
 
 msgid "NAND (Default)"
 msgstr "NAND（默认）"
@@ -46,118 +79,128 @@ msgstr "eMMC"
 msgid "UFS"
 msgstr "UFS"
 
+msgid "Advanced Options"
+msgstr "高级选项"
+
 msgid "Skip MD5 Check"
-msgstr "跳过MD5校验"
+msgstr "跳过 MD5 校验"
 
 msgid "Skip MD5 checksum verification"
-msgstr "跳过MD5校验和验证"
-
-msgid "Catch USB Monitor Log"
-msgstr "捕获USB监视器日志"
-
-msgid "Save USB monitor log to file (requires debugfs and usbmon)"
-msgstr "保存USB监视器日志到文件（需要debugfs和usbmon）"
+msgstr "跳过 MD5 校验和验证"
 
 msgid "Signed Firmware"
 msgstr "签名固件"
 
 msgid "For AG215S-GLR signed firmware packages"
-msgstr "用于AG215S-GLR签名固件包"
-
-msgid "Flash Firmware"
-msgstr "开始烧写"
-
-msgid "Log"
-msgstr "日志"
-
-msgid "Log file will be saved to /var/log/qfirehose/"
-msgstr "日志文件将保存到 /var/log/qfirehose/ 目录"
-
-# 警告和提示信息
-msgid "Please select a firmware file first."
-msgstr "请先选择固件文件。"
-
-msgid "Firmware flashed successfully."
-msgstr "固件烧写成功。"
-
-msgid "Failed to flash firmware: "
-msgstr "固件烧写失败："
-
-msgid "Error: "
-msgstr "错误："
-
-msgid "Warning"
-msgstr "警告"
-
-msgid "Warning."
-msgstr "警告。"
-
-msgid "Please ensure before proceeding:"
-msgstr "请在继续之前确保："
-
-msgid "The firmware you selected is from official channels and compatible with your MODEM."
-msgstr "您选择的固件来自官方渠道并且与您的调制解调器兼容。"
-
-msgid "The firmware version to be flashed should be higher than the version currently in use."
-msgstr "要烧写的固件版本应高于当前使用的版本。"
-
-msgid "Use of software is completely on your own risk."
-msgstr "使用本软件的风险完全由您自己承担。"
-
-msgid "Flashing wrong firmware or failed flash can brick your modem permanently."
-msgstr "烧写错误的固件或烧写失败可能会永久损坏您的调制解调器。"
-
-msgid "Avoid flashing, if device works without issues and updated firmware does not contain new necessary changes."
-msgstr "如果设备运行正常且更新的固件不包含必要的新更改，请避免烧写。"
-
-msgid "Do not flash, if you are not willing to take this risk or do not know what you are doing."
-msgstr "如果您不愿意承担此风险或不知道自己在做什么，请不要进行烧写。"
-
-msgid "After succesful flashing, you should use terminal to issue factory reset for modem settings with AT&F command."
-msgstr "烧写成功后，您应该使用终端通过AT&F命令对调制解调器设置进行出厂重置。"
-
-msgid "mPCIe users (mostly): If modem has completely disappeared after succesful flashing, reason might be that some firmware updates set default mode to USB3 which is unsupported by some mPCIe slots, in this case, you should connect it to USB port using mPCIe -> USB adapter, even most of cheap chinese modules can reveal device. After this you should issue a command to use USB2, which may vary between models, but on most Quectel modems is: AT+QUSBCFG=\"SS\",0"
-msgstr "mPCIe用户（主要）：如果在成功烧写后调制解调器完全消失，原因可能是某些固件更新将默认模式设置为某些mPCIe插槽不支持的USB3，在这种情况下，您应该使用mPCIe -> USB适配器将其连接到USB端口，即使是大多数便宜的中国模块也可以显示设备。之后，您应该发出使用USB2的命令，这可能因型号而异，但在大多数Quectel调制解调器上是：AT+QUSBCFG=\"SS\",0"
-
-msgid "Cancel"
-msgstr "取消"
-
-msgid "Continue"
-msgstr "继续"
-
-# 操作提示和状态信息
-msgid "Flashing Firmware"
-msgstr "正在烧写固件"
-
-msgid "Starting firmware flash process..."
-msgstr "开始固件烧写过程..."
-
-msgid "Firmware package: "
-msgstr "固件包："
-
-msgid "Cleaning up working directory..."
-msgstr "清理工作目录..."
-
-msgid "Creating extraction directory..."
-msgstr "创建解压目录..."
-
-msgid "Extracting firmware package..."
-msgstr "解压固件包..."
-
-msgid "Starting Qfirehose with command:"
-msgstr "执行Qfirehose命令："
-
-msgid "For detailed log, please check "
-msgstr "详细日志请查看 "
+msgstr "用于 AG215S-GLR 签名固件包"
 
 msgid "Erase All Before Download"
 msgstr "下载前擦除所有数据"
 
-msgid "Will erase all data including calibration data, please be careful"
-msgstr "将擦除所有数据（包括校准数据），请谨慎使用"
+msgid "Erase ALL data including calibration data — modem may become permanently unusable!"
+msgstr "擦除所有数据（包括校准数据）— 模组可能永久无法使用！"
 
-msgid "Flashing firmware, please wait..."
-msgstr "正在烧写固件，请稍候..."
+msgid "Flash Firmware"
+msgstr "开始烧写"
 
-msgid "Log file will be saved to /var/log/qfirehose/"
-msgstr "日志文件将保存到 /var/log/qfirehose/ 目录"
+msgid "Flash Log"
+msgstr "烧写日志"
+
+msgid "Copy"
+msgstr "复制"
+
+msgid "Clear"
+msgstr "清空"
+
+msgid "Log copied to clipboard."
+msgstr "日志已复制到剪贴板。"
+
+msgid "Please select a firmware file first."
+msgstr "请先选择固件文件。"
+
+msgid "Danger"
+msgstr "危险"
+
+msgid "You have enabled \"Erase All Before Download\"!"
+msgstr "您已启用"下载前擦除所有数据"！"
+
+msgid "This will erase ALL data on the modem, including calibration data. The modem may become permanently unusable if calibration data is lost."
+msgstr "这将擦除模组上的所有数据，包括校准数据。如果校准数据丢失，模组可能永久无法使用。"
+
+msgid "Are you absolutely sure you want to continue?"
+msgstr "您确定要继续吗？"
+
+msgid "I understand the risk, continue"
+msgstr "我了解风险，继续"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Confirm Firmware Flash"
+msgstr "确认烧写固件"
+
+msgid "Please ensure before proceeding:"
+msgstr "请在继续之前确认："
+
+msgid "The firmware is from official channels and compatible with your modem."
+msgstr "固件来自官方渠道并且与您的模组兼容。"
+
+msgid "The firmware version should be higher than the current version."
+msgstr "要烧写的固件版本应高于当前版本。"
+
+msgid "Flashing wrong firmware can brick your modem permanently."
+msgstr "烧写错误的固件可能会永久损坏您的模组。"
+
+msgid "Do not flash if you are not willing to take this risk."
+msgstr "如果您不愿意承担此风险，请不要烧写。"
+
+msgid "Additional notes..."
+msgstr "补充说明..."
+
+msgid "After flashing, use AT&F command to factory reset modem settings."
+msgstr "烧写完成后，建议使用 AT&F 命令对模组进行出厂重置。"
+
+msgid "mPCIe users: If modem disappears after flashing, it may have switched to USB3 mode. Use mPCIe-to-USB adapter and send AT+QUSBCFG=\"SS\",0 to switch back to USB2."
+msgstr "mPCIe 用户注意：如果烧写后模组消失，可能是固件将默认模式设为 USB3。请使用 mPCIe 转 USB 适配器连接模组，然后发送 AT+QUSBCFG=\"SS\",0 切换回 USB2。"
+
+msgid "Continue"
+msgstr "继续"
+
+msgid "Starting firmware flash process..."
+msgstr "开始固件烧写..."
+
+msgid "Failed to start flash process: "
+msgstr "启动烧写进程失败："
+
+msgid "Firmware upgrade completed successfully!"
+msgstr "固件升级成功完成！"
+
+msgid "Firmware upgrade failed."
+msgstr "固件升级失败。"
+
+msgid "Refresh Devices"
+msgstr "刷新设备"
+
+msgid "Refreshing..."
+msgstr "刷新中..."
+
+msgid "Reset"
+msgstr "重置"
+
+msgid "Waiting for flash process to start..."
+msgstr "等待烧写进程启动..."
+
+msgid "Capture USBMon Log"
+msgstr "捕获 USBMon 日志"
+
+msgid "Capture USB monitor log for debugging (-u)"
+msgstr "捕获 USB 监控日志用于调试（-u 参数）"
+
+msgid "Modem Model"
+msgstr "模组型号"
+
+msgid "Current Firmware"
+msgstr "当前固件"
+
+msgid "Not detected"
+msgstr "未检测到"

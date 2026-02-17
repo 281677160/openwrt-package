@@ -1,35 +1,38 @@
 #!/bin/sh
 
-# 检查PID文件是否存在
-if [ ! -f "/tmp/qfirehose_log/pid" ]; then
-    echo "Process not found"
-    exit 1
-fi
+# QFirehose 状态查询脚本
+# 只返回状态字符串（不含日志），日志由前端直接 cat current.log 获取
+# 状态值：idle / flashing / completed / failed
 
-# 读取PID
-PID=$(cat /tmp/qfirehose_log/pid)
+LOG_DIR="/tmp/qfirehose_log"
+status_file="$LOG_DIR/status"
+pid_file="$LOG_DIR/pid"
+log_file="$LOG_DIR/current.log"
 
-# 检查进程是否存在
-if ! kill -0 $PID 2>/dev/null; then
-    # 进程已结束，检查退出状态
-    if [ -f "/tmp/qfirehose_log/current.log" ]; then
-        # 输出最后的日志内容
-        tail -n 20 /tmp/qfirehose_log/current.log
-        # 检查是否成功完成
-        if grep -q "Firmware flashed successfully" /tmp/qfirehose_log/current.log; then
-            echo "completed"
-            rm -f /tmp/qfirehose_log/pid
-            exit 0
-        else
-            echo "failed"
-            rm -f /tmp/qfirehose_log/pid
-            exit 1
-        fi
-    fi
-else
-    # 进程正在运行，输出最新日志
-    if [ -f "/tmp/qfirehose_log/current.log" ]; then
-        tail -n 5 /tmp/qfirehose_log/current.log
-    fi
+# 检查状态文件
+if [ ! -f "$status_file" ]; then
+    echo "idle"
     exit 0
 fi
+
+status=$(cat "$status_file" 2>/dev/null)
+
+# 检查进程是否仍在运行
+if [ -f "$pid_file" ]; then
+    PID=$(cat "$pid_file" 2>/dev/null)
+    if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
+        # 进程仍在运行
+        status="flashing"
+    elif [ "$status" = "flashing" ]; then
+        # 进程已退出但状态文件未更新（异常退出），检查日志判断结果
+        if [ -f "$log_file" ] && grep -q "Upgrade module successfully" "$log_file" 2>/dev/null; then
+            status="completed"
+        else
+            status="failed"
+        fi
+        echo "$status" > "$status_file"
+    fi
+fi
+
+# 输出纯文本状态（不用 JSON，避免转义问题）
+echo "$status"
