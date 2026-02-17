@@ -1,104 +1,55 @@
 #!/bin/sh
 
-# 启用调试输出
-set -x
+# QFirehose 启动脚本
+# 上游 v1.4.17 已内置 zip/7z 解压功能，可直接传入压缩包路径
+#
+# 日志实时性说明：
+#   qfirehose 的 dbg_time() 宏在每次 fprintf(stdout) 后都调用了 fflush(stdout)，
+#   因此只要 stdout 直接重定向到文件（不经过管道/tee），每条日志都会立即写入磁盘。
+#   不使用 -l 参数，因为 -l 写入的 loghandler 没有 fflush，反而有缓冲延迟。
+#   前端 buildArgs() 也不应传 -l 参数。
 
-# 清理旧的调试日志
-rm -f /tmp/qfirehose_debug.log
+LOG_DIR="/tmp/qfirehose_log"
 
-# 记录当前用户和权限信息
-echo "Current user: $(whoami)" > /tmp/qfirehose_debug.log
-echo "Current groups: $(groups)" >> /tmp/qfirehose_debug.log
-echo "Script permissions:" >> /tmp/qfirehose_debug.log
-ls -l "$0" >> /tmp/qfirehose_debug.log
-
-# 确保目录存在并有正确权限
+# 确保目录存在
 mkdir -p /tmp/qfirehoseupload
-chmod 777 /tmp/qfirehoseupload
-mkdir -p /tmp/qfirehose_log
-chmod 777 /tmp/qfirehose_log
+mkdir -p "$LOG_DIR"
 
 # 生成带时间戳的日志文件名
 timestamp=$(date +%Y%m%d_%H%M%S)
-log_file="/tmp/qfirehose_log/qfirehose_${timestamp}.log"
-pid_file="/tmp/qfirehose_log/pid"
+log_file="$LOG_DIR/qfirehose_${timestamp}.log"
+pid_file="$LOG_DIR/pid"
+status_file="$LOG_DIR/status"
 
 # 创建符号链接指向最新的日志文件
-ln -sf "$log_file" /tmp/qfirehose_log/current.log
+ln -sf "$log_file" "$LOG_DIR/current.log"
 
-# 获取参数
-args="$*"
+# 初始化状态
+echo "flashing" > "$status_file"
+
+# 检查 qfirehose 是否可执行
+if [ ! -x /usr/bin/qfirehose ]; then
+    echo "Error: qfirehose not found or not executable" > "$log_file"
+    echo "failed" > "$status_file"
+    exit 1
+fi
 
 # 记录执行命令
-echo "Command arguments: $args" >> "$log_file"
+echo "QFirehose start at $(date)" > "$log_file"
+echo "Command: /usr/bin/qfirehose $*" >> "$log_file"
+echo "---" >> "$log_file"
 
-# 记录目录权限
-echo "Directory permissions before:" >> "$log_file"
-ls -la /tmp/qfirehoseupload >> "$log_file"
-
-# 检查qfirehose是否可执行
-if [ ! -x /usr/bin/qfirehose ]; then
-    echo "Error: qfirehose is not executable" >> "$log_file"
-    exit 1
-fi
-
-# 检查目录权限
-if [ ! -w /tmp/qfirehose_log ]; then
-    echo "Error: log directory is not writable" >> "$log_file"
-    exit 1
-fi
-
-# 修复解压目录的权限
-firmware_path=$(echo "$args" | grep -o '\-f [^ ]*' | cut -d' ' -f2)
-if [ -n "$firmware_path" ] && [ -d "$firmware_path" ]; then
-    echo "Fixing permissions for firmware directory: $firmware_path" >> "$log_file"
-    chmod -R 777 "$firmware_path"
-    chown -R nobody:nogroup "$firmware_path"
-fi
-
-# 记录修改后的权限
-echo "Directory permissions after:" >> "$log_file"
-ls -la /tmp/qfirehoseupload >> "$log_file"
-
-# 修改命令行参数中的日志路径
-args=$(echo "$args" | sed 's|-l /var/log/qfirehose|-l /tmp/qfirehose_log|g')
-
-# 从参数中提取固件路径
-firmware_path=$(echo "$args" | grep -o '\-f [^ ]*' | cut -d' ' -f2)
-if [ -z "$firmware_path" ]; then
-    echo "Error: firmware path not found in arguments" >> "$log_file"
-    exit 1
-fi
-
-# 提取文件名和目录名
-filename=$(basename "$firmware_path")
-dirname=$(dirname "$firmware_path")
-
-# 清理旧文件，但保留上传的固件包
-echo "Cleaning old files..." >> "$log_file"
-find "$dirname" -type f ! -name "$filename" -delete 2>> "$log_file"
-
-# 创建解压目录
-echo "Creating extraction directory..." >> "$log_file"
-unzip_dir="${firmware_path%.*}"  # 移除.zip后缀
-mkdir -p "$unzip_dir" 2>> "$log_file"
-
-# 解压固件包
-echo "Extracting firmware..." >> "$log_file"
-unzip -o "$firmware_path" -d "$unzip_dir" 2>&1 | tee -a "$log_file"
-
-# 更新参数中的固件路径为解压后的目录
-args=$(echo "$args" | sed "s|-f [^ ]*|-f $unzip_dir|")
-
-# 启动qfirehose并将其放入后台运行
-echo "Starting qfirehose..." >> "$log_file"
-(/usr/bin/qfirehose $args 2>&1 | tee -a "$log_file" & echo $!) > "$pid_file" 2>> "$log_file"
-
-# 检查是否成功启动
-if [ $? -eq 0 ]; then
-    echo "Successfully started qfirehose" >> "$log_file"
-    cat "$pid_file" | tee -a "$log_file"
-else
-    echo "Failed to start qfirehose" >> "$log_file"
-    exit 1
-fi
+# 启动 qfirehose 并将其放入后台运行
+# stdout 直接重定向到文件（非管道），利用 qfirehose 内部的 fflush(stdout) 实现实时写入
+# stderr 也合并到 stdout，确保错误信息不丢失
+(
+    /usr/bin/qfirehose "$@" >> "$log_file" 2>&1
+    ret=$?
+    # 通过退出码和日志关键字双重判断结果
+    if [ "$ret" = "0" ] && grep -q "Upgrade module successfully" "$log_file" 2>/dev/null; then
+        echo "completed" > "$status_file"
+    else
+        echo "failed" > "$status_file"
+    fi
+) &
+echo $! > "$pid_file"
