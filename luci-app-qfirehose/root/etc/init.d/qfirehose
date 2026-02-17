@@ -1,33 +1,13 @@
 #!/bin/sh /etc/rc.common
 
-# 设置启动优先级（越大越晚启动）
 START=99
 
-# 创建必要的目录和设置权限
 start() {
-    # 创建固件上传目录
     mkdir -p /tmp/qfirehoseupload
-    chmod 777 /tmp/qfirehoseupload
-    chown nobody:nogroup /tmp/qfirehoseupload
-
-    # 创建日志目录
-    mkdir -p /var/log/qfirehose
-    chmod 777 /var/log/qfirehose
-    chown nobody:nogroup /var/log/qfirehose
-
-    # 设置脚本权限
-    chmod 755 /usr/sbin/qfirehose-start
-    chmod 755 /usr/sbin/qfirehose-status
-    chown nobody:nogroup /usr/sbin/qfirehose-start
-    chown nobody:nogroup /usr/sbin/qfirehose-status
-
-    # 创建调试日志文件
-    touch /tmp/qfirehose_debug.log
-    chmod 666 /tmp/qfirehose_debug.log
-    chown nobody:nogroup /tmp/qfirehose_debug.log
+    mkdir -p /tmp/qfirehose_log
 }
 
-# 停止服务（目前无需特殊处理）
 stop() {
-    :
+    rm -f /tmp/qfirehose_log/pid
+    rm -f /tmp/qfirehose_log/status
 }

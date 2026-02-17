@@ -1,6 +1,6 @@
 {
     "admin/modem/qfirehose": {
-        "title": "Qfirehose",
+        "title": "QFirehose",
         "order": 90,
         "action": {
             "type": "view",
