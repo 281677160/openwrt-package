@@ -1,15 +1,5 @@
-# QFirehose配置文件
-# 用于存储用户在LuCI界面上的配置选项
-
-# 主配置区块
 config qfirehose 'config'
-    # 启用或禁用QFirehose
-    option enabled '1'
-    # 默认情况下不跳过MD5校验
     option skip_md5 '0'
-    # 默认情况下不捕获USB监视器日志
-    option catch_usbmon '0'
-    # 默认情况下不使用签名固件
+    option erase_all '0'
     option signed_firmware '0'
-    # 默认使用NAND存储类型
     option device_type 'nand'
