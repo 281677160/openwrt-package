@@ -1,12 +1,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=qfirehose
-PKG_VERSION:=1.2
+PKG_VERSION:=1.4.17
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeload.github.com/nippynetworks/qfirehose/tar.gz/$(PKG_VERSION)?
-PKG_HASH:=0fa00df5e70e3044b294b41c6f1d1d28254997bbe0c2b9fbfacaf62493f4e769
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=https://github.com/nippynetworks/qfirehose.git
+PKG_SOURCE_VERSION:=fbbb4feeea19c265a1ed01d5eedf72e33974bac5
+PKG_MIRROR_HASH:=ec9b0b6655077b81966bf41c8cf4e631366c307579d408757dac9605694ccb72
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_LICENSE:=
@@ -18,13 +19,15 @@ define Package/qfirehose
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=Quectel Firehose Recovery application
+  DEPENDS:=+unzip +p7zip
   URL:=https://github.com/nippynetworks/qfirehose
 endef
 
 define Package/qfirehose/description
   Utility that is able to flash firmwares on Quectel's modems.
+  Supports upgrading using firmware directory, zip and 7z packages.
   Usage: qfirehose -f FW_PATH
-  
+
   Warning.
 
    - Use of software is completely on your own risk.
