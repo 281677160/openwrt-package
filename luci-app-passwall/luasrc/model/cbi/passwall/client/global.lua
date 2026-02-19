@@ -371,7 +371,8 @@ o.cfgvalue = function(self, section)
 	return m:get(section, "v2ray_dns_mode")
 end
 o.write = function(self, section, value)
-	if s.fields["dns_mode"]:formvalue(section) == "xray" or s.fields["smartdns_dns_mode"]:formvalue(section) == "xray" then
+	local f = s.fields["smartdns_dns_mode"]
+	if s.fields["dns_mode"]:formvalue(section) == "xray" or (f and f:formvalue(section) == "xray") then
 		return m:set(section, "v2ray_dns_mode", value)
 	end
 end
@@ -387,7 +388,8 @@ o.cfgvalue = function(self, section)
 	return m:get(section, "v2ray_dns_mode")
 end
 o.write = function(self, section, value)
-	if s.fields["dns_mode"]:formvalue(section) == "sing-box" or s.fields["smartdns_dns_mode"]:formvalue(section) == "sing-box" then
+	local f = s.fields["smartdns_dns_mode"]
+	if s.fields["dns_mode"]:formvalue(section) == "sing-box" or (f and f:formvalue(section) == "sing-box") then
 		return m:set(section, "v2ray_dns_mode", value)
 	end
 end
