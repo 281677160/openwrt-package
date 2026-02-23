@@ -130,7 +130,18 @@ else
 		{key = "rr_ttl", config_key = "rr-ttl", prefix = "-rr-ttl "},
 		{key = "rr_ttl_min", config_key = "rr-ttl-min", prefix = "-rr-ttl-min "},
 		{key = "rr_ttl_max", config_key = "rr-ttl-max", prefix = "-rr-ttl-max "},
-		{key = "rr_ttl_reply_max", config_key = "rr-ttl-reply-max", prefix = "-rr-ttl-reply-max "}
+		{key = "rr_ttl_reply_max", config_key = "rr-ttl-reply-max", prefix = "-rr-ttl-reply-max "},
+		{
+			key = "force_aaaa_soa",
+			config_key = "force-qtype-SOA",
+			prefix = "-address ",
+			get_value = function(custom_config)
+				local soa = custom_config["force-qtype-SOA"]
+				if soa and soa:match("(^|%s)28(%s|$)") then return "#6" end
+				if uci:get("smartdns", "@smartdns[0]", "force_aaaa_soa") == "1" then return "#6" end
+				return "-6"
+			end
+		}
 	}
 	-- 从 custom.conf 中读取值，以最后出现的值为准
 	local custom_config = {}
@@ -139,7 +150,7 @@ else
 		for line in f_in:lines() do
 			line = api.trim(line)
 			if line ~= "" and not line:match("^#") then
-				local param, value = line:match("^(%S+)%s+(%S+)$")
+				local param, value = line:match("^(%S+)%s+(.+)$")
 				if param and value then custom_config[param] = value end
 			end
 		end
@@ -147,7 +158,12 @@ else
 	end
 	-- 从 smartdns 配置中读取值，优先级以 custom.conf 为准
 	for _, opt in ipairs(options) do
-		local val = custom_config[opt.config_key] or uci:get("smartdns", "@smartdns[0]", opt.key) or opt.default
+		local val
+		if opt.get_value then
+			val = opt.get_value(custom_config)
+		else
+			val = custom_config[opt.config_key] or uci:get("smartdns", "@smartdns[0]", opt.key) or opt.default
+		end
 		if val == "yes" then val = "1" elseif val == "no" then val = "0" end
 		if opt.yes_no then
 			local arg = (val == "1" and opt.arg_yes or opt.arg_no)
@@ -253,9 +269,7 @@ if DEFAULT_DNS_GROUP then
 	local domain_rules_str = "domain-rules /./ -nameserver " .. DEFAULT_DNS_GROUP
 	if DEFAULT_DNS_GROUP == REMOTE_GROUP then
 		domain_rules_str = domain_rules_str .. " -speed-check-mode none -d no -no-serve-expired"
-		if NO_PROXY_IPV6 == "1" then
-			domain_rules_str = domain_rules_str .. " -address #6"
-		end
+		domain_rules_str = domain_rules_str .. " -address " .. (NO_PROXY_IPV6 == "1" and "#6" or "-6")
 	elseif DEFAULT_DNS_GROUP == LOCAL_GROUP then
 		domain_rules_str = domain_rules_str .. (LOCAL_EXTEND_ARG ~= "" and " " .. LOCAL_EXTEND_ARG or "")
 	end
@@ -445,6 +459,7 @@ if USE_PROXY_LIST == "1" and is_file_nonzero(file_proxy_host) then
 		domain_rules_str = domain_rules_str .. " -address #6"
 		domain_rules_str = REMOTE_FAKEDNS ~= "1" and (domain_rules_str .. " " .. set_type .. " " .. table.concat(sets, ",")) or domain_rules_str
 	else
+		domain_rules_str = domain_rules_str .. " -address -6"
 		table.insert(sets, "#6:" .. setflag .. "passwall_black6")
 		domain_rules_str = REMOTE_FAKEDNS ~= "1" and (domain_rules_str .. " -d no " .. set_type .. " " .. table.concat(sets, ",")) or domain_rules_str
 	end
@@ -469,6 +484,7 @@ if USE_GFW_LIST == "1" and is_file_nonzero(RULES_PATH .. "/gfwlist") then
 		domain_rules_str = domain_rules_str .. " -address #6"
 		domain_rules_str = REMOTE_FAKEDNS ~= "1" and (domain_rules_str .. " " .. set_type .. " " .. table.concat(sets, ",")) or domain_rules_str
 	else
+		domain_rules_str = domain_rules_str .. " -address -6"
 		table.insert(sets, "#6:" .. setflag .. "passwall_gfw6")
 		domain_rules_str = REMOTE_FAKEDNS ~= "1" and (domain_rules_str .. " -d no " .. set_type .. " " .. table.concat(sets, ",")) or domain_rules_str
 	end
@@ -509,6 +525,7 @@ if CHN_LIST ~= "0" and is_file_nonzero(RULES_PATH .. "/chnlist") then
 			domain_rules_str = domain_rules_str .. " -address #6"
 			domain_rules_str = REMOTE_FAKEDNS ~= "1" and (domain_rules_str .. " " .. set_type .. " " .. table.concat(sets, ",")) or domain_rules_str
 		else
+			domain_rules_str = domain_rules_str .. " -address -6"
 			table.insert(sets, "#6:" .. setflag .. "passwall_chn6")
 			domain_rules_str = REMOTE_FAKEDNS ~= "1" and (domain_rules_str .. " -d no " .. set_type .. " " .. table.concat(sets, ",")) or domain_rules_str
 		end
@@ -643,6 +660,7 @@ if IS_SHUNT_NODE then
 					and domain_rules_str
 					or (domain_rules_str .. " " .. set_type .. " " .. table.concat(sets, ","))
 		else
+			domain_rules_str = domain_rules_str .. " -address -6"
 			table.insert(sets, "#6:" .. setflag .. "passwall_shunt6")
 			domain_rules_str = (not only_global and REMOTE_FAKEDNS == "1")
 					and domain_rules_str
