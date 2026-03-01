@@ -178,6 +178,10 @@ start_service() {
 		elif [ "$mixin_file_content" = 1 ]; then
 			ucode -S "$MIXIN_UC" | yq -M -p json -o yaml | yq -M -i ea '... comments="" | . as $item ireduce ({}; . * $item ) | .proxies = .nikki-proxies + .proxies | del(.nikki-proxies) | .proxy-groups = .nikki-proxy-groups + .proxy-groups | del(.nikki-proxy-groups) | .rules = .nikki-rules + .rules | del(.nikki-rules)' "$RUN_PROFILE_PATH" "$MIXIN_FILE_PATH" -
 		fi
+		if [ "$proxy_enabled" = 1 ]; then
+			yq -M -i '(.tun) |= (.auto-route = false | .auto-redirect = false | .auto-detect-interface = false)' "$RUN_PROFILE_PATH"
+			yq -M -i '(.listeners[] | select(.type == "tun")) |= (.auto-route = false | .auto-redirect = false | .auto-detect-interface = false)' "$RUN_PROFILE_PATH"
+		fi
 	fi
 	# check profile
 	if [ "$core_only" = 0 ] && [ "$proxy_enabled" = 1 ]; then
@@ -314,17 +318,12 @@ service_started() {
 	fi
 	local dns_mode; dns_mode=$(yq -M '.dns.enhanced-mode // ""' "$RUN_PROFILE_PATH")
 	local fake_ip6_range; fake_ip6_range=$(yq -M '.dns.fake-ip-range6 // ""' "$RUN_PROFILE_PATH")
-	local tun_device
-	if yq -M -e 'has("tun") and (.tun | .enabled) and (.tun | has("device"))' "$RUN_PROFILE_PATH" > /dev/null 2>&1; then
-		tun_device=$(yq -M '.tun.device' "$RUN_PROFILE_PATH")
-	else
-		tun_device=$(yq -M ".listeners[] | select(.name == \"$tun_listener_name\" and .type == \"tun\") | .device" "$RUN_PROFILE_PATH")
-	fi
+	local tun_device; tun_device=$(yq -M "(.tun | select(.enable) | .device) // (.listeners[] | select(.name == \"$tun_listener_name\" and .type == \"tun\") | .device)" "$RUN_PROFILE_PATH")
 	if [ "$core_only" = 0 ]; then
 		# proxy
 		log "Proxy" "Enabled."
 		# wait for tun device online
-		if [ "$tun_enable" = 1 ] && [ -n "$tun_device" ]; then
+		if [ "$tun_enable" = 1 ]; then
 			log "Proxy" "Waiting for tun device online within $tun_timeout seconds..."
 			while [ "$tun_timeout" -gt 0 ]; do
 				if ip -j link show dev "$tun_device" 2>/dev/null | jsonfilter -q -e "@[@['flags'][@='UP']]" > /dev/null 2>&1; then

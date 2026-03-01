@@ -153,7 +153,8 @@ if load_balancing_options then -- [[ Load balancing Start ]]
 	local descrStr = "Example: <code>^A && B && !C && D$</code><br>"
 	descrStr = descrStr .. "This means the node remark must start with A (^), include B, exclude C (!), and end with D ($).<br>"
 	descrStr = descrStr .. "Conditions are joined by <code>&&</code>, and their order does not affect the result."
-	o.description = translate(descrStr)
+	o.description = translate(descrStr) .. string.format("<br><font color='red'>%s</font>",
+			translate("Keep the match scope small. Too many nodes can impact router performance."))
 
 	o = s:option(ListValue, _n("balancingStrategy"), translate("Balancing Strategy"))
 	o:depends({ [_n("protocol")] = "_balancing" })
@@ -250,6 +251,11 @@ if #protocols > 0 then
 	end
 end
 
+o = s:option(Value, _n("uuid"), translate("ID"))
+o.password = true
+o:depends({ [_n("protocol")] = "vmess" })
+o:depends({ [_n("protocol")] = "vless" })
+
 o = s:option(Value, _n("username"), translate("Username"))
 o:depends({ [_n("protocol")] = "http" })
 o:depends({ [_n("protocol")] = "socks" })
@@ -287,11 +293,6 @@ o:depends({ [_n("protocol")] = "shadowsocks", [_n("ss_method")] = "xchacha20-pol
 
 o = s:option(Flag, _n("uot"), translate("UDP over TCP"))
 o:depends({ [_n("protocol")] = "shadowsocks" })
-
-o = s:option(Value, _n("uuid"), translate("ID"))
-o.password = true
-o:depends({ [_n("protocol")] = "vmess" })
-o:depends({ [_n("protocol")] = "vless" })
 
 o = s:option(ListValue, _n("flow"), translate("flow"))
 o.default = ""
