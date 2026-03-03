@@ -96,11 +96,8 @@ start_instance() {
     procd_open_instance
     [ -n "$tz_env" ] && procd_set_param env "$tz_env"
     
-    procd_set_param command "$PROG" -c "$CONF" $args
-    procd_set_param stdout 1
-    procd_set_param stderr 1
     procd_set_param command /bin/sh -c "
-		${PROG} -l :$port -c \"$CONF\" ${param} >> /var/log/ddns-go.log 2>&1 &
+		${PROG} -l :$port -c \"$CONF\" ${args} >> /var/log/ddns-go.log 2>&1 &
 		DDNS_GO_PID=\$!
 		{
 			while true; do
