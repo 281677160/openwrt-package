@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2025 sirpdboy herboy2008@gmail.com https://github.com/sirpdboy/luci-app-watchdog
+# Copyright (C) 2025-2026 sirpdboy herboy2008@gmail.com https://github.com/sirpdboy/luci-app-watchdog
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
 
@@ -7,7 +7,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=watchdog
 PKG_VERSION:=1
-PKG_RELEASE:=5
+PKG_RELEASE:=6
 
 include $(INCLUDE_DIR)/package.mk
 
