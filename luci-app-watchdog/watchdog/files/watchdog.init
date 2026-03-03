@@ -1,15 +1,16 @@
 #!/bin/sh /etc/rc.common
 #
-# Copyright (C) 2025 sirpdboy herboy2008@gmail.com https://github.com/sirpdboy/luci-app-watchdog
+# Copyright (C) 2025-2026 sirpdboy herboy2008@gmail.com https://github.com/sirpdboy/luci-app-watchdog
 # 
 
 START=99
-STOP=90
+STOP=10
 USE_PROCD=1
 config=watchdog
 dir="/tmp/$config/"
 
 start_service() {
+    clear_rule
     procd_open_instance
     enable_value=$(uci get $config.config.enable 2>/dev/null || echo "0")
     [ "$enable_value" -ne "0" ] && procd_set_param command /usr/share/$config/$config && echo "$config is starting now ..."
@@ -22,18 +23,27 @@ reload_service() {
     start
 }
 
+# 检测防火墙类型
+detect_firewall_type() {
+    if command -v nft >/dev/null && [ -x /sbin/fw4 ]; then
+        echo "nft"
+    elif command -v iptables >/dev/null || command -v ip6tables >/dev/null; then
+        echo "iptables"
+    else
+        echo "unknown"
+    fi
+}
 clear_rule(){
 
-bin_nft=$(which nft 2>/dev/null)
-bin_iptables=$(which iptables 2>/dev/null)
-bin_ip6tables=$(which ip6tables 2>/dev/null)
-if [ -x "$bin_nft" ] && [ -x /sbin/fw4 ]; then
-    nftables_ver="true"
-elif [ -x "$bin_iptables" ] || [ -x "$bin_ip6tables" ]; then
-    iptables_ver="true"
-fi
 
- if [ -n "$nftables_ver" ]; then
+    local fw_type=$(detect_firewall_type)
+
+    if [ "$fw_type" = "nft" ]; then
+
+        local drop_handles=$(nft -a list ruleset 2>/dev/null | grep -E "watchdog Drop rule" | awk '{print $NF}')
+        for handle in $drop_handles; do
+            nft delete rule inet fw4 input handle $handle 2>/dev/null
+        done
         nft delete rule inet fw4 watchdog_input ip saddr @watchdog_blacklist 2>/dev/null
         nft delete rule inet fw4 watchdog_input ip6 saddr @watchdog_blacklistv6 2>/dev/null
         nft delete rule inet fw4 watchdog_input ether saddr @watchdog_blacklistbridge 2>/dev/null
@@ -41,7 +51,7 @@ fi
         nft delete set inet fw4 watchdog_blacklist 2>/dev/null
         nft delete set inet fw4 watchdog_blacklistv6 2>/dev/null
         nft delete set inet fw4 watchdog_blacklistbridge 2>/dev/null
-    elif [ -n "$iptables_ver" ]; then
+    elif [ "$fw_type" = "iptables" ]; then
         iptables -D INPUT -m set --match-set watchdog_blacklist src -j DROP 2>/dev/null
         iptables -D INPUT -m set --match-set watchdog_range src -j DROP 2>/dev/null
         ip6tables -D INPUT -m set --match-set watchdog_blacklistv6 src -j DROP 2>/dev/null
@@ -49,6 +59,7 @@ fi
         ipset destroy watchdog_blacklistv6 2>/dev/null
         ipset destroy watchdog_range 2>/dev/null
     fi
+
 }
 stop_service() {
     [ -f ${dir}child_pid ] && parent_pid=$(cat ${dir}child_pid)
