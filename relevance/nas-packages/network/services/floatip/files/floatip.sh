@@ -1,6 +1,7 @@
 #!/bin/sh
 
 LOCK_FILE="/var/lock/floatip_loop.lock"
+LOCK_FILE_UPDOWN="/var/lock/floatip_updown.lock"
 
 DEFAULT_PREFIX=24
 
@@ -19,28 +20,34 @@ host_alive() {
 	# arping -f -q -b -c 2 -w 2 -i 1 -I $LAN_IFACE "$1"
 }
 
+try_lock_updown() {
+	exec 201>"$LOCK_FILE_UPDOWN"
+	flock -x 201 && return 0
+	return 1
+}
+
+unlock_updown() {
+	flock -u 201
+}
+
 set_up() {
 	local ipaddr="$1"
+	try_lock_updown || return 1
 	echo "set my floatip to $ipaddr" >&2
-	if ! uci -q get network.floatip.ipaddr | grep -Fwq $ipaddr; then
-		if [[ "x$(uci -q get network.floatip)" = xinterface ]]; then
-			uci -q batch <<-EOF >/dev/null
-				set network.floatip.device=$LAN_IFACE
-				delete network.floatip.ipaddr
-				add_list network.floatip.ipaddr=$ipaddr
-			EOF
-		else
-			uci -q batch <<-EOF >/dev/null
-				set network.floatip=interface
-				set network.floatip.proto=static
-				set network.floatip.device=$LAN_IFACE
-				add_list network.floatip.ipaddr=$ipaddr
-				set network.floatip.auto=0
-			EOF
-		fi
-		uci commit network
+	ip addr add "$ipaddr" dev "$LAN_IFACE"
+	echo "ip addr del \"$ipaddr\" dev \"$LAN_IFACE\"" > /tmp/run/floatip_cleanup.sh
+	unlock_updown
+	return 0
+}
+
+set_down() {
+	try_lock_updown || return 1
+	if [ -f /tmp/run/floatip_cleanup.sh ]; then
+		sh -c '. /tmp/run/floatip_cleanup.sh'
+		rm -f /tmp/run/floatip_cleanup.sh
 	fi
-	ifup floatip
+	unlock_updown
+	return 0
 }
 
 set_lan_ping() {
@@ -112,7 +119,7 @@ fallback_loop() {
 		if [[ $found_alive = 1 ]]; then
 			if [[ $floatip_up = 1 ]]; then
 				echo "set down floatip" >&2
-				ifdown floatip
+				set_down || exit 1
 				floatip_up=0
 			else
 				dead_counter=0
@@ -130,7 +137,7 @@ fallback_loop() {
 			continue
 		fi
 		echo "no host alive, set up floatip $ipaddr" >&2
-		set_up "$ipaddr"
+		set_up "$ipaddr" || exit 1
 		floatip_up=1
 		sleep 5
 	done
@@ -182,7 +189,7 @@ main_loop() {
 				set_lan_ping
 				if [[ $found_alive = 0 ]]; then
 					echo "no host alive, and url passed, set up floatip $ipaddr" >&2
-					set_up "$ipaddr"
+					set_up "$ipaddr" || exit 1
 					floatip_up=1
 				fi
 			else
@@ -198,7 +205,7 @@ main_loop() {
 					continue
 				fi
 				echo "set down floatip, and disable ping" >&2
-				ifdown floatip
+				set_down || exit 1
 				set_lan_ping 0
 				floatip_up=0
 			fi
@@ -218,6 +225,12 @@ main() {
 		fallback_loop
 	fi
 }
+
+if [[ "$1" = "down" ]]; then
+	set_down
+	exit 0
+fi
+shift
 
 try_lock() {
 	exec 200>"$LOCK_FILE"
