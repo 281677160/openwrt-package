@@ -6,6 +6,11 @@ uci -q batch <<-EOF >/dev/null
 	commit ucitrack
 EOF
 
+uci -q batch <<-EOF >/dev/null
+	delete network.floatip
+	commit network
+EOF
+
 # don't change role if enabled
 [[ "`uci -q get floatip.main.enabled`" = "1" ]] && exit 0
 
