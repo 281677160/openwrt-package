@@ -10,11 +10,11 @@ include $(TOPDIR)/rules.mk
 PKG_ARCH_kai_session:=$(ARCH)
 
 PKG_NAME:=kai_session
-PKG_VERSION:=0.0.3
+PKG_VERSION:=0.0.5
 PKG_RELEASE:=0
 PKG_SOURCE:=$(PKG_NAME)-binary-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://github.com/linkease/istore-packages/releases/download/prebuilt/
-PKG_HASH:=40b0fe38b90d3630b8e3cb945afbeed9e1466141b85d389a1afffc138a45eead
+PKG_HASH:=51006dd937ebf2a5e9bb1ffb7ee722e9aefe130bf9bc732f9d53b24265454cb2
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-binary-$(PKG_VERSION)
 
 PKG_BUILD_PARALLEL:=1
