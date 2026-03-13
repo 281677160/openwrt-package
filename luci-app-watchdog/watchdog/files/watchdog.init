@@ -23,7 +23,6 @@ reload_service() {
     start
 }
 
-# 检测防火墙类型
 detect_firewall_type() {
     if command -v nft >/dev/null && [ -x /sbin/fw4 ]; then
         echo "nft"
