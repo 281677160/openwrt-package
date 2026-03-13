@@ -26,7 +26,7 @@ function renderStatus(isRunning) {
     
     return String.format(
         '<em><span style="color:%s">%s <strong>%s %s</strong></span></em>',
-        color, icon, _('watchdog'), statusText
+        color, icon, _('Watch Dog'), statusText
     );
 }
 
@@ -68,7 +68,7 @@ return view.extend({
     render: function() {
 
         var m, s, o;
-        m = new form.Map('watchdog', _('watchdog'), _('This is the security watchdog plugin for OpenWRT, which monitors and guards web login, SSH connections, and other situations.<br /><br />If you encounter any issues while using it, please submit them here:') + '<a href="https://github.com/sirpdboy/luci-app-watchdog" target="_blank">' + _('GitHub Project Address') + '</a>');
+        m = new form.Map('watchdog', _('Watch Dog'), _('This is the security watchdog plugin for OpenWRT, which monitors and guards web login, SSH connections, and other situations.<br /><br />If you encounter any issues while using it, please submit them here:') + '<a href="https://github.com/sirpdboy/luci-app-watchdog" target="_blank">' + _('GitHub Project Address') + '</a>');
         
         s = m.section(form.TypedSection);
         s.anonymous = true;
@@ -93,18 +93,7 @@ return view.extend({
             });
 
             poll.start();
-            return E('div', { class: 'cbi-section', id: 'status_bar' }, [ statusView ,
-               E('div', { 'style': 'text-align: right; font-style: italic;' }, [
-                    E('span', {}, [
-                    _('© github '),
-                    E('a', { 
-                        'href': 'https://github.com/sirpdboy', 
-                        'target': '_blank',
-                        'style': 'text-decoration: none;'
-                    }, 'by sirpdboy')
-                ])
-            ])
-        ]);
+            return E('div', { class: 'cbi-section', id: 'status_bar' }, statusView );
         }
 
         s = m.section(form.NamedSection, 'config', 'watchdog', _(''));
@@ -152,11 +141,9 @@ return view.extend({
         o.rows = 8;
         o.wrap = 'soft';
         
-        // 修复：正确处理空文件的情况
         o.cfgvalue = function(section_id) {
             return fs.read('/usr/share/watchdog/api/ip_blacklist')
                 .then(function(content) {
-                    // 如果文件不存在或为空，返回空字符串
                     return content || '';
                 })
                 .catch(function(err) {
@@ -165,59 +152,45 @@ return view.extend({
                 });
         };
         
-        // 修复：确保空值能被正确保存，并触发日志
         o.write = function(section_id, formvalue) {
             var self = this;
             
             return self.cfgvalue(section_id).then(function(oldValue) {
-                // 处理空值 - 如果表单值为空或只包含空白字符，清空文件
                 var newValue = (formvalue || '').trim();
                 
-                // 如果值没有变化，不执行写入
                 if (oldValue === newValue) {
                     return;
                 }
-                
-                // 处理空值情况 - 清空文件
                 if (newValue === '') {
                     return fs.write('/usr/share/watchdog/api/ip_blacklist', '')
                         .then(function() {
-                            // 添加成功通知
-                            ui.addNotification(null, E('p', {}, _('Blacklist cleared successfully')));
                             
-                            // 触发 watchdog 重新加载配置，这会记录日志
                             return fs.exec('/etc/init.d/watchdog', ['restart'])
                                 .then(function() {
                                     console.log('Watchdog restarted successfully');
                                 })
                                 .catch(function(err) {
                                     console.error('Failed to restart watchdog:', err);
-                                    // 即使重启失败，也尝试手动触发清理
                                     return fs.exec('/usr/bin/logger', ['-t', 'watchdog', 'Blacklist cleared via web interface']);
                                 });
                         });
                 }
                 
-                // 格式化内容：每行一个IP，去除空行
                 var lines = newValue.split('\n');
                 var validLines = [];
                 
                 for (var i = 0; i < lines.length; i++) {
                     var line = lines[i].trim();
-                    // 跳过空行
                     if (line === '') {
                         continue;
                     }
                     validLines.push(line);
                 }
                 
-                // 如果没有有效IP，清空文件
                 if (validLines.length === 0) {
                     return fs.write('/usr/share/watchdog/api/ip_blacklist', '')
                         .then(function() {
-                            ui.addNotification(null, E('p', {}, _('Blacklist cleared successfully')));
                             
-                            // 触发 watchdog 重新加载配置
                             return fs.exec('/etc/init.d/watchdog', ['restart'])
                                 .then(function() {
                                     console.log('Watchdog restarted successfully');
@@ -229,38 +202,29 @@ return view.extend({
                         });
                 }
                 
-                // 找出删除的IP（对比新旧内容）
                 var oldLines = oldValue ? oldValue.split('\n').map(function(line) { return line.trim(); }).filter(function(line) { return line !== ''; }) : [];
                 var removedIPs = oldLines.filter(function(ip) {
                     return validLines.indexOf(ip) === -1;
                 });
                 
-                // 写入格式化的内容，每个IP一行
                 var content = validLines.join('\n') + '\n';
                 return fs.write('/usr/share/watchdog/api/ip_blacklist', content)
                     .then(function() {
                         var message = _('Blacklist updated successfully');
                         if (removedIPs.length > 0) {
                             message += ' ' + _('Removed %s IP(s)').replace('%s', removedIPs.length);
-                            // 记录到系统日志
                             return fs.exec('/usr/bin/logger', ['-t', 'watchdog', 'Removed IPs from blacklist: ' + removedIPs.join(', ')])
                                 .then(function() {
-                                    ui.addNotification(null, E('p', {}, message));
                                     return fs.exec('/etc/init.d/watchdog', ['restart']);
                                 });
                         } else {
-                            ui.addNotification(null, E('p', {}, message));
                             return fs.exec('/etc/init.d/watchdog', ['restart']);
                         }
                     })
                     .catch(function(err) {
-                        ui.addNotification(null, E('p', { style: 'color:red' }, 
-                            _('Failed to update blacklist: ') + err.message));
                         return Promise.reject(err);
                     });
             }).catch(function(err) {
-                ui.addNotification(null, E('p', { style: 'color:red' }, 
-                    _('Failed to read current blacklist: ') + err.message));
                 return Promise.reject(err);
             });
         };
