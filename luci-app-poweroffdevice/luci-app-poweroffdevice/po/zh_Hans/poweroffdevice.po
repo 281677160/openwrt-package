@@ -6,33 +6,44 @@
 msgid "PowerOff"
 msgstr "关机"
 
-msgid "PowerOff Device"
-msgstr "设备关机"
+msgid "⚠️ PowerOff Device"
+msgstr "⚠️ 设备关机"
 
-msgid "Perform Power Off"
-msgstr "执行关机"
+msgid "⚠️ Perform Power Off"
+msgstr "⚠️ 执行关机"
 
 msgid "Turn off the power to the device you are using"
 msgstr "关闭您正在使用的设备的电源"
 
-msgid "WARNING: Power off might result in a reboot on a device which not support power off."
-msgstr "警告：对于不支持关机的设备，关机可能会导致重新启动." 
+msgid "This action will immediately turn off the power to your device. Make sure to save all your work before proceeding."
+msgstr "此操作将立即关闭设备的电源。在继续之前，请确保保存所有工作" 
 
-msgid "PowerOffing..."
+msgid "Powering off device..."
 msgstr "正在关机..."
 
-msgid "Device shutdown complete!"
-msgstr "设备关机完毕!"
+msgid "Confirm Power Off"
+msgstr "确认关机"
 
-msgid "PowerOff failed"
-msgstr "关机失败"
+msgid "Warning!"
+msgstr "警告"
 
-msgid "The device is shutting down..."
-msgstr "设备正在关闭..."
+msgid "Before you continue:"
+msgstr "继续关机之前："
 
-msgid "The device may have powered off. If not, check manually."
-msgstr "设备已断电。如果没有，请手动操作。"
+msgid "Save all unsaved settings"
+msgstr "保存所有未保存的设置"
 
-msgid "Confirm"
-msgstr "确认"
+msgid "Check if other users are active"
+msgstr "检查其他用户是否处于活动状态"
+
+msgid "The device needs to be manually turned on"
+msgstr "设备需要手动开机"
+
+msgid "Powering Off"
+msgstr "关机中"
+
+msgid "The device should power off within a few seconds. If the device remains on, you may need to perform a manual shutdown."
+msgstr "设备应在几秒钟内关闭。如果设备保持开启状态，您可能需要执行手动关机"
+
+
 
