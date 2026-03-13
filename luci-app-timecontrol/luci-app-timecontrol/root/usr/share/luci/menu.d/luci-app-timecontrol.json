@@ -1,4 +1,11 @@
-{
+{	"admin/control": {
+		"title": "Control",
+		"order": 44,
+		"action": {
+			"type": "firstchild",
+			"recurse": true
+		}
+	},
   "admin/control/timecontrol": {
     "title": "Time Control",
     "order": 10,
