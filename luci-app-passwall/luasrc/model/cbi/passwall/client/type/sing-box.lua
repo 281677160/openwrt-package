@@ -308,9 +308,6 @@ if singbox_tags:find("with_quic") then
 
 	o = s:option(Flag, _n("hysteria_disable_mtu_discovery"), translate("Disable MTU detection"))
 	o:depends({ [_n("protocol")] = "hysteria" })
-
-	o = s:option(Value, _n("hysteria_alpn"), translate("QUIC TLS ALPN"))
-	o:depends({ [_n("protocol")] = "hysteria" })
 end
 
 if singbox_tags:find("with_quic") then
@@ -350,6 +347,8 @@ if singbox_tags:find("with_quic") then
 	o:value("http/1.1")
 	o:value("h2,http/1.1")
 	o:value("h3,h2,http/1.1")
+	o:value("spdy/3.1")
+	o:value("h3,spdy/3.1")
 	o:depends({ [_n("protocol")] = "tuic" })
 end
 
@@ -409,7 +408,7 @@ o:depends({ [_n("protocol")] = "trojan" })
 o:depends({ [_n("protocol")] = "shadowsocks" })
 o:depends({ [_n("protocol")] = "anytls" })
 
-o = s:option(ListValue, _n("alpn"), translate("alpn"))
+o = s:option(ListValue, _n("alpn"), translate("ALPN"))
 o.default = "default"
 o:value("default", translate("Default"))
 o:value("h3")
@@ -419,6 +418,7 @@ o:value("http/1.1")
 o:value("h2,http/1.1")
 o:value("h3,h2,http/1.1")
 o:depends({ [_n("tls")] = true })
+o:depends({ [_n("protocol")] = "hysteria" })
 
 o = s:option(Flag, _n("tls_disable_sni"), translate("Disable SNI"), translate("Do not send server name in ClientHello."))
 o.default = "0"
@@ -426,14 +426,12 @@ o:depends({ [_n("tls")] = true })
 o:depends({ [_n("protocol")] = "hysteria"})
 o:depends({ [_n("protocol")] = "tuic" })
 o:depends({ [_n("protocol")] = "hysteria2" })
-o:depends({ [_n("protocol")] = "shadowsocks" })
 
 o = s:option(Value, _n("tls_serverName"), translate("Domain"))
 o:depends({ [_n("tls")] = true })
 o:depends({ [_n("protocol")] = "hysteria"})
 o:depends({ [_n("protocol")] = "tuic" })
 o:depends({ [_n("protocol")] = "hysteria2" })
-o:depends({ [_n("protocol")] = "shadowsocks" })
 
 o = s:option(Flag, _n("tls_allowInsecure"), translate("allowInsecure"), translate("Whether unsafe connections are allowed. When checked, Certificate validation will be skipped."))
 o.default = "0"
@@ -441,7 +439,6 @@ o:depends({ [_n("tls")] = true })
 o:depends({ [_n("protocol")] = "hysteria"})
 o:depends({ [_n("protocol")] = "tuic" })
 o:depends({ [_n("protocol")] = "hysteria2" })
-o:depends({ [_n("protocol")] = "shadowsocks" })
 
 o = s:option(Flag, _n("ech"), translate("ECH"))
 o.default = "0"
