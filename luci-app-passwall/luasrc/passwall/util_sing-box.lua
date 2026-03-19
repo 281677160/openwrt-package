@@ -177,7 +177,8 @@ function gen_outbound(flag, node, tag, proxy_table)
 				record_fragment = record_fragment,
 				ech = (node.ech == "1") and {
 					enabled = true,
-					config = node.ech_config and split(node.ech_config:gsub("\\n", "\n"), "\n") or {}
+					config = node.ech_config and { node.ech_config } or nil,
+					query_server_name = node.ech_query_server_name
 				} or nil,
 				utls = (node.utls == "1" or node.reality == "1") and {
 					enabled = true,
@@ -536,7 +537,7 @@ function gen_config_server(node)
 	if node.tls == "1" and node.ech == "1" then
 		tls.ech = {
 			enabled = true,
-			key = node.ech_key and split(node.ech_key:gsub("\\n", "\n"), "\n") or {}
+			key = node.ech_key and { node.ech_key } or nil
 		}
 	end
 
