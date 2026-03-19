@@ -461,6 +461,9 @@ o.validate = function(self, value)
 	return value
 end
 
+o = s:option(Value, _n("ech_query_server_name"), translate("ECH Query Domain"), translate("Overrides the domain name used for ECH HTTPS record queries."))
+o:depends({ [_n("ech")] = true })
+
 if singbox_tags:find("with_utls") then
 	o = s:option(Flag, _n("utls"), translate("uTLS"))
 	o.default = "0"
