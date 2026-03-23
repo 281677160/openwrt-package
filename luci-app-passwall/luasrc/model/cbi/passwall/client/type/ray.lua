@@ -370,7 +370,7 @@ o:depends({ [_n("protocol")] = "hysteria2" })
 -- o:value("1.3")
 -- o:depends({ [_n("tls")] = true })
 
-o = s:option(Value, _n("tls_serverName"), translate("Domain"))
+o = s:option(Value, _n("tls_serverName"), "SNI " .. translate("Domain"))
 o:depends({ [_n("tls")] = true })
 o:depends({ [_n("protocol")] = "hysteria2" })
 
