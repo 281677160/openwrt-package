@@ -259,28 +259,10 @@ function gen_outbound(flag, node, tag, proxy_table)
 				} or nil,
 				hysteriaSettings = (node.transport == "hysteria") and {
 					version = 2,
-					auth = node.hysteria2_auth_password,
-					up = (node.hysteria2_up_mbps and tonumber(node.hysteria2_up_mbps)) and tonumber(node.hysteria2_up_mbps) .. "mbps" or nil,
-					down = (node.hysteria2_down_mbps and tonumber(node.hysteria2_down_mbps)) and tonumber(node.hysteria2_down_mbps) .. "mbps" or nil,
-					udphop = (node.hysteria2_hop) and {
-						port = string.gsub(node.hysteria2_hop, ":", "-"),
-						interval = (function()
-								local v = tonumber((node.hysteria2_hop_interval or "30s"):match("^%d+"))
-								return (v and v >= 5) and v or 30
-							    end)()
-					} or nil,
-					maxIdleTimeout = (function()
-						local timeoutStr = tostring(node.hysteria2_idle_timeout or "")
-						local timeout = tonumber(timeoutStr:match("^%d+"))
-						if timeout and timeout >= 4 and timeout <= 120 then
-							return timeout
-						end
-						return 30
-					end)(),
-					disablePathMTUDiscovery = (node.hysteria2_disable_mtu_discovery) and true or false
+					auth = node.hysteria2_auth_password
 				} or nil,
 				finalmask = (function()
-					local finalmask
+					local finalmask = {}
 					if node.transport == "mkcp" then
 						local map = {none = "none", srtp = "header-srtp", utp = "header-utp", ["wechat-video"] = "header-wechat",
 							dtls = "header-dtls", wireguard = "header-wireguard", dns = "header-dns"}
@@ -297,15 +279,34 @@ function gen_outbound(flag, node, tag, proxy_table)
 							c.settings = { password = node.mkcp_seed }
 						end
 						udp[#udp+1] = c
-						finalmask = { udp = udp }
-					elseif node.transport == "hysteria" and node.hysteria2_obfs_type and node.hysteria2_obfs_type ~= "" then
-						finalmask = {
-							udp = {{
+						finalmask.udp = udp
+					elseif node.transport == "hysteria" then
+						if node.hysteria2_obfs_type and node.hysteria2_obfs_type ~= "" then
+							finalmask.udp = {{
 								type = node.hysteria2_obfs_type,
 								settings = node.hysteria2_obfs_password and {
 									password = node.hysteria2_obfs_password
 								} or nil
 							}}
+						end
+						local up = tonumber(node.hysteria2_up_mbps) or 0
+						local down = tonumber(node.hysteria2_down_mbps) or 0
+						finalmask.quicParams = {
+							congestion = (up <= 0 and down <= 0) and "bbr" or "brutal",
+							brutalUp = up > 0 and (up .. "mbps") or nil,
+							brutalDown = down > 0 and (down .. "mbps") or nil,
+							udpHop = (node.hysteria2_hop) and {
+								ports = string.gsub(node.hysteria2_hop, ":", "-"),
+								interval = (function(v)
+									v = tonumber((v or "30s"):match("^%d+"))
+									return (v and v >= 5) and v or 30
+								end)(node.hysteria2_hop_interval)
+							} or nil,
+							maxIdleTimeout = (function(t)
+								t = tonumber(tostring(t or "30"):match("^%d+"))
+								return (t and t >= 4 and t <= 120) and t or 30
+							end)(node.hysteria2_idle_timeout),
+							disablePathMTUDiscovery = tonumber(node.hysteria2_disable_mtu_discovery) == 1
 						}
 					end
 					if node.finalmask and node.finalmask ~= "" then
