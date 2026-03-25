@@ -476,7 +476,7 @@ local function processData(szType, content, add_mode, group)
 		end
 		result.type = "SSR"
 
-		local dat = split(content, "/%?")
+		local dat = split(content:gsub("/%?", "?"), "%?")
 		local hostInfo = split(dat[1], ':')
 		if dat[1]:match('%[(.*)%]') then
 			result.address = dat[1]:match('%[(.*)%]')
@@ -490,8 +490,10 @@ local function processData(szType, content, add_mode, group)
 		result.password = base64Decode(hostInfo[#hostInfo])	
 		local params = {}
 		for _, v in pairs(split(dat[2], '&')) do
-			local t = split(v, '=')
-			params[t[1]] = t[2]
+			local s = v:find("=", 1, true)
+			if s and s > 1 then
+				params[v:sub(1, s - 1)] = v:sub(s + 1)
+			end
 		end
 		result.obfs_param = base64Decode(params.obfsparam)
 		result.protocol_param = base64Decode(params.protoparam)
@@ -647,8 +649,10 @@ local function processData(szType, content, add_mode, group)
 			local find_index = info:find("%?")
 			local query = split(info, "%?")
 			for _, v in pairs(split(query[2], '&')) do
-				local t = split(v, '=')
-				if #t >= 2 then params[t[1]] = UrlDecode(t[2]) end
+				local s = v:find("=", 1, true)
+				if s and s > 1 then
+					params[v:sub(1, s - 1)] = UrlDecode(v:sub(s + 1))
+				end
 			end
 			if params.plugin then
 				local plugin_info = params.plugin
@@ -740,12 +744,12 @@ local function processData(szType, content, add_mode, group)
 				if result.type == 'Xray' then
 					-- obfs-local插件转换成xray支持的格式
 					if result.plugin ~= "obfs-local" then
-						result.error_msg = "Xray不支持 " .. result.plugin .. " 插件."
+						result.error_msg = "Xray 不支持 " .. result.plugin .. " 插件。"
 					else
 						local obfs = result.plugin_opts:match("obfs=([^;]+)") or ""
 						local obfs_host = result.plugin_opts:match("obfs%-host=([^;]+)") or ""
 						if obfs == "" or obfs_host == "" then
-							result.error_msg = "SS " .. result.plugin .. " 插件选项不完整."
+							result.error_msg = "SS " .. result.plugin .. " 插件选项不完整。"
 						end
 						if obfs == "http" then
 							result.transport = "raw"
@@ -775,7 +779,7 @@ local function processData(szType, content, add_mode, group)
 				end
 				if aead2022 then
 					-- shadowsocks-libev 不支持2022加密
-					result.error_msg = "shadowsocks-libev 不支持2022加密."
+					result.error_msg = "shadowsocks-libev 不支持2022加密。"
 				end
 			end
 
@@ -852,7 +856,7 @@ local function processData(szType, content, add_mode, group)
 					end
 					if params.type == 'xhttp' then
 						if result.type ~= "Xray" then
-							result.error_msg = "请更换 Xray 以支持 xhttp 传输方式."
+							result.error_msg = "请更换 Xray 以支持 xhttp 传输方式。"
 						end
 						result.xhttp_host = params.host
 						result.xhttp_path = params.path
@@ -898,13 +902,13 @@ local function processData(szType, content, add_mode, group)
 					end
 					result.uot = params.udp
 				elseif (params.type ~= "tcp" and params.type ~= "raw") and (params.headerType and params.headerType ~= "none") then
-					result.error_msg = "请更换Xray或Sing-Box来支持SS更多的传输方式."
+					result.error_msg = "请更换 Xray 或 Sing-Box 来支持 SS 更多的传输方式。"
 				end
 			end
 
 			if params["shadow-tls"] then
 				if result.type ~= "sing-box" and result.type ~= "SS-Rust" then
-					result.error_msg =  ss_type_default .. " 不支持 shadow-tls 插件."
+					result.error_msg =  ss_type_default .. " 不支持 shadow-tls 插件。"
 				else
 					-- 解析SS Shadow-TLS 插件参数
 					local function parseShadowTLSParams(b64str, out)
@@ -975,9 +979,9 @@ local function processData(szType, content, add_mode, group)
 			local host_port = query[1]
 			local params = {}
 			for _, v in pairs(split(query[2], '&')) do
-				local t = split(v, '=')
-				if #t > 1 then
-					params[string.lower(t[1])] = UrlDecode(t[2])
+				local s = v:find("=", 1, true)
+				if s and s > 1 then
+					params[v:sub(1, s - 1)] = UrlDecode(v:sub(s + 1))
 				end
 			end
 			-- [2001:4860:4860::8888]:443
@@ -1101,7 +1105,7 @@ local function processData(szType, content, add_mode, group)
 			result.finalmask = (params.fm and params.fm ~= "") and api.base64Encode(params.fm) or nil
 
 			if result.type == "sing-box" and (result.transport == "mkcp" or result.transport == "xhttp") then
-				log("跳过节点:" .. result.remarks .."，因Sing-Box不支持" .. szType .. "协议的" .. result.transport .. "传输方式，需更换Xray。")
+				log("跳过节点：" .. result.remarks .."，因 Sing-Box 不支持 " .. szType .. " 协议的 " .. result.transport .. " 传输方式，需更换 Xray。")
 				return nil
 			end
 		end
@@ -1143,8 +1147,10 @@ local function processData(szType, content, add_mode, group)
 			local host_port = query[1]
 			local params = {}
 			for _, v in pairs(split(query[2], '&')) do
-				local t = split(v, '=')
-				params[t[1]] = UrlDecode(t[2])
+				local s = v:find("=", 1, true)
+				if s and s > 1 then
+					params[v:sub(1, s - 1)] = UrlDecode(v:sub(s + 1))
+				end
 			end
 			-- [2001:4860:4860::8888]:443
 			-- 8.8.8.8:443
@@ -1294,7 +1300,7 @@ local function processData(szType, content, add_mode, group)
 			result.finalmask = (params.fm and params.fm ~= "") and api.base64Encode(params.fm) or nil
 
 			if result.type == "sing-box" and (result.transport == "mkcp" or result.transport == "xhttp") then
-				log("跳过节点:" .. result.remarks .."，因Sing-Box不支持" .. szType .. "协议的" .. result.transport .. "传输方式，需更换Xray。")
+				log("跳过节点：" .. result.remarks .."，因 Sing-Box 不支持 " .. szType .. " 协议的 " .. result.transport .. " 传输方式，需更换 Xray。")
 				return nil
 			end
 		end
@@ -1315,13 +1321,13 @@ local function processData(szType, content, add_mode, group)
 		end
 		result.remarks = UrlDecode(alias)
 		
-		local dat = split(content:gsub("/%?", "?"), '%?')
-		local host_port = dat[1]
+		local query = split(content:gsub("/%?", "?"), '%?')
+		local host_port = query[1]
 		local params = {}
-		for _, v in pairs(split(dat[2], '&')) do
-			local t = split(v, '=')
-			if #t > 0 then
-				params[t[1]] = t[2]
+		for _, v in pairs(split(query[2], '&')) do
+			local s = v:find("=", 1, true)
+			if s and s > 1 then
+				params[v:sub(1, s - 1)] = v:sub(s + 1)
 			end
 		end
 		-- [2001:4860:4860::8888]:443
@@ -1371,9 +1377,9 @@ local function processData(szType, content, add_mode, group)
 		local host_port = query[1]
 		local params = {}
 		for _, v in pairs(split(query[2], '&')) do
-			local t = split(v, '=')
-			if #t > 1 then
-				params[string.lower(t[1])] = UrlDecode(t[2])
+			local s = v:find("=", 1, true)
+			if s and s > 1 then
+				params[v:sub(1, s - 1):lower()] = UrlDecode(v:sub(s + 1))
 			end
 		end
 		-- [2001:4860:4860::8888]:443
@@ -1456,9 +1462,9 @@ local function processData(szType, content, add_mode, group)
 		local host_port = query[1]
 		local params = {}
 		for _, v in pairs(split(query[2], '&')) do
-			local t = split(v, '=')
-			if #t > 1 then
-				params[string.lower(t[1])] = UrlDecode(t[2])
+			local s = v:find("=", 1, true)
+			if s and s > 1 then
+				params[v:sub(1, s - 1):lower()] = UrlDecode(v:sub(s + 1))
 			end
 		end
 		if host_port:find(":") then
@@ -1513,8 +1519,10 @@ local function processData(szType, content, add_mode, group)
 			local host_port = query[1]
 			local params = {}
 			for _, v in pairs(split(query[2], '&')) do
-				local t = split(v, '=')
-				params[t[1]] = UrlDecode(t[2])
+				local s = v:find("=", 1, true)
+				if s and s > 1 then
+					params[v:sub(1, s - 1)] = UrlDecode(v:sub(s + 1))
+				end
 			end
 			-- [2001:4860:4860::8888]:443
 			-- 8.8.8.8:443
@@ -1557,7 +1565,7 @@ local function processData(szType, content, add_mode, group)
 			local singbox_version = api.get_app_version("sing-box")
 			local version_ge_1_12 = api.compare_versions(singbox_version:match("[^v]+"), ">=", "1.12.0")
 			if not has_singbox or not version_ge_1_12 then
-				log("跳过节点:" .. result.remarks .."，因" .. szType .. "类型的节点需要 Sing-Box 1.12 以上版本支持。")
+				log("跳过节点：" .. result.remarks .."，因 " .. szType .. " 类型的节点需要 Sing-Box 1.12 以上版本支持。")
 				return nil
 			end
 		end
@@ -1596,9 +1604,9 @@ local function processData(szType, content, add_mode, group)
 		local host_port = query[1]
 		local params = {}
 		for _, v in pairs(split(query[2], '&')) do
-			local t = split(v, '=')
-			if #t > 1 then
-				params[string.lower(t[1])] = UrlDecode(t[2])
+			local s = v:find("=", 1, true)
+			if s and s > 1 then
+				params[v:sub(1, s - 1)] = UrlDecode(v:sub(s + 1))
 			end
 		end
 		if host_port:find(":") then
@@ -1624,7 +1632,7 @@ local function processData(szType, content, add_mode, group)
 			result.naive_congestion_control = params.congestion_control or "bbr"
 		end
 	else
-		log('暂时不支持' .. szType .. "类型的节点订阅，跳过此节点。")
+		log("暂时不支持 " .. szType .. " 类型的节点订阅，跳过此节点。")
 		return nil
 	end
 	if not result.remarks or result.remarks == "" then
@@ -2021,17 +2029,17 @@ local function parse_link(raw, add_mode, group, cfgid)
 							end
 						end
 					else
-						log('跳过未知类型: ' .. szType)
+						log('跳过未知类型：' .. szType)
 					end
 					-- log(result)
 					if result then
 						if result.error_msg then
-							log('丢弃节点: ' .. result.remarks .. ", 原因:" .. result.error_msg)
+							log('丢弃节点：' .. result.remarks .. " ，原因：" .. result.error_msg)
 						elseif not result.type then
-							log('丢弃节点: ' .. result.remarks .. ", 找不到可使用二进制.")
+							log('丢弃节点：' .. result.remarks .. " ，找不到可使用二进制。")
 						elseif (add_mode == "2" and is_filter_keyword(result.remarks)) or not result.address or result.remarks == "NULL" or result.address == "127.0.0.1" or
 								(not datatypes.hostname(result.address) and not (api.is_ip(result.address))) then
-							log('丢弃过滤节点: ' .. result.type .. ' 节点, ' .. result.remarks)
+							log('丢弃过滤节点：' .. result.type .. ' 节点，' .. result.remarks)
 						else
 							tinsert(node_list, result)
 						end
@@ -2052,7 +2060,7 @@ local function parse_link(raw, add_mode, group, cfgid)
 				list = node_list
 			}
 		end
-		log('成功解析【' .. group .. '】节点数量: ' .. #node_list)
+		log('成功解析【' .. group .. '】节点数量：' .. #node_list)
 	else
 		if add_mode == "2" then
 			log('获取到的【' .. group .. '】订阅内容为空，可能是订阅地址无效，或是网络问题，请诊断！')
