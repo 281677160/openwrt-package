@@ -288,7 +288,7 @@ end
 o.cfgvalue = function(self, section)
 	return self.map.uci:get("shadowsocksr", "@server_subscribe[0]", "xray_hy2_type") or "hysteria2"
 end
-o.rmempty = false
+o.rmempty = true
 o.write = function(self, section, value)
 	-- 更新 server_subscribe 的 xray_hy2_type
 	local old_value = self.map.uci:get("shadowsocksr", "@server_subscribe[0]", "xray_hy2_type")
@@ -358,7 +358,7 @@ o.cfgvalue = function(self, section)
 	return self.map.uci:get("shadowsocksr", "@server_subscribe[0]", "ss_type") or "ss-rust"
 end
 o:depends("type", "ss")
-o.rmempty = false
+o.rmempty = true
 o.write = function(self, section, value)
 	-- 更新 server_subscribe 的 ss_type
 	local old_value = self.map.uci:get("shadowsocksr", "@server_subscribe[0]", "ss_type")
@@ -1323,7 +1323,7 @@ if is_finded("xray") then
 
 	o = s:option(ListValue, "ech_ForceQuery", translate("ECH Query Policy"))
 	o.description = translate("Controls the policy used when performing DNS queries for ECH configuration.")
-	o.default = "none"
+	o.default = "full"
 	o:value("none")
 	o:value("half")
 	o:value("full")
