@@ -184,9 +184,14 @@ if has_xray then
 	o.default = "100-200"
 	o:depends("fragment", true)
 
-	o = s_xray:option(Value, "fragment_interval", translate("Fragment Interval"), translate("Fragmentation interval (ms)"))
+	o = s_xray:option(Value, "fragment_delay", translate("Fragment Delay"), translate("Fragmentation interval (ms)"))
 	o.datatype = "or(uinteger,portrange)"
 	o.default = "10-20"
+	o:depends("fragment", true)
+
+	o = s_xray:option(Value, "fragment_maxSplit", translate("Max Split"), translate("Limit the maximum number of splits."))
+	o.datatype = "or(uinteger,portrange)"
+	o.default = "100-200"
 	o:depends("fragment", true)
 
 	o = s_xray:option(Flag, "noise", translate("Noise"), translate("UDP noise, Under some circumstances it can bypass some UDP based protocol restrictions."))
@@ -231,11 +236,12 @@ if has_xray then
 
 	o = s_xray_noise:option(ListValue, "type", translate("Type"))
 	o:value("rand", "rand")
+	o:value("array", "array")
 	o:value("str", "str")
 	o:value("hex", "hex")
 	o:value("base64", "base64")
 
-	o = s_xray_noise:option(Value, "packet", translate("Packet"))
+	o = s_xray_noise:option(Value, "packet", translate("Packet | Rand Length"))
 	o.datatype = "minlength(1)"
 	o.rmempty = false
 
