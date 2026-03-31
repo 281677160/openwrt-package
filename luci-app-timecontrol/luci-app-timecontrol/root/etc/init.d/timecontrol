@@ -1,6 +1,7 @@
 #!/bin/sh /etc/rc.common
+
 #
-# Copyright (C) 2023 sirpdboy herboy2008@gmail.com
+# Copyright (C) 2022-2026 sirpdboy herboy2008@gmail.com
 #
 
 START=99
@@ -21,9 +22,9 @@ _timecontrol_start() {
 	 if [ "$(grep -c 'option enable .1.' /etc/config/$NAME 2>/dev/null)" -gt "0" ]; then
 	    touch $LOCK
 	    timecontrol start
+	    sleep 2
 	    start_instance
 	 else
-            echo "INFO: 没有任何管制的设备！"
 	    stop_service
 	 fi
 }
@@ -40,7 +41,7 @@ service_triggers() {
 
 stop_service(){
 	kill -9 $(busybox ps -w | grep 'timecontrolctrl' | grep -v 'grep' | awk '{print $1}') >/dev/null 2>&1
+	killall timecontrolctrl 2>/dev/null
 	rm -f $LOCK 2>/dev/null
 	timecontrol stop
 }
-

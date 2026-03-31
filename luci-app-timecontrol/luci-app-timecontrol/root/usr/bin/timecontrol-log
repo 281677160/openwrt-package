@@ -1,0 +1,117 @@
+#!/bin/bash
+
+# 时间控制日志查看工具
+
+NAME=timecontrol
+LOG_FILE="/var/log/$NAME.log"
+STATUS_LOG="/var/lib/$NAME/status.log"
+CONNECTION_LOG="/var/lib/$NAME/connections.log"
+
+show_realtime_log() {
+    echo "正在显示实时日志，按 Ctrl+C 退出..."
+    echo ""
+    tail -f "$LOG_FILE" | while read line; do
+        # 高亮显示重要信息
+        if echo "$line" | grep -q "STATUS-CHANGE\|TIME_EXCEEDED\|RESET"; then
+            echo -e "\033[1;31m$line\033[0m"  # 红色显示重要变更
+        elif echo "$line" | grep -q "ALLOW_ACCESS\|解除限制"; then
+            echo -e "\033[1;32m$line\033[0m"  # 绿色显示允许访问
+        elif echo "$line" | grep -q "BLOCK_ACCESS\|添加限制"; then
+            echo -e "\033[1;33m$line\033[0m"  # 黄色显示禁止访问
+        else
+            echo "$line"
+        fi
+    done
+}
+
+show_status_log() {
+    echo "最近状态变更记录:"
+    echo "────────────────────────────────────────────────────────────────────"
+    if [ -f "$STATUS_LOG" ]; then
+        tail -n 20 "$STATUS_LOG" | while read line; do
+            local time=$(echo "$line" | cut -d']' -f1 | sed 's/\[//')
+            local message=$(echo "$line" | cut -d']' -f2-)
+            printf "%-20s %s\n" "$time" "$message"
+        done
+    else
+        echo "暂无状态记录"
+    fi
+}
+
+show_connection_log() {
+    echo "设备连接记录:"
+    echo "────────────────────────────────────────────────────────────────────"
+    echo "时间                 设备             状态"
+    echo "────────────────────────────────────────────────────────────────────"
+    
+    if [ -f "$CONNECTION_LOG" ]; then
+        tail -n 20 "$CONNECTION_LOG" | while read line; do
+            local timestamp=$(echo "$line" | cut -d',' -f1)
+            local target=$(echo "$line" | cut -d',' -f2)
+            local action=$(echo "$line" | cut -d',' -f3)
+            
+            local time_str=$(date -d "@$timestamp" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || echo "$timestamp")
+            local action_text=""
+            
+            case "$action" in
+                "connect") action_text="上线" ;;
+                "disconnect") action_text="下线" ;;
+                *) action_text="$action" ;;
+            esac
+            
+            printf "%-20s %-18s %s\n" "$time_str" "$target" "$action_text"
+        done
+    else
+        echo "暂无连接记录"
+    fi
+}
+
+show_summary() {
+    local summary_file="/tmp/timecontrol_status.txt"
+    if [ -f "$summary_file" ]; then
+        cat "$summary_file"
+    else
+        echo "状态摘要文件不存在，正在生成..."
+        timecontrol status
+    fi
+}
+
+show_help() {
+    echo "时间控制日志查看工具"
+    echo ""
+    echo "用法: timecontrol-log {realtime|status|connections|summary|help}"
+    echo ""
+    echo "命令:"
+    echo "  realtime    - 实时显示日志（彩色高亮）"
+    echo "  status      - 显示状态变更记录"
+    echo "  connections - 显示设备连接记录"
+    echo "  summary     - 显示状态摘要"
+    echo "  help        - 显示此帮助"
+    echo ""
+    echo "示例:"
+    echo "  timecontrol-log realtime    # 实时监控"
+    echo "  timecontrol-log status      # 查看状态变更"
+}
+
+case "$1" in
+    "realtime")
+        show_realtime_log
+        ;;
+    "status")
+        show_status_log
+        ;;
+    "connections")
+        show_connection_log
+        ;;
+    "summary")
+        show_summary
+        ;;
+    "help"|"")
+        show_help
+        ;;
+    *)
+        echo "未知命令: $1"
+        show_help
+        exit 1
+        ;;
+esac
