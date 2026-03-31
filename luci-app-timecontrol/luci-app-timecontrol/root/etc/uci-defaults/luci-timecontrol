@@ -1,5 +1,5 @@
 #!/bin/sh
-chmod +x  /etc/init.d/timecontrol /usr/bin/timecontrol*
+chmod +x  /etc/init.d/timecontrol /usr/bin/timecontrol* /usr/libexec/timecontrol-call
 uci -q batch <<-EOF >/dev/null
 	delete ucitrack.@timecontrol[-1]
 	add ucitrack timecontrol
@@ -8,5 +8,7 @@ uci -q batch <<-EOF >/dev/null
 EOF
 
 [ -s /etc/config/timecontrol ] ||  echo "config timecontrol" > /etc/config/timecontrol
+
+/etc/init.d/rpcd restart
 rm -f /tmp/luci-indexcache
 exit 0

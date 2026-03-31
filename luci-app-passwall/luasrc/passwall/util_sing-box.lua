@@ -6,6 +6,7 @@ local jsonc = api.jsonc
 local appname = "passwall"
 local fs = api.fs
 local split = api.split
+local ech_domain = {}
 
 local local_version = api.get_app_version("sing-box"):match("[^v]+")
 local version_ge_1_13_0 = api.compare_versions(local_version, ">=", "1.13.0")
@@ -175,11 +176,35 @@ function gen_outbound(flag, node, tag, proxy_table)
 				--max_version = "1.3",
 				fragment = fragment,
 				record_fragment = record_fragment,
-				ech = (node.ech == "1") and {
-					enabled = true,
-					config = node.ech_config and { node.ech_config } or nil,
-					query_server_name = node.ech_query_server_name
-				} or nil,
+				ech = (node.ech == "1") and (function()
+					local function get_ech_domain(s) --兼容xray "域名+DNS" 格式ech
+						local domain, dns = s:match("^([^+]+)%+(.+)$")
+						if not domain or not dns then return nil end
+						if not (dns:match("^https?://") or dns:match("^tcp://") or dns:match("^udp://") or dns:match("^h2c://")) then
+							return nil
+						end
+						if not domain:match("^[%w%-%.]+%.[%a]+$") then return nil end
+						return domain
+					end
+					local ech = { enabled = true }
+					local config = node.ech_config
+					local qname = node.ech_query_server_name
+					if config and not qname then
+						qname = get_ech_domain(config)
+						if not qname and not (config:match("%-+%s*BEGIN") and config:match("%-+%s*END")) then
+							config = "-----BEGIN ECH CONFIGS-----\n" .. config:gsub("%s+", "") .. "\n-----END ECH CONFIGS-----"
+						end
+					end
+					if qname then
+						ech.query_server_name = qname
+						ech_domain[qname] = true
+					elseif config then
+						ech.config = { config }
+					elseif node.tls_serverName and node.tls_serverName ~= "" then
+						ech_domain[node.tls_serverName] = true
+					end
+					return ech
+				end)() or nil,
 				utls = (node.utls == "1" or node.reality == "1") and {
 					enabled = true,
 					fingerprint = node.fingerprint or "chrome"
@@ -1864,13 +1889,26 @@ function gen_config(var)
 
 	if not dns then
 		dns = {
-			servers = {
-				{
-					type = "local",
-					tag = "direct"
-				}
-			}
+			servers = {{
+				type = "local",
+				tag = "direct"
+			}}
 		}
+	end
+
+	if next(ech_domain) ~= nil then
+		table.insert(dns.servers, {
+			tag = "ech-dns",
+			type = "https",
+			server = "223.5.5.5"
+		})
+		if not dns.rules then dns.rules = {} end
+		local domain = {}
+		for line, _ in pairs(ech_domain) do domain[#domain+1] = line end
+		table.insert(dns.rules, 1, {
+			domain = domain,
+			server = "ech-dns"
+		})
 	end
 
 	if COMMON.default_outbound_tag == "block" then
