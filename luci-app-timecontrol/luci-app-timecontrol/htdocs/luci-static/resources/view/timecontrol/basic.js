@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
+/*
+
+ * Copyright (C) 2022-2026 sirpdboy <herboy2008@gmail.com>
+ */
 'use strict';
 'require view';
 'require fs';
@@ -31,13 +36,12 @@ function checkTimeControlProcess() {
             }
         }
         
-        return { running: running, pid: pid };
+        return { running: running, pid: null };
     }).catch(function() {
         return { running: false, pid: null };
     });
 }
 
-// 渲染服务状态显示
 function renderServiceStatus(isRunning, pid) {
     var statusText = isRunning ? _('RUNNING') : _('NOT RUNNING');
     var color = isRunning ? 'green' : 'red';
@@ -114,16 +118,20 @@ return view.extend({
     load: function() {
         return Promise.all([
             uci.load('timecontrol'),
-            network.getDevices()
+            network.getHostHints()
         ]);
     },
 
     render: function(data) {
         var m, s, o;
-        var hostList = [];
+        let hosts = data[1]?.hosts;
 
         m = new form.Map('timecontrol', _('Internet Time Control'),
             _('Users can limit their internet usage time through MAC and IP, with available IP ranges such as 192.168.110.00 to 192.168.10.200') + '<br/>' +
+            _('黑名单模式时间控制方式:') + '<br/>' +
+            _('1. 时间段控制: 指定的机器在设定时间段内可以上网，其他时间不能上网') + '<br/>' +
+            _('2. 允许上机时长: 指定的机器上线后可以上网指定时长，超过时长后不能上网') + '<br/>' +
+            _('3. 组合控制: 在时间段内+时长限制（在允许的时间段内限制上网时长）') + '<br/>' +
             _('Suggested feedback:') + ' <a href="https://github.com/sirpdboy/luci-app-timecontrol.git" target="_blank">GitHub @timecontrol</a>');
 
         s = m.section(form.TypedSection);
@@ -171,7 +179,6 @@ return view.extend({
                 ])
             ]);
         };
-
         s = m.section(form.TypedSection, 'timecontrol');
         s.anonymous = true;
         s.addremove = false;
@@ -202,50 +209,113 @@ return view.extend({
         o = s.option(form.Flag, 'enable', _('Enabled'));
         o.rmempty = false;
         o.default = '1';
-	
+        
         o = s.option(form.Value, 'mac', _('IP/MAC Address'));
         o.rmempty = false;
-        o.placeholder = '192.168.10.100 or 00:11:22:33:44:55';
-        
-        getHostList().then(function(hosts) {
-            hostList = hosts;
-            o.value('', _('-- Please select or enter manually --'));
+        if (hosts) {
+            var hostOptions = {};
             
-            if (hosts.length > 0) {
-                hosts.forEach(function(host) {
-                    var displayName = '';
-                    if (host.name) {
-                        displayName = host.name + ' - ';
-                    }
-                    displayName += host.ipv4 + ' (' + host.mac + ')';
-                    
-                    // 添加IP选项
-                    o.value(host.ipv4, displayName);
-                    
-                    // 添加MAC选项
-                    var macDisplay = host.mac;
-                    if (host.name) {
-                        macDisplay += ' - ' + host.name;
-                    }
-                    if (host.ipv4) {
-                        macDisplay += ' (' + host.ipv4 + ')';
-                    }
-                    o.value(host.mac, macDisplay);
-                });
+            Object.keys(hosts).forEach(function(mac) {
+                var host = hosts[mac];
+                var name = host.name || _(' ');
+                var ips = L.toArray(host.ipaddrs || host.ipv4 || []);
+
+                if (ips.length > 0) {
+                    ips.forEach(function(ip) {
+                        var macDisplay = 'MAC: %s (%s - %s)'.format(mac,ip, name);
+                        hostOptions['mac:' + mac] = macDisplay;
+                        var ipDisplay = 'IP: %s (%s - %s)'.format(ip, mac, name);
+                        hostOptions['ip:' + ip] = ipDisplay;
+                    });
+                }
+            });
+            var sortedKeys = Object.keys(hostOptions).sort(function(a, b) {
+                return hostOptions[a].localeCompare(hostOptions[b]);
+            });
+            
+            sortedKeys.forEach(function(key) {
+                if (key.startsWith('ip:')) {
+                    o.value(key.substring(3), hostOptions[key]);
+                }
+            });
+
+            sortedKeys.forEach(function(key) {
+                if (key.startsWith('mac:')) {
+                    o.value(key.substring(4), hostOptions[key]);
+                }
+            });
+        }
+
+        // 时间控制方式选择
+        o = s.option(cbiRichListValue, 'time_mode', _('Time Control Mode'));
+        o.value('period', _('Time Period Control (allow in period)'));
+        o.value('duration', _('Allow Duration Control (allow limited time)'));
+        o.value('combined', _('Combined Control (allow in period + limit duration)'));
+        o.default = 'period';
+        o.rmempty = false;
+        o.onchange = function(ev, mode) {
+            var row = this.map.findElement('id', this.cbid(this.section_id));
+            if (row) {
+                // 显示/隐藏相关字段
+                var startTime = row.querySelector('[data-field="timestart"]');
+                var endTime = row.querySelector('[data-field="timeend"]');
+                var duration = row.querySelector('[data-field="duration"]');
+                var useDuration = row.querySelector('[data-field="use_duration"]');
+                var resetCycle = row.querySelector('[data-field="reset_cycle"]');
+                
+                if (startTime) startTime.parentElement.style.display = 
+                    (mode === 'period' || mode === 'combined') ? '' : 'none';
+                if (endTime) endTime.parentElement.style.display = 
+                    (mode === 'period' || mode === 'combined') ? '' : 'none';
+                if (duration) duration.parentElement.style.display = 
+                    (mode === 'duration' || mode === 'combined') ? '' : 'none';
+                if (useDuration) useDuration.parentElement.style.display = 
+                    (mode === 'combined') ? '' : 'none';
+                if (resetCycle) resetCycle.parentElement.style.display = 
+                    (mode === 'duration' || mode === 'combined') ? '' : 'none';
             }
-        });
+        };
 
-        o = s.option(form.Value, 'timestart', _('Start Control Time'));
+        // 时间段控制字段
+        o = s.option(form.Value, 'timestart', _('Allow Start Time'));
         o.placeholder = '00:00';
         o.default = '00:00';
-        o.rmempty = false;
+        o.depends({ 'time_mode': 'period', '!contains': true });
+        o.depends({ 'time_mode': 'combined', '!contains': true });
 
-        o = s.option(form.Value, 'timeend', _('Stop Control Time'));
+        o = s.option(form.Value, 'timeend', _('Allow End Time'));
         o.placeholder = '00:00';
         o.default = '00:00';
-        o.rmempty = false;
+        o.depends({ 'time_mode': 'period', '!contains': true });
+        o.depends({ 'time_mode': 'combined', '!contains': true });
 
-        o = s.option(form.ListValue, 'week', _('Week Day (1~7)'));
+        // 持续时间控制字段
+        o = s.option(form.Value, 'duration', _('Allowed Duration (minutes)'));
+        o.placeholder = '60';
+        o.default = '60';
+        o.datatype = 'min(1)';
+        o.depends({ 'time_mode': 'duration', '!contains': true });
+        o.depends({ 'time_mode': 'combined', '!contains': true });
+        o.description = _('设备上线后允许上网的分钟数，超过后将被禁止上网');
+
+        // 重置周期
+        o = s.option(cbiRichListValue, 'reset_cycle', _('Reset Cycle'));
+        o.value('daily', _('Daily Reset'));
+        o.value('weekly', _('Weekly Reset'));
+        o.value('monthly', _('Monthly Reset'));
+        o.value('never', _('Never Reset (until manual reset)'));
+        o.default = 'daily';
+        o.depends({ 'time_mode': 'duration', '!contains': true });
+        o.depends({ 'time_mode': 'combined', '!contains': true });
+        o.description = _('时长重置周期');
+
+        // 组合控制：是否在时间段内启用时长限制
+        o = s.option(form.Flag, 'use_duration', _('Enable Duration Limit in Period'));
+        o.default = '0';
+        o.depends({ 'time_mode': 'combined', '!contains': true });
+        o.description = _('在允许的时间段内限制上网时长');
+
+        o = s.option(form.Value, 'week', _('Week Day (1~7)'));
         o.value('0', _('Everyday'));
         o.value('1', _('Monday'));
         o.value('2', _('Tuesday'));
@@ -258,6 +328,8 @@ return view.extend({
         o.value('6,7', _('Rest Day'));
         o.default = '0';
         o.rmempty = false;
+        o.description = _('允许上网的星期');
+
         return m.render();
     }
 });

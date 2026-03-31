@@ -1,6 +1,6 @@
 #
 # Copyright (C) 2006-2017 OpenWrt.org
-# Copyright (C) 2022-2025 sirpdboy <herboy2008@gmail.com>
+# Copyright (C) 2022-2026 sirpdboy <herboy2008@gmail.com>
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
 #
@@ -17,8 +17,8 @@ LUCI_DESCRIPTION:=LuCI support for Easy timecontrol for nftables(Internet time c
 LUCI_DEPENDS:=+bc +nftables +bash +conntrack
 LUCI_PKGARCH:=all
 
-PKG_VERSION:=3.2.1
-PKG_RELEASE:=20251227
+PKG_VERSION:=3.2.4
+PKG_RELEASE:=20260322
 PKG_MAINTAINER:=sirpdboy <herboy2008@gmail.com>
 
 define Build/Compile
