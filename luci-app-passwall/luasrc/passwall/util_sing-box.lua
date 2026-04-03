@@ -527,7 +527,8 @@ function gen_outbound(flag, node, tag, proxy_table)
 					["User-Agent"] = node.user_agent
 				} or nil,
 				quic = node.naive_quic == "1" and true or false,
-				quic_congestion_control = (node.naive_quic == "1" and node.naive_congestion_control) and node.naive_congestion_control or nil
+				quic_congestion_control = (node.naive_quic == "1" and node.naive_congestion_control) and node.naive_congestion_control or nil,
+				tls = tls
 			}
 		end
 

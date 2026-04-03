@@ -453,7 +453,7 @@ local function processData(szType, content, add_mode, group)
 		end
 		result.type = "SSR"
 
-		local dat = split(content, "/%?")
+		local dat = split(content:gsub("/%?", "?"), "%?")
 		local hostInfo = split(dat[1], ':')
 		if dat[1]:match('%[(.*)%]') then
 			result.address = dat[1]:match('%[(.*)%]')
@@ -467,8 +467,10 @@ local function processData(szType, content, add_mode, group)
 		result.password = base64Decode(hostInfo[#hostInfo])	
 		local params = {}
 		for _, v in pairs(split(dat[2], '&')) do
-			local t = split(v, '=')
-			params[t[1]] = t[2]
+			local s = v:find("=", 1, true)
+			if s and s > 1 then
+				params[v:sub(1, s - 1)] = v:sub(s + 1)
+			end
 		end
 		result.obfs_param = base64Decode(params.obfsparam)
 		result.protocol_param = base64Decode(params.protoparam)
@@ -587,14 +589,10 @@ local function processData(szType, content, add_mode, group)
 		if info.tls == "tls" or info.tls == "1" then
 			result.tls = "1"
 			result.tls_serverName = (info.sni and info.sni ~= "") and info.sni or info.host
-			info.allowinsecure = info.allowinsecure or info.insecure
-			if info.allowinsecure and (info.allowinsecure == "1" or info.allowinsecure == "0") then
-				result.tls_allowInsecure = info.allowinsecure
-			else
-				result.tls_allowInsecure = allowInsecure_default and "1" or "0"
-			end
 			result.tls_CertSha = info.pcs
 			result.tls_CertByName = info.vcn
+			local insecure = info.allowinsecure or info.allowInsecure or info.insecure
+			result.tls_allowInsecure = (insecure == "1" or insecure == "0") and insecure or (allowInsecure_default and "1" or "0")
 		else
 			result.tls = "0"
 		end
@@ -633,8 +631,10 @@ local function processData(szType, content, add_mode, group)
 			local find_index = info:find("%?")
 			local query = split(info, "%?")
 			for _, v in pairs(split(query[2], '&')) do
-				local t = split(v, '=')
-				if #t >= 2 then params[t[1]] = UrlDecode(t[2]) end
+				local s = v:find("=", 1, true)
+				if s and s > 1 then
+					params[v:sub(1, s - 1)] = UrlDecode(v:sub(s + 1))
+				end
 			end
 			if params.plugin then
 				local plugin_info = params.plugin
@@ -838,7 +838,7 @@ local function processData(szType, content, add_mode, group)
 					end
 					if params.type == 'xhttp' then
 						if result.type ~= "Xray" then
-							result.error_msg = "请更换 Xray 以支持 xhttp 传输方式."
+							result.error_msg = i18n.translatef("Please replace %s to support %s transmission method.", "Xray", "xhttp")
 						end
 						result.xhttp_host = params.host
 						result.xhttp_path = params.path
@@ -876,12 +876,8 @@ local function processData(szType, content, add_mode, group)
 							result.reality_mldsa65Verify = params.pqv or nil
 						end
 					end
-					params.allowinsecure = params.allowinsecure or params.insecure
-					if params.allowinsecure and (params.allowinsecure == "1" or params.allowinsecure == "0") then
-						result.tls_allowInsecure = params.allowinsecure
-					else
-						result.tls_allowInsecure = allowInsecure_default and "1" or "0"
-					end
+					local insecure = params.allowinsecure or params.allowInsecure or params.insecure
+					result.tls_allowInsecure = (insecure == "1" or insecure == "0") and insecure or (allowInsecure_default and "1" or "0")
 					result.uot = params.udp
 				elseif (params.type ~= "tcp" and params.type ~= "raw") and (params.headerType and params.headerType ~= "none") then
 					result.error_msg = i18n.translatef("Please replace Xray or Sing-Box to support more transmission methods in Shadowsocks.")
@@ -959,9 +955,9 @@ local function processData(szType, content, add_mode, group)
 			local host_port = query[1]
 			local params = {}
 			for _, v in pairs(split(query[2], '&')) do
-				local t = split(v, '=')
-				if #t > 1 then
-					params[string.lower(t[1])] = UrlDecode(t[2])
+				local s = v:find("=", 1, true)
+				if s and s > 1 then
+					params[v:sub(1, s - 1)] = UrlDecode(v:sub(s + 1))
 				end
 			end
 			-- [2001:4860:4860::8888]:443
@@ -978,32 +974,14 @@ local function processData(szType, content, add_mode, group)
 				result.address = host_port
 			end
 
-			local peer, sni = nil, ""
-			if params.peer then peer = params.peer end
-			sni = params.sni and params.sni or ""
-			if params.ws and params.ws == "1" then
-				result.trojan_transport = "ws"
-				if params.wshost then result.ws_host = params.wshost end
-				if params.wspath then result.ws_path = params.wspath end
-				if sni == "" and params.wshost then sni = params.wshost end
-			end
 			result.port = port
 
 			result.tls = '1'
-			result.tls_serverName = peer and peer or sni
+			result.tls_serverName = params.peer or params.sni or ""
 			result.tls_CertSha = params.pcs
 			result.tls_CertByName = params.vcn
-
-			params.allowinsecure = params.allowinsecure or params.insecure
-			if params.allowinsecure then
-				if params.allowinsecure == "1" or params.allowinsecure == "0" then
-					result.tls_allowInsecure = params.allowinsecure
-				else
-					result.tls_allowInsecure = string.lower(params.allowinsecure) == "true" and "1" or "0"
-				end
-			else
-				result.tls_allowInsecure = allowInsecure_default and "1" or "0"
-			end
+			local insecure = params.allowinsecure or params.allowInsecure or params.insecure
+			result.tls_allowInsecure = (insecure == "1" or insecure == "0") and insecure or (allowInsecure_default and "1" or "0")
 
 			if not params.type then params.type = "tcp" end
 			params.type = string.lower(params.type)
@@ -1071,8 +1049,7 @@ local function processData(szType, content, add_mode, group)
 				result.quic_security = params.quicSecurity or "none"
 			end
 			if params.type == 'grpc' then
-				if params.path then result.grpc_serviceName = params.path end
-				if params.serviceName then result.grpc_serviceName = params.serviceName end
+				result.grpc_serviceName = params.serviceName or params.path
 				result.grpc_mode = params.mode or "gun"
 			end
 			if params.type == 'xhttp' then
@@ -1131,8 +1108,10 @@ local function processData(szType, content, add_mode, group)
 			local host_port = query[1]
 			local params = {}
 			for _, v in pairs(split(query[2], '&')) do
-				local t = split(v, '=')
-				params[t[1]] = UrlDecode(t[2])
+				local s = v:find("=", 1, true)
+				if s and s > 1 then
+					params[v:sub(1, s - 1)] = UrlDecode(v:sub(s + 1))
+				end
 			end
 			-- [2001:4860:4860::8888]:443
 			-- 8.8.8.8:443
@@ -1265,17 +1244,11 @@ local function processData(szType, content, add_mode, group)
 					result.use_mldsa65Verify = (params.pqv and params.pqv ~= "") and "1" or nil
 					result.reality_mldsa65Verify = params.pqv or nil
 				end
+				local insecure = params.allowinsecure or params.allowInsecure or params.insecure
+				result.tls_allowInsecure = (insecure == "1" or insecure == "0") and insecure or (allowInsecure_default and "1" or "0")
 			end
 
 			result.port = port
-
-			params.allowinsecure = params.allowinsecure or params.insecure
-			if params.allowinsecure and (params.allowinsecure == "1" or params.allowinsecure == "0") then
-				result.tls_allowInsecure = params.allowinsecure
-			else
-				result.tls_allowInsecure = allowInsecure_default and "1" or "0"
-			end
-
 			result.tcp_fast_open = params.tfo
 			result.use_finalmask = (params.fm and params.fm ~= "") and "1" or nil
 			result.finalmask = (params.fm and params.fm ~= "") and api.base64Encode(params.fm) or nil
@@ -1302,13 +1275,13 @@ local function processData(szType, content, add_mode, group)
 		end
 		result.remarks = UrlDecode(alias)
 		
-		local dat = split(content:gsub("/%?", "?"), '%?')
-		local host_port = dat[1]
+		local query = split(content:gsub("/%?", "?"), '%?')
+		local host_port = query[1]
 		local params = {}
-		for _, v in pairs(split(dat[2], '&')) do
-			local t = split(v, '=')
-			if #t > 0 then
-				params[t[1]] = t[2]
+		for _, v in pairs(split(query[2], '&')) do
+			local s = v:find("=", 1, true)
+			if s and s > 1 then
+				params[v:sub(1, s - 1)] = v:sub(s + 1)
 			end
 		end
 		-- [2001:4860:4860::8888]:443
@@ -1327,14 +1300,10 @@ local function processData(szType, content, add_mode, group)
 		result.hysteria_obfs = params.obfsParam
 		result.hysteria_auth_type = "string"
 		result.hysteria_auth_password = params.auth
-		result.tls_serverName = params.peer
-		params.allowinsecure = params.allowinsecure or params.insecure
-		if params.allowinsecure and (params.allowinsecure == "1" or params.allowinsecure == "0") then
-			result.tls_allowInsecure = params.allowinsecure
-		else
-			result.tls_allowInsecure = allowInsecure_default and "1" or "0"
-		end
-		result.hysteria_alpn = params.alpn
+		result.tls_serverName = params.peer or params.sni or ""
+		local insecure = params.allowinsecure or params.allowInsecure or params.insecure
+		result.tls_allowInsecure = (insecure == "1" or insecure == "0") and insecure or (allowInsecure_default and "1" or "0")
+		result.alpn = params.alpn
 		result.hysteria_up_mbps = params.upmbps
 		result.hysteria_down_mbps = params.downmbps
 		result.hysteria_hop = params.mport
@@ -1357,9 +1326,9 @@ local function processData(szType, content, add_mode, group)
 		local host_port = query[1]
 		local params = {}
 		for _, v in pairs(split(query[2], '&')) do
-			local t = split(v, '=')
-			if #t > 1 then
-				params[string.lower(t[1])] = UrlDecode(t[2])
+			local s = v:find("=", 1, true)
+			if s and s > 1 then
+				params[v:sub(1, s - 1):lower()] = UrlDecode(v:sub(s + 1))
 			end
 		end
 		-- [2001:4860:4860::8888]:443
@@ -1378,12 +1347,8 @@ local function processData(szType, content, add_mode, group)
 		result.tls_serverName = params.sni
 		result.tls_CertSha = params.pcs
 		result.tls_CertByName = params.vcn
-		params.allowinsecure = params.allowinsecure or params.insecure
-		if params.allowinsecure and (params.allowinsecure == "1" or params.allowinsecure == "0") then
-			result.tls_allowInsecure = params.allowinsecure
-		else
-			result.tls_allowInsecure = allowInsecure_default and "1" or "0"
-		end
+		local insecure = params.allowinsecure or params.insecure
+		result.tls_allowInsecure = (insecure == "1" or insecure == "0") and insecure or (allowInsecure_default and "1" or "0")
 		result.hysteria2_tls_pinSHA256 = params.pinSHA256
 		result.hysteria2_hop = params.mport
 
@@ -1441,9 +1406,9 @@ local function processData(szType, content, add_mode, group)
 		local host_port = query[1]
 		local params = {}
 		for _, v in pairs(split(query[2], '&')) do
-			local t = split(v, '=')
-			if #t > 1 then
-				params[string.lower(t[1])] = UrlDecode(t[2])
+			local s = v:find("=", 1, true)
+			if s and s > 1 then
+				params[v:sub(1, s - 1):lower()] = UrlDecode(v:sub(s + 1))
 			end
 		end
 		if host_port:find(":") then
@@ -1462,16 +1427,8 @@ local function processData(szType, content, add_mode, group)
 		result.tuic_alpn = params.alpn or "default"
 		result.tuic_congestion_control = params.congestion_control or "cubic"
 		result.tuic_udp_relay_mode = params.udp_relay_mode or "native"
-		params.allowinsecure = params.allowinsecure or params.insecure
-		if params.allowinsecure then
-			if params.allowinsecure == "1" or params.allowinsecure == "0" then
-				result.tls_allowInsecure = params.allowinsecure
-			else
-				result.tls_allowInsecure = string.lower(params.allowinsecure) == "true" and "1" or "0"
-			end
-		else
-			result.tls_allowInsecure = allowInsecure_default and "1" or "0"
-		end
+		local insecure = params.allowinsecure or params.insecure or params.allow_insecure
+		result.tls_allowInsecure = (insecure == "1" or insecure == "0") and insecure or (allowInsecure_default and "1" or "0")
 	elseif szType == "anytls" then
 		if has_singbox then
 			result.type = 'sing-box'
@@ -1497,8 +1454,10 @@ local function processData(szType, content, add_mode, group)
 			local host_port = query[1]
 			local params = {}
 			for _, v in pairs(split(query[2], '&')) do
-				local t = split(v, '=')
-				params[t[1]] = UrlDecode(t[2])
+				local s = v:find("=", 1, true)
+				if s and s > 1 then
+					params[v:sub(1, s - 1):lower()] = UrlDecode(v:sub(s + 1))
+				end
 			end
 			-- [2001:4860:4860::8888]:443
 			-- 8.8.8.8:443
@@ -1514,7 +1473,7 @@ local function processData(szType, content, add_mode, group)
 				result.address = host_port
 			end
 			result.tls = "0"
-			if (not params.security or params.security == "") and params.sni and params.sni ~= "" then
+			if not params.security or params.security == "" then
 				params.security = "tls"
 			end
 			if params.security == "tls" or params.security == "reality" then
@@ -1532,18 +1491,70 @@ local function processData(szType, content, add_mode, group)
 				end
 			end
 			result.port = port
-			params.allowinsecure = params.allowinsecure or params.insecure
-			if params.allowinsecure and (params.allowinsecure == "1" or params.allowinsecure == "0") then
-				result.tls_allowInsecure = params.allowinsecure
+			local insecure = params.allowinsecure or params.insecure
+			result.tls_allowInsecure = (insecure == "1" or insecure == "0") and insecure or (allowInsecure_default and "1" or "0")
+		end
+	elseif szType == 'naive+https' or szType == 'naive+quic' then
+		if has_singbox then
+			result.type = 'sing-box'
+			result.protocol = "naive"
+		else
+			log(2, i18n.translatef("Skip the %s node because the %s core program is not installed.", "NaïveProxy", "Sing-Box"))
+			return nil
+		end
+
+		local alias = ""
+		if content:find("#") then
+			local idx_sp = content:find("#")
+			alias = content:sub(idx_sp + 1, -1)
+			content = content:sub(0, idx_sp - 1)
+		end
+		result.remarks = UrlDecode(alias)
+		local Info = content
+		if content:find("@", 1, true) then
+			local contents = split(content, "@")
+			local auth = contents[1] or ""
+			local idx = auth:find(":", 1, true)
+			if not idx then -- Fixed some links that encode the colon between username and password.
+				auth = UrlDecode(auth)
+				idx = auth:find(":", 1, true)
+			end
+			if idx then
+				result.username = UrlDecode(auth:sub(1, idx - 1))
+				result.password = UrlDecode(auth:sub(idx + 1))
+			end
+			Info = (contents[2] or ""):gsub("/%?", "?")
+		end
+		local query = split(Info, "%?")
+		local host_port = query[1]
+		local params = {}
+		for _, v in pairs(split(query[2], '&')) do
+			local s = v:find("=", 1, true)
+			if s and s > 1 then
+				params[v:sub(1, s - 1)] = UrlDecode(v:sub(s + 1))
+			end
+		end
+		if host_port:find(":") then
+			local sp = split(host_port, ":")
+			result.port = sp[#sp]
+			if api.is_ipv6addrport(host_port) then
+				result.address = api.get_ipv6_only(host_port)
 			else
-				result.tls_allowInsecure = allowInsecure_default and "1" or "0"
+				result.address = sp[1]
 			end
-			local singbox_version = api.get_app_version("sing-box")
-			local version_ge_1_12 = api.compare_versions(singbox_version:match("[^v]+"), ">=", "1.12.0")
-			if not has_singbox or not version_ge_1_12 then
-				log(2, i18n.translatef("Skip the %s node, as %s type nodes require Sing-Box version 1.12 or higher.", result.remarks, szType))
-				return nil
-			end
+		else
+			result.address = host_port
+		end
+		result.tls_serverName = params.sni
+		result.uot = params.uot
+		result.naive_insecure_concurrency = params["insecure-concurrency"] or "0"
+		if params.ech and params.ech ~= "" then
+			result.ech = "1"
+			result.ech_config = params.ech
+		end
+		if szType == "naive+quic" then
+			result.naive_quic = "1"
+			result.naive_congestion_control = params.congestion_control or "bbr"
 		end
 	else
 		log(2, i18n.translatef("%s type node subscriptions are not currently supported, skip this node.", szType))
