@@ -746,6 +746,7 @@ function gen_config(var)
 	local fakedns = nil
 	local routing = nil
 	local observatory = nil
+	local burstObservatory = nil
 	local strategy = nil
 	local inbounds = {}
 	local outbounds = {}
@@ -1003,19 +1004,31 @@ function gen_config(var)
 				fallbackTag = fallback_node_tag,
 				strategy = strategy
 			})
-			if not observatory and (_node.balancingStrategy == "leastPing" or _node.balancingStrategy == "leastLoad" or fallback_node_tag) then
+			if _node.balancingStrategy == "leastPing" or _node.balancingStrategy == "leastLoad" or fallback_node_tag then
 				local t = api.format_go_time(_node.probeInterval)
 				if t == "0s" then
 					t = "60s"
 				elseif not t:find("[hm]") and tonumber(t:match("%d+")) < 10 then
 					t = "10s"
 				end
-				observatory = {
-					subjectSelector = { "blc-" },
-					probeUrl = _node.useCustomProbeUrl and _node.probeUrl or "https://www.google.com/generate_204",
-					probeInterval = t,
-					enableConcurrency = true
-				}
+				if _node.balancingStrategy == "leastLoad" then
+					burstObservatory = burstObservatory or {
+						subjectSelector = { "blc-" },
+						pingConfig = {
+							destination = _node.useCustomProbeUrl and _node.probeUrl or nil,
+							interval = t,
+							sampling = 3,
+							timeout = "5s"
+						}
+					}
+				else
+					observatory = observatory or {
+						subjectSelector = { "blc-" },
+						probeUrl = _node.useCustomProbeUrl and _node.probeUrl or nil,
+						probeInterval = t,
+						enableConcurrency = true
+					}
+				end
 			end
 			local loopback_outbound = gen_loopback(loopback_tag, loopback_dst)
 			local inbound_tag = loopback_outbound.settings.inboundTag
@@ -1670,7 +1683,8 @@ function gen_config(var)
 			-- 传出连接
 			outbounds = outbounds,
 			-- 连接观测
-			observatory = observatory,
+			observatory = (not burstObservatory) and observatory or nil,
+			burstObservatory = burstObservatory,
 			-- 路由
 			routing = routing,
 			-- 本地策略
