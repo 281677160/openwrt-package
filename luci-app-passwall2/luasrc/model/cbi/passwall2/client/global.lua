@@ -95,7 +95,7 @@ current_node = current_node_id and m.uci:get_all(appname, current_node_id) or {}
 
 -- Shunt Start
 if (has_singbox or has_xray) and #nodes_table > 0 then
-	if #normal_list > 0 then
+	if #normal_list > 0 or #iface_list > 0 then
 		if current_node.protocol == "_shunt" then
 			local shunt_lua = loadfile("/usr/lib/lua/luci/model/cbi/passwall2/client/include/shunt_options.lua")
 			setfenv(shunt_lua, getfenv(1))(m, s, {
@@ -112,7 +112,7 @@ if (has_singbox or has_xray) and #nodes_table > 0 then
 			})
 		end
 	else
-		local tips = s:taboption("Main", DummyValue, "tips", " ")
+		local tips = s:taboption("Main", DummyValue, "tips", "　")
 		tips.rawhtml = true
 		tips.cfgvalue = function(t, n)
 			return string.format('<a style="color: red">%s</a>', translate("There are no available nodes, please add or subscribe nodes first."))
@@ -351,6 +351,9 @@ end
 local o_node = s.fields["node"]
 local o_socks = s2.fields["node"]
 for k, v in pairs(nodes_table) do
+	if #normal_list == 0 and #iface_list == 0 then
+		break
+	end
 	o_node:value(v.id, v["remark"])
 	o_node.group[#o_node.group+1] = (v.group and v.group ~= "") and v.group or translate("default")
 	o_socks:value(v.id, v["remark"])

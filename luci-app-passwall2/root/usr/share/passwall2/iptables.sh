@@ -13,6 +13,8 @@ IPSET_WAN6="passwall2_wan6"
 IPSET_LAN6="passwall2_lan6"
 IPSET_VPS6="passwall2_vps6"
 
+FWMARK="0x50535732"
+
 ipt=$(command -v iptables-legacy || command -v iptables)
 ip6t=$(command -v ip6tables-legacy || command -v ip6tables)
 
@@ -150,10 +152,9 @@ REDIRECT() {
 	local s="-j REDIRECT"
 	[ -n "$1" ] && {
 		local s="$s --to-ports $1"
-		[ "$2" == "MARK" ] && s="-j MARK --set-mark $1"
 		[ "$2" == "TPROXY" ] && {
-			local mark="-m mark --mark 1"
-			s="${mark} -j TPROXY --tproxy-mark 0x1/0x1 --on-port $1"
+			local mark="-m mark --mark ${FWMARK}"
+			s="${mark} -j TPROXY --on-port $1"
 		}
 	}
 	echo $s
@@ -300,6 +301,10 @@ load_acl() {
 					local gateway device
 					network_get_gateway gateway "${interface}"
 					network_get_device device "${interface}"
+					# network_get_device returns empty for non-UP interfaces (e.g. auto='0').
+					# Try ubus directly, then check if the name is a kernel device.
+					[ -z "${device}" ] && device=$(ubus call "network.interface.${interface}" status 2>/dev/null | jsonfilter -e '@.device' 2>/dev/null)
+					[ -z "${device}" ] && [ -d "/sys/class/net/${interface}" ] && device="${interface}"
 					[ -z "${device}" ] && device="${interface}"
 					_ipt_source="-i ${device} "
 					msg=$(i18n "Source iface [%s]," "${device}")
@@ -684,7 +689,7 @@ add_firewall_rule() {
 	$ipt_n -N PSW2_OUTPUT
 	$ipt_n -A PSW2_OUTPUT $(dst $IPSET_LAN) -j RETURN
 	$ipt_n -A PSW2_OUTPUT $(dst $IPSET_VPS) -j RETURN
-	$ipt_n -A PSW2_OUTPUT -m mark --mark 0xff -j RETURN
+	$ipt_n -A PSW2_OUTPUT -m mark --mark 255 -j RETURN
 
 	$ipt_n -N PSW2_DNS
 	if [ $(config_t_get global dns_redirect "1") = "0" ]; then
@@ -693,12 +698,16 @@ add_firewall_rule() {
 	else
 		$ipt_n -I PREROUTING -j PSW2_DNS
 	fi
-	
+
+	$ipt_m -N PSW2_DIVERT
+	$ipt_m -A PSW2_DIVERT -j MARK --set-mark ${FWMARK}
+	$ipt_m -A PSW2_DIVERT -j ACCEPT
+
 	$ipt_m -N PSW2_RULE
 	$ipt_m -A PSW2_RULE -j CONNMARK --restore-mark
-	$ipt_m -A PSW2_RULE -m mark --mark 0x1 -j RETURN
-	$ipt_m -A PSW2_RULE -p tcp -m tcp --syn -j MARK --set-xmark 1
-	$ipt_m -A PSW2_RULE -p udp -m conntrack --ctstate NEW,RELATED -j MARK --set-xmark 1
+	$ipt_m -A PSW2_RULE -m mark --mark ${FWMARK} -j RETURN
+	$ipt_m -A PSW2_RULE -p tcp -m tcp --syn -j MARK --set-xmark ${FWMARK}
+	$ipt_m -A PSW2_RULE -p udp -m conntrack --ctstate NEW,RELATED -j MARK --set-xmark ${FWMARK}
 	$ipt_m -A PSW2_RULE -j CONNMARK --save-mark
 
 	$ipt_m -N PSW2
@@ -718,6 +727,8 @@ add_firewall_rule() {
 	unset WAN_IP wan_ip
 
 	insert_rule_before "$ipt_m" "PREROUTING" "mwan3" "-j PSW2"
+	insert_rule_before "$ipt_m" "PREROUTING" "PSW2" "-p tcp -m socket -j PSW2_DIVERT"
+	insert_rule_before "$ipt_m" "PREROUTING" "PSW2" "-p udp -m socket -j PSW2_DIVERT"
 
 	$ipt_m -N PSW2_OUTPUT
 	$ipt_m -A PSW2_OUTPUT $(dst $IPSET_LAN) -j RETURN
@@ -731,10 +742,10 @@ add_firewall_rule() {
 			log_i18n 1 "$(i18n "Add direct DNS to %s: %s" "iptables" "${dns_address}:${dns_port:-53}")"
 		done
 	}
-	$ipt_m -A PSW2_OUTPUT -m mark --mark 0xff -j RETURN
+	$ipt_m -A PSW2_OUTPUT -m mark --mark 255 -j RETURN
 
-	ip rule add fwmark 1 lookup 100
-	ip route add local 0.0.0.0/0 dev lo table 100
+	ip rule add fwmark ${FWMARK} lookup 999 priority 999
+	ip route add local 0.0.0.0/0 dev lo table 999
 
 	[ "$accept_icmpv6" = "1" ] && {
 		$ip6t_n -N PSW2
@@ -745,7 +756,7 @@ add_firewall_rule() {
 		$ip6t_n -N PSW2_OUTPUT
 		$ip6t_n -A PSW2_OUTPUT $(dst $IPSET_LAN6) -j RETURN
 		$ip6t_n -A PSW2_OUTPUT $(dst $IPSET_VPS6) -j RETURN
-		$ip6t_n -A PSW2_OUTPUT -m mark --mark 0xff -j RETURN
+		$ip6t_n -A PSW2_OUTPUT -m mark --mark 255 -j RETURN
 	}
 	
 	$ip6t_n -N PSW2_DNS
@@ -755,12 +766,16 @@ add_firewall_rule() {
 	else
 		$ip6t_n -I PREROUTING -j PSW2_DNS
 	fi
+
+	$ip6t_m -N PSW2_DIVERT
+	$ip6t_m -A PSW2_DIVERT -j MARK --set-mark ${FWMARK}
+	$ip6t_m -A PSW2_DIVERT -j ACCEPT
 	
 	$ip6t_m -N PSW2_RULE
 	$ip6t_m -A PSW2_RULE -j CONNMARK --restore-mark
-	$ip6t_m -A PSW2_RULE -m mark --mark 0x1 -j RETURN
-	$ip6t_m -A PSW2_RULE -p tcp -m tcp --syn -j MARK --set-xmark 1
-	$ip6t_m -A PSW2_RULE -p udp -m conntrack --ctstate NEW,RELATED -j MARK --set-xmark 1
+	$ip6t_m -A PSW2_RULE -m mark --mark ${FWMARK} -j RETURN
+	$ip6t_m -A PSW2_RULE -p tcp -m tcp --syn -j MARK --set-xmark ${FWMARK}
+	$ip6t_m -A PSW2_RULE -p udp -m conntrack --ctstate NEW,RELATED -j MARK --set-xmark ${FWMARK}
 	$ip6t_m -A PSW2_RULE -j CONNMARK --save-mark
 
 	$ip6t_m -N PSW2
@@ -779,15 +794,17 @@ add_firewall_rule() {
 	unset WAN6_IP wan6_ip
 
 	insert_rule_before "$ip6t_m" "PREROUTING" "mwan3" "-j PSW2"
+	insert_rule_before "$ip6t_m" "PREROUTING" "PSW2" "-p tcp -m socket -j PSW2_DIVERT"
+	insert_rule_before "$ip6t_m" "PREROUTING" "PSW2" "-p udp -m socket -j PSW2_DIVERT"
 
 	$ip6t_m -N PSW2_OUTPUT
-	$ip6t_m -A PSW2_OUTPUT -m mark --mark 0xff -j RETURN
+	$ip6t_m -A PSW2_OUTPUT -m mark --mark 255 -j RETURN
 	$ip6t_m -A PSW2_OUTPUT $(dst $IPSET_LAN6) -j RETURN
 	$ip6t_m -A PSW2_OUTPUT $(dst $IPSET_VPS6) -j RETURN
 	$ip6t_m -A PSW2_OUTPUT -m conntrack --ctdir REPLY -j RETURN
 
-	ip -6 rule add fwmark 1 table 100
-	ip -6 route add local ::/0 dev lo table 100
+	ip -6 rule add fwmark ${FWMARK} table 999 priority 999
+	ip -6 route add local ::/0 dev lo table 999
 
 	[ "$ENABLED_DEFAULT_ACL" == 1 ] && {
 		local ipt_tmp=$ipt_n
@@ -906,10 +923,10 @@ add_firewall_rule() {
 		fi
 		
 		$ipt_m -I OUTPUT $(comment "mangle-OUTPUT-PSW2") -o lo -j RETURN
-		insert_rule_before "$ipt_m" "OUTPUT" "mwan3" "$(comment mangle-OUTPUT-PSW2) -m mark --mark 1 -j RETURN"
+		insert_rule_before "$ipt_m" "OUTPUT" "mwan3" "$(comment mangle-OUTPUT-PSW2) -m mark --mark ${FWMARK} -j RETURN"
 		
 		$ip6t_m -I OUTPUT $(comment "mangle-OUTPUT-PSW2") -o lo -j RETURN
-		insert_rule_before "$ip6t_m" "OUTPUT" "mwan3" "$(comment mangle-OUTPUT-PSW2) -m mark --mark 1 -j RETURN"
+		insert_rule_before "$ip6t_m" "OUTPUT" "mwan3" "$(comment mangle-OUTPUT-PSW2) -m mark --mark ${FWMARK} -j RETURN"
 
 		$ipt_m -A PSW2 -p udp --dport 53 -j RETURN
 		$ip6t_m -A PSW2 -p udp --dport 53 -j RETURN
@@ -930,17 +947,17 @@ del_firewall_rule() {
 				$ipt -D $chain $index 2>/dev/null
 			done
 		done
-		for chain in "PSW2" "PSW2_OUTPUT" "PSW2_DNS" "PSW2_RULE"; do
+		for chain in "PSW2" "PSW2_OUTPUT" "PSW2_DIVERT" "PSW2_DNS" "PSW2_RULE"; do
 			$ipt -F $chain 2>/dev/null
 			$ipt -X $chain 2>/dev/null
 		done
 	done
 
-	ip rule del fwmark 1 lookup 100 2>/dev/null
-	ip route del local 0.0.0.0/0 dev lo table 100 2>/dev/null
+	ip rule del fwmark ${FWMARK} lookup 999 priority 999 2>/dev/null
+	ip route del local 0.0.0.0/0 dev lo table 999 2>/dev/null
 
-	ip -6 rule del fwmark 1 table 100 2>/dev/null
-	ip -6 route del local ::/0 dev lo table 100 2>/dev/null
+	ip -6 rule del fwmark ${FWMARK} table 999 priority 999 2>/dev/null
+	ip -6 route del local ::/0 dev lo table 999 2>/dev/null
 
 	log_i18n 0 "Delete %s rules is complete." "iptables"
 }
@@ -964,7 +981,7 @@ gen_include() {
 		[ -z "${_ipt}" ] && return
 
 		echo "*$2"
-		${_ipt}-save -t $2 | grep "PSW2" | grep -v "\-j PSW2$" | sed -e "s/^-A \(OUTPUT\|PREROUTING\)/-I \1 1/"
+		${_ipt}-save -t $2 | grep "PSW2" | grep -v "\-j PSW2$" | grep -v "socket \-j PSW2_DIVERT$" | sed -e "s/^-A \(OUTPUT\|PREROUTING\)/-I \1 1/"
 		echo 'COMMIT'
 	}
 	local __ipt=""
@@ -981,6 +998,8 @@ gen_include() {
 			[ -z "${is_tproxy}" ] && \$(${MY_PATH} insert_rule_after "$ipt_n" "PREROUTING" "prerouting_rule" "-p tcp -j PSW2")
 
 			\$(${MY_PATH} insert_rule_before "$ipt_m" "PREROUTING" "mwan3" "-j PSW2")
+			\$(${MY_PATH} insert_rule_before "$ipt_m" "PREROUTING" "PSW2" "-p tcp -m socket -j PSW2_DIVERT")
+			\$(${MY_PATH} insert_rule_before "$ipt_m" "PREROUTING" "PSW2" "-p udp -m socket -j PSW2_DIVERT")
 
 			WAN_IP=\$(get_wan_ips ip4)
 			[ ! -z "\${WAN_IP}" ] && {
@@ -1005,6 +1024,8 @@ gen_include() {
 			[ "$accept_icmpv6" = "1" ] && $ip6t_n -A PREROUTING -p ipv6-icmp -j PSW2
 
 			\$(${MY_PATH} insert_rule_before "$ip6t_m" "PREROUTING" "mwan3" "-j PSW2")
+			\$(${MY_PATH} insert_rule_before "$ip6t_m" "PREROUTING" "PSW2" "-p tcp -m socket -j PSW2_DIVERT")
+			\$(${MY_PATH} insert_rule_before "$ip6t_m" "PREROUTING" "PSW2" "-p udp -m socket -j PSW2_DIVERT")
 
 			WAN6_IP=\$(get_wan_ips ip6)
 			[ ! -z "\${WAN6_IP}" ] && {
