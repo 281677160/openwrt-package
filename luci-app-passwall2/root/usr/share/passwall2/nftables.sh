@@ -14,6 +14,8 @@ NFTSET_WAN6="passwall2_wan6"
 NFTSET_LAN6="passwall2_lan6"
 NFTSET_VPS6="passwall2_vps6"
 
+FWMARK="0x50535732"
+
 FWI=$(uci -q get firewall.passwall2.path 2>/dev/null)
 FAKE_IP="198.18.0.0/16"
 FAKE_IP_6="fc00::/18"
@@ -103,15 +105,14 @@ REDIRECT() {
 	local s="counter redirect"
 	[ -n "$1" ] && {
 		local s="$s to :$1"
-		[ "$2" == "MARK" ] && s="counter meta mark set $1"
 		[ "$2" == "TPROXY" ] && {
-			s="counter meta mark 1 tproxy to :$1"
+			s="counter meta mark ${FWMARK} tproxy to :$1"
 		}
 		[ "$2" == "TPROXY4" ] && {
-			s="counter meta mark 1 tproxy ip to :$1"
+			s="counter meta mark ${FWMARK} tproxy ip to :$1"
 		}
 		[ "$2" == "TPROXY6" ] && {
-			s="counter meta mark 1 tproxy ip6 to :$1"
+			s="counter meta mark ${FWMARK} tproxy ip6 to :$1"
 		}
 
 	}
@@ -338,6 +339,10 @@ load_acl() {
 					local gateway device
 					network_get_gateway gateway "${interface}"
 					network_get_device device "${interface}"
+					# network_get_device returns empty for non-UP interfaces (e.g. auto='0').
+					# Try ubus directly, then check if the name is a kernel device.
+					[ -z "${device}" ] && device=$(ubus call "network.interface.${interface}" status 2>/dev/null | jsonfilter -e '@.device' 2>/dev/null)
+					[ -z "${device}" ] && [ -d "/sys/class/net/${interface}" ] && device="${interface}"
 					[ -z "${device}" ] && device="${interface}"
 					_ipt_source="iifname ${device} "
 					msg=$(i18n "Source iface [%s]," "${device}")
@@ -496,7 +501,7 @@ load_acl() {
 
 		[ "$UDP_NO_REDIR_PORTS" != "disable" ] && {
 			nft "add rule $NFTABLE_NAME PSW2_MANGLE ip protocol udp $(factor $UDP_NO_REDIR_PORTS "udp dport") counter return comment \"${comment}\""
-			nft "add rule $NFTABLE_NAME PSW2_MANGLE_V6 counter meta l4proto udp $(factor $UDP_NO_REDIR_PORTS "udp dport") counter return comment \"${comment}\""
+			nft "add rule $NFTABLE_NAME PSW2_MANGLE_V6 meta l4proto udp $(factor $UDP_NO_REDIR_PORTS "udp dport") counter return comment \"${comment}\""
 			if ! has_1_65535 "$UDP_NO_REDIR_PORTS"; then
 				log 2 "${msg}$(i18n "not proxy %s port [%s]" "UDP" "${UDP_NO_REDIR_PORTS}")"
 			else
@@ -708,6 +713,11 @@ add_firewall_rule() {
 		nft_output_chain="PSW2_OUTPUT_MANGLE"
 	fi
 
+	nft "add chain $NFTABLE_NAME PSW2_DIVERT"
+	nft "flush chain $NFTABLE_NAME PSW2_DIVERT"
+	nft "add rule $NFTABLE_NAME PSW2_DIVERT meta l4proto tcp socket transparent 1 mark set ${FWMARK} counter accept"
+	nft "add rule $NFTABLE_NAME PSW2_DIVERT meta l4proto udp socket transparent 1 mark set ${FWMARK} counter accept"
+
 	nft "add chain $NFTABLE_NAME PSW2_DNS"
 	nft "flush chain $NFTABLE_NAME PSW2_DNS"
 	if [ $(config_t_get global dns_redirect "1") = "0" ]; then
@@ -721,11 +731,11 @@ add_firewall_rule() {
 	# for ipv4 ipv6 tproxy mark
 	nft "add chain $NFTABLE_NAME PSW2_RULE"
 	nft "flush chain $NFTABLE_NAME PSW2_RULE"
-	nft "add rule $NFTABLE_NAME PSW2_RULE meta mark set ct mark counter"
-	nft "add rule $NFTABLE_NAME PSW2_RULE meta mark 1 counter return"
-	nft "add rule $NFTABLE_NAME PSW2_RULE tcp flags syn meta mark set mark and 0x0 xor 0x1 counter"
-	nft "add rule $NFTABLE_NAME PSW2_RULE meta l4proto udp ct state new,related meta mark set mark and 0x0 xor 0x1 counter"
-	nft "add rule $NFTABLE_NAME PSW2_RULE ct mark set mark counter"
+	nft "add rule $NFTABLE_NAME PSW2_RULE counter meta mark set ct mark"
+	nft "add rule $NFTABLE_NAME PSW2_RULE meta mark ${FWMARK} counter return"
+	nft "add rule $NFTABLE_NAME PSW2_RULE tcp flags & (fin|syn|rst|ack) == syn counter meta mark set ${FWMARK}"
+	nft "add rule $NFTABLE_NAME PSW2_RULE meta l4proto udp ct state new,related counter meta mark set ${FWMARK}"
+	nft "add rule $NFTABLE_NAME PSW2_RULE counter ct mark set mark"
 
 	#ipv4 tproxy mode and udp
 	nft "add chain $NFTABLE_NAME PSW2_MANGLE"
@@ -747,9 +757,10 @@ add_firewall_rule() {
 			log_i18n 1 "$(i18n "Add direct DNS to %s: %s" "nftables" "${dns_address}:${dns_port:-53}")"
 		done
 	}
-	nft "add rule $NFTABLE_NAME PSW2_OUTPUT_MANGLE meta mark 0xff counter return"
+	nft "add rule $NFTABLE_NAME PSW2_OUTPUT_MANGLE meta mark 255 counter return"
 
 	# jump chains
+	nft "add rule $NFTABLE_NAME mangle_prerouting counter jump PSW2_DIVERT"
 	nft "add rule $NFTABLE_NAME mangle_prerouting ip protocol udp counter jump PSW2_MANGLE"
 	[ -n "${is_tproxy}" ] && nft "add rule $NFTABLE_NAME mangle_prerouting ip protocol tcp counter jump PSW2_MANGLE"
 
@@ -765,7 +776,7 @@ add_firewall_rule() {
 		nft "flush chain $NFTABLE_NAME PSW2_OUTPUT_NAT"
 		nft "add rule $NFTABLE_NAME PSW2_OUTPUT_NAT ip daddr @$NFTSET_LAN counter return"
 		nft "add rule $NFTABLE_NAME PSW2_OUTPUT_NAT ip daddr @$NFTSET_VPS counter return"
-		nft "add rule $NFTABLE_NAME PSW2_OUTPUT_NAT meta mark 0xff counter return"
+		nft "add rule $NFTABLE_NAME PSW2_OUTPUT_NAT meta mark 255 counter return"
 	}
 
 	#icmp ipv6-icmp redirect
@@ -793,8 +804,8 @@ add_firewall_rule() {
 	}
 	unset WAN_IP
 
-	ip rule add fwmark 1 lookup 100
-	ip route add local 0.0.0.0/0 dev lo table 100
+	ip rule add fwmark ${FWMARK} lookup 999 priority 999
+	ip route add local 0.0.0.0/0 dev lo table 999
 
 	#ipv6 tproxy mode and udp
 	nft "add chain $NFTABLE_NAME PSW2_MANGLE_V6"
@@ -808,7 +819,7 @@ add_firewall_rule() {
 	nft "add rule $NFTABLE_NAME PSW2_OUTPUT_MANGLE_V6 ip6 daddr @$NFTSET_LAN6 counter return"
 	nft "add rule $NFTABLE_NAME PSW2_OUTPUT_MANGLE_V6 ip6 daddr @$NFTSET_VPS6 counter return"
 	nft "add rule $NFTABLE_NAME PSW2_OUTPUT_MANGLE_V6 ct direction reply counter return"
-	nft "add rule $NFTABLE_NAME PSW2_OUTPUT_MANGLE_V6 meta mark 0xff counter return"
+	nft "add rule $NFTABLE_NAME PSW2_OUTPUT_MANGLE_V6 meta mark 255 counter return"
 
 	# jump chains
 	[ "$PROXY_IPV6" == "1" ] && {
@@ -823,8 +834,8 @@ add_firewall_rule() {
 		}
 		unset WAN6_IP
 
-		ip -6 rule add fwmark 1 table 100
-		ip -6 route add local ::/0 dev lo table 100
+		ip -6 rule add fwmark ${FWMARK} table 999 priority 999
+		ip -6 route add local ::/0 dev lo table 999
 	}
 
 	[ "$ENABLED_DEFAULT_ACL" == 1 ] && {
@@ -941,7 +952,7 @@ add_firewall_rule() {
 		fi
 
 		nft "add rule $NFTABLE_NAME mangle_output oif lo counter return comment \"PSW2_OUTPUT_MANGLE\""
-		nft "add rule $NFTABLE_NAME mangle_output meta mark 1 counter return comment \"PSW2_OUTPUT_MANGLE\""
+		nft "add rule $NFTABLE_NAME mangle_output meta mark ${FWMARK} counter return comment \"PSW2_OUTPUT_MANGLE\""
 
 		nft "add rule $NFTABLE_NAME PSW2_MANGLE ip protocol udp udp dport 53 counter return"
 		nft "add rule $NFTABLE_NAME PSW2_MANGLE_V6 meta l4proto udp udp dport 53 counter return"
@@ -969,11 +980,11 @@ del_firewall_rule() {
 	# Need to be removed at the end, otherwise it will show "Resource busy"
 	nft delete chain $NFTABLE_NAME handle $(nft -a list chains | grep -E "PSW2_RULE" | awk -F '# handle ' '{print$2}') 2>/dev/null
 
-	ip rule del fwmark 1 lookup 100 2>/dev/null
-	ip route del local 0.0.0.0/0 dev lo table 100 2>/dev/null
+	ip rule del fwmark ${FWMARK} lookup 999 priority 999 2>/dev/null
+	ip route del local 0.0.0.0/0 dev lo table 999 2>/dev/null
 
-	ip -6 rule del fwmark 1 table 100 2>/dev/null
-	ip -6 route del local ::/0 dev lo table 100 2>/dev/null
+	ip -6 rule del fwmark ${FWMARK} table 999 priority 999 2>/dev/null
+	ip -6 route del local ::/0 dev lo table 999 2>/dev/null
 
 	destroy_nftset $NFTSET_LOCAL
 	destroy_nftset $NFTSET_WAN

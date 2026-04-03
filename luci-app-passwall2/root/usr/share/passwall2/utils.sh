@@ -48,7 +48,7 @@ eval_set_val() {
 eval_unset_val() {
 	for i in $@; do
 		for j in $i; do
-			eval unset j
+			eval unset $j
 		done
 	done
 }
@@ -348,6 +348,8 @@ add_ip2route() {
 	local gateway device
 	network_get_gateway gateway "$2"
 	network_get_device device "$2"
+	[ -z "${device}" ] && device=$(ubus call "network.interface.$2" status 2>/dev/null | jsonfilter -e '@.device' 2>/dev/null)
+	[ -z "${device}" ] && [ -d "/sys/class/net/$2" ] && device="$2"
 	[ -z "${device}" ] && device="$2"
 
 	if [ -n "${gateway}" ]; then

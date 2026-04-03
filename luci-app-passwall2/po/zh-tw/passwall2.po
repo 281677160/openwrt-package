@@ -559,6 +559,9 @@ msgstr "認證類型"
 msgid "Auth Password"
 msgstr "認證密碼"
 
+msgid "Client BBR Flow Control"
+msgstr "客戶端 BBR 流控"
+
 msgid "Commands the client to use the BBR flow control algorithm"
 msgstr "命令客戶端使用 BBR 流量控制算法"
 
@@ -582,6 +585,9 @@ msgstr "QUIC 連接接收窗口"
 
 msgid "QUIC concurrent bidirectional streams"
 msgstr "QUIC 並發双向流的最大數量"
+
+msgid "QUIC KeepAlive interval"
+msgstr "QUIC KeepAlive 間隔"
 
 msgid "Disable MTU detection"
 msgstr "禁用 MTU 檢測"
@@ -1093,6 +1099,21 @@ msgstr "IP 範圍"
 msgid "Source Interface"
 msgstr "源接口"
 
+msgid "Bridge"
+msgstr "網橋"
+
+msgid "Wireless Adapter"
+msgstr "無線適配器"
+
+msgid "Ethernet Adapter"
+msgstr "乙太網適配器"
+
+msgid "Tunnel Interface"
+msgstr "隧道介面"
+
+msgid "Invalid interface name"
+msgstr "無效的介面名稱"
+
 msgid "Use Interface With ACLs"
 msgstr "使用接口控制"
 
@@ -1312,6 +1333,9 @@ msgstr "允許不安全連接"
 msgid "Whether unsafe connections are allowed. When checked, Certificate validation will be skipped."
 msgstr "是否允許不安全連接。當勾選時，將跳過證書驗證。"
 
+msgid "Used when the node link does not include this parameter."
+msgstr "當節點連結未包含該參數時，將使用此設定。"
+
 msgid "%s Node Use Type"
 msgstr "%s 節點使用類型"
 
@@ -1329,6 +1353,9 @@ msgstr "用於本地Socks服務器連接的密碼"
 
 msgid "UDP relay mode"
 msgstr "UDP中继模式"
+
+msgid "Concurrent Tunnels"
+msgstr "並發隧道連接數"
 
 msgid "Congestion control algorithm"
 msgstr "拥塞控制算法"
@@ -1651,11 +1678,20 @@ msgstr "ECH 查詢策略"
 msgid "Controls the policy used when performing DNS queries for ECH configuration."
 msgstr "控制使用 DNS 查詢 ECH 配置時的策略。"
 
+msgid "ECH Query Domain"
+msgstr "ECH 查詢網域名"
+
+msgid "Overrides the domain name used for ECH HTTPS record queries."
+msgstr "覆蓋用於 ECH HTTPS 記錄查詢的網域名。"
+
 msgid "Enable Multipath TCP, need to be enabled in both server and client configuration."
 msgstr "啟用 Multipath TCP，需在服務端和客戶端配置中同時啟用。"
 
 msgid "An FinalMaskObject in JSON format, used for sharing."
 msgstr "JSON 格式的 FinalMaskObject，用來實現分享。"
+
+msgid "Custom finalmask overrides mkcp, hysteria2, fragment, noise, and related settings."
+msgstr "自定義 finalmask 將涵蓋 mkcp、hysteria2、fragment、noise 等相關配置。"
 
 msgid "Fragment"
 msgstr "分片"
@@ -1675,8 +1711,8 @@ msgstr "分片包长"
 msgid "Fragmented packet length (byte)"
 msgstr "分片包长 (byte)"
 
-msgid "Fragment Interval"
-msgstr "分片間隔"
+msgid "Fragment Delay"
+msgstr "分片延遲"
 
 msgid "Fragmentation interval (ms)"
 msgstr "分片間隔（ms）"
@@ -1705,14 +1741,11 @@ msgstr "在 Xray 設置中勾選 “噪聲” 以發送噪聲包。"
 msgid "Xray Noise Packets"
 msgstr "Xray 噪聲數据包"
 
-msgid "Packet"
-msgstr "數据包"
+msgid "Packet | Rand Length"
+msgstr "數據包 | Rand 長度"
 
 msgid "Delay (ms)"
 msgstr "延迟（ms）"
-
-msgid "IP Type"
-msgstr "IP 類型"
 
 msgid "If is domain name, The requested domain name will be resolved to IP before connect."
 msgstr "如果是域名，域名將在請求發出之前解析為 IP。"
@@ -2252,8 +2285,11 @@ msgstr "插件選項不完整。"
 msgid "shadowsocks-libev unsupport 2022 encryption."
 msgstr "shadowsocks-libev 不支持2022加密。"
 
+msgid "Please replace %s to support %s transmission method."
+msgstr "請更換 %s 以支援 %s 傳輸方式。"
+
 msgid "Please replace Xray or Sing-Box to support more transmission methods in Shadowsocks."
-msgstr "請更換 Xray 或 Sing-Box 來支持 Shadowsocks 更多的傳輸方式。"
+msgstr "請更換 Xray 或 Sing-Box 來支援 Shadowsocks 更多的傳輸方式。"
 
 msgid "unsupport %s plugin."
 msgstr "不支持 %s 插件。"
@@ -2338,3 +2374,6 @@ msgstr "發生錯誤, 正在恢復服務。"
 
 msgid "Subscription complete..."
 msgstr "訂閱完毕..."
+
+msgid "Processing, please wait…"
+msgstr "正在處理，請稍候。"
