@@ -150,6 +150,9 @@ o = s:option(Flag, "accept_icmpv6", translate("Hijacking ICMPv6 (IPv6 PING)"))
 o:depends("ipv6_tproxy", true)
 o.default = 0
 
+o = s:option(DynamicList, "force_proxy_lan_ip", translate("Force Proxy LAN IP"), translate("By default, commonly used internal network IP ranges will be connect directly (not entering the core). If you want a certain network range to go through a proxy, please add it here."))
+o.datatype = "or(ipmask4,ipmask6)"
+
 if has_xray then
 	s_xray = m:section(TypedSection, "global_xray", "Xray " .. translate("Settings"))
 	s_xray.anonymous = true

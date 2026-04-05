@@ -747,6 +747,12 @@ msgstr "ربودن ICMP (PING)"
 msgid "Hijacking ICMPv6 (IPv6 PING)"
 msgstr "ربودن ICMPv6 (IPv6 PING)"
 
+msgid "Force Proxy LAN IP"
+msgstr "IP پروکسی LAN را مجبور کنید"
+
+msgid "By default, commonly used internal network IP ranges will be connect directly (not entering the core). If you want a certain network range to go through a proxy, please add it here."
+msgstr "به طور پیش‌فرض، محدوده‌های IP شبکه داخلی که معمولاً استفاده می‌شوند، مستقیماً متصل می‌شوند (و وارد هسته نمی‌شوند). اگر می‌خواهید محدوده شبکه خاصی از طریق پروکسی عبور کند، لطفاً آن را اینجا اضافه کنید."
+
 msgid "Sniffing"
 msgstr "شنود (Sniffing)"
 
