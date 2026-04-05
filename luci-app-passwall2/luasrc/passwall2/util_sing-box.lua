@@ -1119,9 +1119,22 @@ function gen_config(var)
 	end
 
 	if node then
+		if node.protocol ~= "_shunt" then
+			-- create shunt logic
+			local tmp_node = {
+				remarks = node.remarks,
+				type = "sing-box",
+				protocol = "_shunt",
+				default_node = node[".name"],
+			}
+			tmp_node.fakedns = remote_dns_fake
+			tmp_node.default_fakedns = remote_dns_fake
+			node = tmp_node
+		end
+
 		if server_host and server_port then
-			node.address = server_host
-			node.port = server_port
+			default_node_address = server_host
+			default_node_port = server_port
 		end
 
 		function gen_socks_config_node(node_id, socks_id, remarks)
@@ -1369,6 +1382,12 @@ function gen_config(var)
 						sys.call(string.format("mkdir -p %s && touch %s/%s", api.TMP_IFACE_PATH, api.TMP_IFACE_PATH, node.iface))
 					end
 				else
+					if tag == "default" then
+						if default_node_address and default_node_port then
+							node.address = default_node_address
+							node.port = default_node_port
+						end
+					end
 					for _, _outbound in ipairs(outbounds) do
 						-- Avoid generating duplicate nested processes
 						if _outbound["_flag_proxy_tag"] and _outbound["_flag_proxy_tag"]:find("socks <- " .. node[".name"], 1, true) then
@@ -1631,12 +1650,6 @@ function gen_config(var)
 					table.insert(rules, rule)
 				end
 			end)
-		else
-			COMMON.default_outbound_tag = gen_outbound_get_tag(flag, node, nil, {
-				fragment = singbox_settings.fragment == "1" or nil,
-				record_fragment = singbox_settings.record_fragment == "1" or nil,
-				run_socks_instance = not no_run
-			})
 		end
 
 		for index, value in ipairs(rules) do
@@ -1875,17 +1888,27 @@ function gen_config(var)
 				end
 			end
 		end
-
-		if remote_dns_fake and default_dns_flag == "remote" then
-			-- When default is not direct and enable fakedns, default DNS use FakeDNS.
-			local fakedns_dns_rule = {
-				query_type = {
-					"A", "AAAA"
-				},
-				server = fakedns_tag,
-				disable_cache = true
-			}
-			table.insert(dns.rules, fakedns_dns_rule)
+		if default_dns_flag == "remote" then
+			if remote_dns_fake then
+				-- When default is not direct and enable fakedns, default DNS use FakeDNS.
+				local fakedns_dns_rule = {
+					query_type = {
+						"A", "AAAA"
+					},
+					server = fakedns_tag,
+					disable_cache = true,
+					rewrite_ttl = 30,
+					strategy = remote_strategy,
+				}
+				table.insert(dns.rules, fakedns_dns_rule)
+			else
+				local remote_dns_rule = {
+					server = "remote",
+					disable_cache = true,
+					strategy = remote_strategy,
+				}
+				table.insert(dns.rules, remote_dns_rule)
+			end
 		end
 		local dns_in_inbound = {
 			type = "direct",
