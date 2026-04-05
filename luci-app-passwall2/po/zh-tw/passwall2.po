@@ -739,6 +739,12 @@ msgstr "劫持ICMP (PING)"
 msgid "Hijacking ICMPv6 (IPv6 PING)"
 msgstr "劫持ICMPv6 (IPv6 PING)"
 
+msgid "Force Proxy LAN IP"
+msgstr "強制代理內網IP段"
+
+msgid "By default, commonly used internal network IP ranges will be connect directly (not entering the core). If you want a certain network range to go through a proxy, please add it here."
+msgstr "預設情況下，常用內網IP網段將直連（不進入核心），如果你希望某個網段走代理，請在此新增。"
+
 msgid "Sniffing"
 msgstr "流量嗅探"
 
