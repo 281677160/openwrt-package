@@ -1101,13 +1101,16 @@ socks_node_switch() {
 		LOG_FILE="/dev/null"
 		run_socks flag=$flag node=$new_node bind=$bind socks_port=$port config_file=$config_file http_port=$http_port http_config_file=$http_config_file log_file=$log_file
 		set_cache_var "socks_${flag}" "$new_node"
+		local ENABLED_DEFAULT_ACL=$(get_cache_var "ENABLED_DEFAULT_ACL")
+		local ENABLED_ACLS=$(get_cache_var "ENABLED_ACLS")
+		[ "$ENABLED_DEFAULT_ACL" != "1" -a "$ENABLED_ACLS" != "1" ] && return
 		local USE_TABLES=$(get_cache_var "USE_TABLES")
 		[ -n "$USE_TABLES" ] && source $APP_PATH/${USE_TABLES}.sh filter_direct_node_list
 	}
 }
 
 clean_crontab() {
-	[ -f "/tmp/lock/${CONFIG}_cron.lock" ] && return
+	[ -f "${LOCK_PATH}/${CONFIG}_cron.lock" ] && return
 	touch /etc/crontabs/root
 	#sed -i "/${CONFIG}/d" /etc/crontabs/root >/dev/null 2>&1
 	sed -i "/$(echo "/etc/init.d/${CONFIG}" | sed 's#\/#\\\/#g')/d" /etc/crontabs/root >/dev/null 2>&1
@@ -1115,7 +1118,7 @@ clean_crontab() {
 	sed -i "/$(echo "lua ${APP_PATH}/subscribe.lua start" | sed 's#\/#\\\/#g')/d" /etc/crontabs/root >/dev/null 2>&1
 
 	pgrep -af "${CONFIG}/" | awk '/tasks\.sh/{print $1}' | xargs kill -9 >/dev/null 2>&1
-	rm -rf /tmp/lock/${CONFIG}_tasks.lock
+	rm -f ${LOCK_PATH}/${CONFIG}_tasks.lock
 }
 
 start_crontab() {
@@ -1124,8 +1127,8 @@ start_crontab() {
 		[ "$start_daemon" = "1" ] && $APP_PATH/monitor.sh > /dev/null 2>&1 &
 	fi
 
-	[ -f "/tmp/lock/${CONFIG}_cron.lock" ] && {
-		rm -rf "/tmp/lock/${CONFIG}_cron.lock"
+	[ -f "${LOCK_PATH}/${CONFIG}_cron.lock" ] && {
+		rm -f "${LOCK_PATH}/${CONFIG}_cron.lock"
 		echolog "当前为计划任务自动运行，不重新配置定时任务。"
 		return
 	}
@@ -1230,7 +1233,7 @@ start_crontab() {
 }
 
 stop_crontab() {
-	[ -f "/tmp/lock/${CONFIG}_cron.lock" ] && return
+	[ -f "${LOCK_PATH}/${CONFIG}_cron.lock" ] && return
 	clean_crontab
 	/etc/init.d/cron restart
 	#echolog "清除定时执行命令。"
@@ -1938,8 +1941,9 @@ stop() {
 		[ -n "${bak_bridge_nf_ip6t}" ] && sysctl -w net.bridge.bridge-nf-call-ip6tables=${bak_bridge_nf_ip6t} >/dev/null 2>&1
 	}
 	rm -rf $TMP_PATH
-	rm -rf /tmp/lock/${CONFIG}_socks_auto_switch*
-	rm -rf /tmp/lock/${CONFIG}_lease2hosts*
+	rm -f ${LOCK_PATH}/${CONFIG}_socks_auto_switch*
+	rm -f ${LOCK_PATH}/${CONFIG}_lease2hosts*
+	rm -f ${LOCK_PATH}/${CONFIG}_monitor*
 	echolog "清空并关闭相关程序和缓存完成。"
 	exit 0
 }
@@ -1979,6 +1983,8 @@ get_config() {
 	[ "$ENABLED_ACLS" = 1 ] && {
 		[ "$(uci show ${CONFIG} | grep "@acl_rule" | grep "enabled='1'" | wc -l)" == 0 ] && ENABLED_ACLS=0
 	}
+	set_cache_var ENABLED_DEFAULT_ACL $ENABLED_DEFAULT_ACL
+	set_cache_var ENABLED_ACLS $ENABLED_ACLS
 
 	TCP_PROXY_WAY=$(config_t_get global_forwarding tcp_proxy_way redirect)
 	PROXY_IPV6=$(config_t_get global_forwarding ipv6_tproxy 0)

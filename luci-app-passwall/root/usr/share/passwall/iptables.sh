@@ -742,43 +742,50 @@ filter_vpsip() {
 }
 
 filter_server_port() {
-	local address=${1}
-	local port=${2}
-	local stream=${3}
-	stream=$(echo ${3} | tr 'A-Z' 'a-z')
-	local _is_tproxy ipt_tmp
-	ipt_tmp=$ipt_n
-	_is_tproxy=${is_tproxy}
-	[ "$stream" == "udp" ] && _is_tproxy="TPROXY"
-	[ -n "${_is_tproxy}" ] && ipt_tmp=$ipt_m
-
-	for _ipt in 4 6; do
-		[ "$_ipt" == "4" ] && _ipt=$ipt_tmp
-		[ "$_ipt" == "6" ] && _ipt=$ip6t_m
-		$_ipt -n -L PSW_OUTPUT | grep -q "${address}:${port}"
-		if [ $? -ne 0 ]; then
-			$_ipt -I PSW_OUTPUT $(comment "${address}:${port}") -p $stream -d $address --dport $port -j RETURN 2>/dev/null
+	local address="$1"
+	local port=$(echo "$2" | tr '-' ':' | tr -d ' ')
+	local stream=$(echo "$3" | tr 'A-Z' 'a-z')
+	local ipt_tmp="$ipt_n" _is_tproxy _ipt_cmd _ver multi_ports p ports
+	[ "$(config_t_get global_forwarding tcp_proxy_way redirect)" = "tproxy" ] && _is_tproxy="TPROXY"
+	[ "$stream" = "udp" ] && _is_tproxy="TPROXY"
+	[ -n "$_is_tproxy" ] && ipt_tmp="$ipt_m"
+	for _ver in 4 6; do
+		[ "$_ver" = "4" ] && _ipt_cmd="$ipt_tmp"
+		[ "$_ver" = "6" ] && _ipt_cmd="$ip6t_m"
+		multi_ports=""
+		for p in $(echo "$port" | tr ',' ' '); do
+			case "$p" in
+				*:* )
+					$_ipt_cmd -n -L PSW_OUTPUT 2>/dev/null | grep -q "${address}:${p}:${stream}" || \
+					$_ipt_cmd -I PSW_OUTPUT $(comment "${address}:${p}:${stream}") -p "$stream" -d "$address" --dport "$p" -j RETURN 2>/dev/null
+					;;
+				* )
+					multi_ports="${multi_ports},$p"
+					;;
+			esac
+		done
+		if [ -n "$multi_ports" ]; then
+			ports=$(printf "%s\n" "${multi_ports#,}" | tr ',' '\n' | sort -n | tr '\n' ',' | sed 's/,$//')
+			$_ipt_cmd -n -L PSW_OUTPUT 2>/dev/null | grep -q "${address}:${ports}:${stream}" || \
+			$_ipt_cmd -I PSW_OUTPUT $(comment "${address}:${ports}:${stream}") -p "$stream" -d "$address" -m multiport --dports "$ports" -j RETURN 2>/dev/null
 		fi
 	done
 }
 
 filter_node() {
-	local node=${1}
-	local stream=${2}
-	if [ -n "$node" ]; then
-		local address=$(config_n_get $node address)
-		local port=$(config_n_get $node port)
-		[ -z "$address" ] && [ -z "$port" ] && {
-			return 1
-		}
-		filter_server_port $address $port $stream
-		filter_server_port $address $port $stream
-	fi
+	local node="$1" stream="$2"
+	[ -z "$node" ] && return 1
+	local address=$(config_n_get "$node" address)
+	local port=$(config_n_get "$node" port)
+	local hop=$(config_n_get "$node" hysteria2_hop)
+	[ -n "$hop" ] && port="${port:+$port,}$hop" 
+	[ -z "$address" -o -z "$port" ] && return 1
+	filter_server_port "$address" "$port" "$stream"
 }
 
 filter_direct_node_list() {
 	[ ! -s "$TMP_PATH/direct_node_list" ] && return
-	for _node_id in $(cat $TMP_PATH/direct_node_list | awk '!seen[$0]++'); do
+	awk '!seen[$0]++' "$TMP_PATH/direct_node_list" | while read -r _node_id; do
 		filter_node "$_node_id" TCP
 		filter_node "$_node_id" UDP
 		unset _node_id

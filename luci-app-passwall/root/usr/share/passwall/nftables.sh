@@ -793,41 +793,40 @@ filter_vpsip() {
 }
 
 filter_server_port() {
-	local address=${1}
-	local port=${2}
-	local stream=${3}
-	stream=$(echo ${3} | tr 'A-Z' 'a-z')
-	local _is_tproxy
-	_is_tproxy=${is_tproxy}
-	[ "$stream" == "udp" ] && _is_tproxy="TPROXY"
-
-	for _ipt in 4 6; do
-		[ "$_ipt" == "4" ] && _ip_type=ip
-		[ "$_ipt" == "6" ] && _ip_type=ip6
-		nft "list chain $NFTABLE_NAME $nft_output_chain" 2>/dev/null | grep -q "${address}:${port}"
-		if [ $? -ne 0 ]; then
-			nft "insert rule $NFTABLE_NAME $nft_output_chain meta l4proto $stream $_ip_type daddr $address $stream dport $port return comment \"${address}:${port}\"" 2>/dev/null
-		fi
+	local address="$1"
+	local port=$(echo "$2" | tr ':' '-' | tr -d ' ')
+	local stream=$(echo "$3" | tr 'A-Z' 'a-z')
+	local _ip_type _port_expr _ver _is_tproxy
+	local _nft_output_chain="PSW_OUTPUT_NAT"
+	[ "$(config_t_get global_forwarding tcp_proxy_way redirect)" = "tproxy" ] && _is_tproxy="TPROXY"
+	[ "$stream" = "udp" ] && _is_tproxy="TPROXY"
+	[ -n "$_is_tproxy" ] && _nft_output_chain="PSW_OUTPUT_MANGLE"
+	case "$port" in
+		*,*) _port_expr="{ $port }" ;;
+		*)   _port_expr="$port" ;;
+	esac
+	for _ver in 4 6; do
+		[ "$_ver" = "4" ] && _ip_type="ip"
+		[ "$_ver" = "6" ] && _ip_type="ip6" && _nft_output_chain="PSW_OUTPUT_MANGLE_V6"
+		nft list chain "$NFTABLE_NAME" "$_nft_output_chain" 2>/dev/null | grep -q "comment \"${address}:${port}:${stream}\"" || \
+		nft insert rule "$NFTABLE_NAME" "$_nft_output_chain" meta l4proto "$stream" $_ip_type daddr "$address" "$stream" dport $_port_expr return comment "\"${address}:${port}:${stream}\"" 2>/dev/null
 	done
 }
 
 filter_node() {
-	local node=${1}
-	local stream=${2}
-	if [ -n "$node" ]; then
-		local address=$(config_n_get $node address)
-		local port=$(config_n_get $node port)
-		[ -z "$address" ] && [ -z "$port" ] && {
-			return 1
-		}
-		filter_server_port $address $port $stream
-		filter_server_port $address $port $stream
-	fi
+	local node="$1" stream="$2"
+	[ -z "$node" ] && return 1
+	local address=$(config_n_get "$node" address)
+	local port=$(config_n_get "$node" port)
+	local hop=$(config_n_get "$node" hysteria2_hop)
+	[ -n "$hop" ] && port="${port:+$port,}$hop" 
+	[ -z "$address" -o -z "$port" ] && return 1
+	filter_server_port "$address" "$port" "$stream"
 }
 
 filter_direct_node_list() {
 	[ ! -s "$TMP_PATH/direct_node_list" ] && return
-	for _node_id in $(cat $TMP_PATH/direct_node_list | awk '!seen[$0]++'); do
+	awk '!seen[$0]++' "$TMP_PATH/direct_node_list" | while read -r _node_id; do
 		filter_node "$_node_id" TCP
 		filter_node "$_node_id" UDP
 		unset _node_id

@@ -1233,10 +1233,8 @@ local function processData(szType, content, add_mode, group)
 				result.httpupgrade_host = params.host
 				result.httpupgrade_path = params.path
 			end
-			
 			result.encryption = params.encryption or "none"
-
-			result.flow = params.flow and params.flow:gsub("-udp443", "") or nil
+			result.flow = params.flow
 
 			result.tls = "0"
 			if params.security == "tls" or params.security == "reality" then
