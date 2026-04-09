@@ -305,9 +305,10 @@ o = s:option(Value, _n("hysteria2_hop"), translate("Port hopping range"))
 o.description = translate("Format as 1000:2000 or 1000-2000 Multiple groups are separated by commas (,).")
 o:depends({ [_n("protocol")] = "hysteria2" })
 
-o = s:option(Value, _n("hysteria2_hop_interval"), translate("Hop Interval"), translate("Example:") .. "30s (≥5s)")
-o.placeholder = "30s"
-o.default = "30s"
+o = s:option(Value, _n("hysteria2_hop_interval"), translate("Hop Interval(second)"), translate("Supports a fixed value or a random range (e.g., 30, 5-30), minimum 5."))
+o.datatype = "or(uinteger,portrange)"
+o.placeholder = "30"
+o.default = "30"
 o:depends({ [_n("protocol")] = "hysteria2" })
 
 o = s:option(Value, _n("hysteria2_up_mbps"), translate("Max upload Mbps"))

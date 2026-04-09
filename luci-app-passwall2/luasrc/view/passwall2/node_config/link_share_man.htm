@@ -1455,7 +1455,7 @@ local current_node = map:get(section)
 			opt.set(dom_prefix + 'port', m.port || "443");
 
 			opt.set(dom_prefix + 'encryption', queryParam.encryption || "none");
-			opt.set(dom_prefix + 'flow', (queryParam.flow || '').replace('-udp443', ''));
+			opt.set(dom_prefix + 'flow', queryParam.flow || '');
 			if (queryParam.security) {
 				if (queryParam.security == "tls") {
 					opt.set(dom_prefix + 'tls', true);

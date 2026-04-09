@@ -546,7 +546,7 @@ load_acl() {
 			$ipt_m -A PSW2 $(comment "${comment_d}") -p udp $(REDIRECT $REDIR_PORT TPROXY)
 
 			[ "$PROXY_IPV6" == "1" ] && {
-				$ip6t_m -I PSW2 $(comment "${comment_d}") -p udp -d $(dst $IPSET_PROXY_LAN6) -j PSW2_RULE
+				$ip6t_m -I PSW2 $(comment "${comment_d}") -p udp $(dst $IPSET_PROXY_LAN6) -j PSW2_RULE
 				$ip6t_m -A PSW2 $(comment "${comment_d}") -p udp -d $FAKE_IP_6 -j PSW2_RULE
 				add_shunt_t_rule "${SHUNT_LIST6}" "$ip6t_m -A PSW2 $(comment "${comment_d}") -p udp" "-j PSW2_RULE" $UDP_REDIR_PORTS
 				add_port_rules "$ip6t_m -A PSW2 $(comment "${comment_d}") -p udp" $UDP_REDIR_PORTS "-j PSW2_RULE"
