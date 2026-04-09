@@ -1807,14 +1807,14 @@ msgstr "缓冲区大小"
 msgid "Buffer size for every connection (kB)"
 msgstr "每一个连接的缓冲区大小（kB）"
 
-msgid "Handshake Timeout"
-msgstr "握手超时 "
-
 msgid "Idle Timeout"
-msgstr "空闲超时 "
+msgstr "空闲超时"
 
-msgid "Hop Interval"
-msgstr "端口跳跃时间 "
+msgid "Hop Interval(second)"
+msgstr "端口跳跃间隔（秒）"
+
+msgid "Supports a fixed value or a random range (e.g., 30, 5-30), minimum 5."
+msgstr "支持固定值或随机范围（如 30 或 5-30），最小 5 秒。"
 
 msgid "HeartbeatPeriod(second)"
 msgstr "心跳周期（单位：秒）"

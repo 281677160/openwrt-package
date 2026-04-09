@@ -19,7 +19,7 @@ if node then
 	end
 end
 -%>
-<script src="<%=resource%>/view/<%=api.appname%>/Sortable.min.js"></script>
+<script src="<%=resource%>/view/<%=appname%>/Sortable.min.js"></script>
 
 <style>
 table th, .table .th {
@@ -963,7 +963,11 @@ table td, .table .td {
 						} else {
 							innerHTML = innerHTML.split("{{tcping}}").join('<span class="tcping_value" cbiid="{{id}}"><a href="javascript:void(0)" style="color:inherit">---</a></span>');
 						}
-						innerHTML = innerHTML.split("{{url_test}}").join('<span class="ping"><a href="javascript:void(0)" onclick="javascript:urltest_node(\'{{id}}\', this)"><%:Test%></a></span>');
+						if (o["address"] && o["port"]) {
+							innerHTML = innerHTML.split("{{url_test}}").join('<span class="ping"><a href="javascript:void(0)" onclick="javascript:urltest_node(\'{{id}}\', this)"><%:Test%></a></span>');
+						} else {
+							innerHTML = innerHTML.split("{{url_test}}").join('<span class="ping_value"><a href="javascript:void(0)" style="color:inherit">---</a></span>');
+						}
 						innerHTML = innerHTML.split("{{id}}").join(o[".name"]);
 						innerHTML = innerHTML.split("{{group}}").join(o["group"] || "");
 						let node_remarks = get_remarks_name(o);
