@@ -7,6 +7,10 @@ local appname = api.appname
 local fs = api.fs
 local CACHE_PATH = api.CACHE_PATH
 
+local GLOBAL = {
+	DNS_SERVER = {}
+}
+
 local xray_version = api.get_app_version("xray")
 
 local function get_domain_excluded()
@@ -130,6 +134,7 @@ function gen_outbound(flag, node, tag, proxy_table)
 			streamSettings = (node.streamSettings or node.protocol == "vmess" or node.protocol == "vless" or node.protocol == "socks" or node.protocol == "shadowsocks" or node.protocol == "trojan" or node.protocol == "hysteria") and {
 				sockopt = {
 					mark = 255,
+					domainStrategy = node.domain_strategy or "UseIP",
 					tcpFastOpen = (node.tcp_fast_open == "1") and true or nil,
 					tcpMptcp = (node.tcpMptcp == "1") and true or nil
 				},
@@ -280,7 +285,19 @@ function gen_outbound(flag, node, tag, proxy_table)
 							udpHop = (node.hysteria2_hop) and {
 								ports = string.gsub(node.hysteria2_hop, ":", "-"),
 								interval = (function(v)
-									v = tonumber((v or "30s"):match("^%d+"))
+									if not v then return 30 end
+									if v:find("-", 1, true) then
+										local min, max = v:match("^(%d+)%-(%d+)$")
+										min = tonumber(min)
+										max = tonumber(max)
+										if min and max then
+											min = (min >= 5) and min or 5
+											max = (max >= min) and max or min
+											return min .. "-" .. max
+										end
+										return 30
+									end
+									v = tonumber((v or "30"):match("^%d+"))
 									return (v and v >= 5) and v or 30
 								end)(node.hysteria2_hop_interval)
 							} or nil,
@@ -380,6 +397,43 @@ function gen_outbound(flag, node, tag, proxy_table)
 			if result.streamSettings.tlsSettings then
 				result.streamSettings.tlsSettings.alpn = alpn
 			end
+		end
+
+		if api.datatypes.hostname(node.address) and node.domain_resolver and (node.domain_resolver_dns or node.domain_resolver_dns_https) then
+			local dns_tag = node_id .. "_dns"
+			local dns_proto = node.domain_resolver
+			local config_address
+			local config_port
+			if dns_proto == "https" then
+				local _a = api.parseURL(node.domain_resolver_dns_https)
+				if _a then
+					config_address = node.domain_resolver_dns_https
+					if _a.port then
+						config_port = _a.port
+					else
+						config_port = 443
+					end
+				end
+			else
+				local server_address = node.domain_resolver_dns
+				local config_port = 53
+				local split = api.split(server_address, ":")
+				if #split > 1 then
+					server_address = split[1]
+					config_port = tonumber(split[#split])
+				end
+				config_address = server_address
+				if dns_proto == "tcp" then
+					config_address = dns_proto .. "://" .. server_address .. ":" .. config_port
+				end
+			end
+			GLOBAL.DNS_SERVER[node_id] = {
+				tag = dns_tag,
+				queryStrategy = node.domain_strategy or "UseIP",
+				address = config_address,
+				port = config_port,
+				domains = {"full:" .. node.address}
+			}
 		end
 
 	end
@@ -694,6 +748,14 @@ function gen_config_server(node)
 		end
 	end
 
+	for index, value in ipairs(config.outbounds) do
+		for k, v in pairs(config.outbounds[index]) do
+			if k:find("_") == 1 then
+				config.outbounds[index][k] = nil
+			end
+		end
+	end
+
 	return config
 end
 
@@ -734,7 +796,7 @@ function gen_config(var)
 	local no_run = var["no_run"]
 
 	local dns_domain_rules = {}
-	local dns = nil
+	local dns = {}
 	local fakedns = nil
 	local inbounds = {}
 	local outbounds = {}
@@ -1063,17 +1125,17 @@ function gen_config(var)
 			local to_node = get_node_by_id(node.to_node)
 			if to_node then
 				-- Landing Node not support use special node.
-				if to_node.protocol:find("^_") then
+				if to_node.protocol and to_node.protocol:find("^_") then
 					to_node = nil
 				end
 			end
 			if to_node then
 				local to_outbound
 				if to_node.type ~= "Xray" then
-					local tag = to_node[".name"]
+					local in_tag = "inbound_" .. to_node[".name"] .. "_" .. tostring(outbound.tag)
 					local new_port = api.get_new_port()
 					table.insert(inbounds, {
-						tag = tag,
+						tag = in_tag,
 						listen = "127.0.0.1",
 						port = new_port,
 						protocol = "dokodemo-door",
@@ -1085,11 +1147,11 @@ function gen_config(var)
 					to_node.address = "127.0.0.1"
 					to_node.port = new_port
 					table.insert(rules, 1, {
-						inboundTag = {tag},
+						inboundTag = {in_tag},
 						outboundTag = outbound.tag
 					})
-					to_outbound = gen_outbound(node[".name"], to_node, tag, {
-						tag = tag,
+					to_outbound = gen_outbound(node[".name"], to_node, to_node[".name"], {
+						tag = to_node[".name"],
 						run_socks_instance = not no_run
 					})
 				else
@@ -1365,14 +1427,38 @@ function gen_config(var)
 			}
 		end
 	end
-	
-	if dns_listen_port then
-		local direct_dns_tag = "dns-in-direct"
-		local remote_dns_tag = "dns-in-remote"
-		local remote_fakedns_tag = "dns-in-remote-fakedns"
-		local default_dns_tag = "dns-in-default"
-		local dns_servers = {}
 
+	local dns_servers = {}
+	local direct_dns_tag = "dns-in-direct"
+	local remote_dns_tag = "dns-in-remote"
+	local remote_fakedns_tag = "dns-in-remote-fakedns"
+	local default_dns_tag = "dns-in-default"
+
+	for i, v in pairs(GLOBAL.DNS_SERVER) do
+		table.insert(dns_servers, {
+			server = v,
+			outboundTag = "direct"
+		})
+	end
+
+	dns = {
+		tag = "dns-global",
+		hosts = {},
+		disableCache = (dns_cache and dns_cache == "0") and true or false,
+		disableFallback = true,
+		disableFallbackIfMatch = true,
+		servers = {},
+		queryStrategy = "UseIP"
+	}
+
+	table.insert(dns_servers, {
+		server = {
+			tag = "local",
+			address = "localhost"
+		}
+	})
+
+	if dns_listen_port then
 		local _remote_dns_proto = "tcp"
 
 		if not routing then
@@ -1381,16 +1467,6 @@ function gen_config(var)
 				rules = {}
 			}
 		end
-	
-		dns = {
-			tag = "dns-global",
-			hosts = {},
-			disableCache = (dns_cache and dns_cache == "0") and true or false,
-			disableFallback = true,
-			disableFallbackIfMatch = true,
-			servers = {},
-			queryStrategy = "UseIP"
-		}
 	
 		local dns_host = ""
 		if flag == "global" then
@@ -1590,7 +1666,9 @@ function gen_config(var)
 					if value.domain and value.outboundTag then
 						local dns_server = nil
 						local dns_outboundTag = value.outboundTag
-						if value.outboundTag == "direct" then
+						if value.dns_server then
+							dns_server = api.clone(value.dns_server)
+						elseif value.outboundTag == "direct" then
 							dns_server = api.clone(_direct_dns)
 						else
 							if value.fakedns then
@@ -1610,7 +1688,6 @@ function gen_config(var)
 							dns_server = nil
 						end
 						if dns_server then
-							dns_server.finalQuery = true
 							dns_server.domains = value.domain
 							if value.shunt_rule_name then
 								dns_server.tag = "dns-in-" .. value.shunt_rule_name
@@ -1620,25 +1697,6 @@ function gen_config(var)
 								server = dns_server
 							})
 						end
-					end
-				end
-			end
-
-			for i = #dns_servers, 1, -1 do
-				local value = dns_servers[i]
-				if value.server.tag ~= direct_dns_tag and value.server.tag ~= remote_dns_tag then
-					-- DNS rule must be at the front, prevents being matched by rules.
-					if value.outboundTag and value.server.address ~= "fakedns" then
-						table.insert(routing.rules, 1, {
-							inboundTag = {
-								value.server.tag
-							},
-							outboundTag = value.outboundTag,
-						})
-					end
-					if (value.server.domains and #value.server.domains > 0) or value.server.tag == default_dns_tag then
-						-- Only keep default DNS server or has domains DNS server.
-						table.insert(dns.servers, 1, value.server)
 					end
 				end
 			end
@@ -1655,15 +1713,6 @@ function gen_config(var)
 			local default_rule = api.clone(routing.rules[default_rule_index])
 			table.remove(routing.rules, default_rule_index)
 			table.insert(routing.rules, default_rule)
-		end
-
-		local dns_hosts_len = 0
-		for key, value in pairs(dns.hosts) do
-			dns_hosts_len = dns_hosts_len + 1
-		end
-
-		if dns_hosts_len == 0 then
-			dns.hosts = nil
 		end
 
 		local content = flag .. node_id .. jsonc.stringify(routing.rules)
@@ -1697,6 +1746,29 @@ function gen_config(var)
 				string.gsub(nftset_list, '[^' .. "\r\n" .. ']+', function(w)
 					sys.call(string.format("nft flush set %s %s %s 2>/dev/null", family, table_name, w))
 				end)
+			end
+		end
+	end
+
+	if not next(dns.hosts) then
+		dns.hosts = nil
+	end
+
+	for i = #dns_servers, 1, -1 do
+		local value = dns_servers[i]
+		if value.server.tag ~= direct_dns_tag and value.server.tag ~= remote_dns_tag then
+			-- DNS rule must be at the front, prevents being matched by rules.
+			if value.outboundTag and value.server.address ~= "fakedns" then
+				table.insert(routing.rules, 1, {
+					inboundTag = {
+						value.server.tag
+					},
+					outboundTag = value.outboundTag,
+				})
+			end
+			if (value.server.domains and #value.server.domains > 0) or value.server.tag == default_dns_tag then
+				-- Only keep default DNS server or has domains DNS server.
+				table.insert(dns.servers, 1, value.server)
 			end
 		end
 	end

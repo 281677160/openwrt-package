@@ -1169,6 +1169,7 @@ start() {
 	export XRAY_LOCATION_ASSET=$V2RAY_LOCATION_ASSET
 	export ENABLE_DEPRECATED_GEOSITE=true
 	export ENABLE_DEPRECATED_GEOIP=true
+	export SS_SYSTEM_DNS_RESOLVER_FORCE_BUILTIN=1
 	ulimit -n 65535
 	start_haproxy
 	start_socks
@@ -1237,6 +1238,7 @@ stop() {
 	pgrep -af "${CONFIG}/" | awk '! /app\.sh|subscribe\.lua|rule_update\.lua|tasks\.sh|server_app\.lua|ujail/{print $1}' | xargs kill -9 >/dev/null 2>&1
 	unset V2RAY_LOCATION_ASSET
 	unset XRAY_LOCATION_ASSET
+	unset SS_SYSTEM_DNS_RESOLVER_FORCE_BUILTIN
 	stop_crontab
 	rm -rf $GLOBAL_DNSMASQ_CONF
 	rm -rf $GLOBAL_DNSMASQ_CONF_PATH
