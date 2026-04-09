@@ -1630,14 +1630,14 @@ msgstr "缓衝区大小"
 msgid "Buffer size for every connection (kB)"
 msgstr "每一個連接的缓衝区大小（kB）"
 
-msgid "Handshake Timeout"
-msgstr "握手超時 "
-
 msgid "Idle Timeout"
-msgstr "空闲超時 "
+msgstr "空闲超時"
 
-msgid "Hop Interval"
-msgstr "端口跳跃時間 "
+msgid "Hop Interval(second)"
+msgstr "端口跳躍間隔（秒）"
+
+msgid "Supports a fixed value or a random range (e.g., 30, 5-30), minimum 5."
+msgstr "支援固定值或隨機範圍（如 30 或 5-30），最小 5 秒。"
 
 msgid "HeartbeatPeriod(second)"
 msgstr "心跳周期（單位：秒）"
@@ -1755,6 +1755,12 @@ msgstr "延迟（ms）"
 
 msgid "If is domain name, The requested domain name will be resolved to IP before connect."
 msgstr "如果是域名，域名將在請求發出之前解析為 IP。"
+
+msgid "Domain DNS Resolve"
+msgstr "域名 DNS 解析"
+
+msgid "If the node address is a domain name, this DNS will be used for resolution."
+msgstr "如果節點地址是域名，則將使用此 DNS 進行解析。"
 
 msgid "Chain Proxy"
 msgstr "鏈式代理"

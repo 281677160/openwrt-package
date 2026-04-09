@@ -278,9 +278,10 @@ if singbox_tags:find("with_quic") then
 	o.description = translate("Format as 1000:2000 or 1000-2000 Multiple groups are separated by commas (,).")
 	o:depends({ [_n("protocol")] = "hysteria" })
 
-	o = s:option(Value, _n("hysteria_hop_interval"), translate("Hop Interval"), translate("Example:") .. "30s (≥5s)")
-	o.placeholder = "30s"
-	o.default = "30s"
+	o = s:option(Value, _n("hysteria_hop_interval"), translate("Hop Interval(second)"), translate("Example:") .. "30 (≥5)")
+	o.datatype = "uinteger"
+	o.placeholder = "30"
+	o.default = "30"
 	o:depends({ [_n("protocol")] = "hysteria" })
 
 	o = s:option(Value, _n("hysteria_obfs"), translate("Obfs Password"))
@@ -362,9 +363,10 @@ if singbox_tags:find("with_quic") then
 	o.description = translate("Format as 1000:2000 or 1000-2000 Multiple groups are separated by commas (,).")
 	o:depends({ [_n("protocol")] = "hysteria2" })
 
-	o = s:option(Value, _n("hysteria2_hop_interval"), translate("Hop Interval"), translate("Example:") .. "30s (≥5s)")
-	o.placeholder = "30s"
-	o.default = "30s"
+	o = s:option(Value, _n("hysteria2_hop_interval"), translate("Hop Interval(Second)"), translate("Supports a fixed value or a random range (e.g., 30, 5-30), minimum 5."))
+	o.datatype = "or(uinteger,portrange)"
+	o.placeholder = "30"
+	o.default = "30"
 	o:depends({ [_n("protocol")] = "hysteria2" })
 
 	o = s:option(Value, _n("hysteria2_up_mbps"), translate("Max upload Mbps"))
