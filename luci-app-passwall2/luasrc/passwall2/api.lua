@@ -1561,3 +1561,34 @@ function cleanEmptyTables(t)
 	end
 	return next(t) and t or nil
 end
+
+function get_dnsmasq_server_domain()
+	local dnsmasq_server = uci:get("dhcp", "@dnsmasq[0]", "server")
+	local dnsmasq_server_t = {}
+	if dnsmasq_server and #dnsmasq_server > 0 then
+		for k, v in ipairs(dnsmasq_server) do
+			if v:find("/") then
+				local split1 = split(v, "/")
+				if #split1 > 2 then
+					local domain = split1[2]
+					local upstream_dns = split1[#split1]
+					local upstream_dns_server
+					local upstream_dns_port = "53"
+					local dns_split = split(upstream_dns, "#")
+					if #dns_split > 1 then
+						upstream_dns_server = dns_split[1]
+						upstream_dns_port = dns_split[#dns_split]
+					else
+						upstream_dns_server = upstream_dns
+					end
+					dnsmasq_server_t[domain] = {
+						dnsmasq_dns = upstream_dns,
+						server = upstream_dns_server,
+						port = tonumber(upstream_dns_port)
+					}
+				end
+			end
+		end
+	end
+	return dnsmasq_server_t
+end
