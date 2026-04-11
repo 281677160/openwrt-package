@@ -11,6 +11,11 @@ local ech_domain = {}
 local local_version = api.get_app_version("sing-box"):match("[^v]+")
 local version_ge_1_13_0 = api.compare_versions(local_version, ">=", "1.13.0")
 
+local GLOBAL = {
+	DNS_SERVER = {},
+	VPS_EXCLUDE = {}
+}
+
 local GEO_VAR = {
 	OK = nil,
 	DIR = nil,
@@ -153,6 +158,51 @@ function gen_outbound(flag, node, tag, proxy_table)
 			},
 			detour = node.detour,
 		}
+
+		if api.datatypes.hostname(node.address) and node.domain_resolver and (node.domain_resolver_dns or node.domain_resolver_dns_https) then
+			local dns_proto = node.domain_resolver
+			local server_address
+			local server_port
+			local server_path
+			if dns_proto == "https" then
+				local _a = api.parseURL(node.domain_resolver_dns_https)
+				if _a then
+					server_address = _a.hostname
+					server_port = _a.port or 443
+					server_path = _a.pathname or ""
+				end
+			else
+				server_address = node.domain_resolver_dns
+				server_port = 53
+				local split = api.split(server_address, ":")
+				if #split > 1 then
+					server_address = split[1]
+					server_port = tonumber(split[#split])
+				end
+			end
+			local dns_key = dns_proto .. "|" .. tostring(server_address) .. "|" .. tostring(server_port) .. "|" .. tostring(server_path or "")
+			if not GLOBAL.DNS_SERVER[dns_key] then
+				GLOBAL.DNS_SERVER[dns_key] = {
+					server = {
+						tag = "dns-node-" .. api.gen_short_uuid(),
+						type = dns_proto,
+						server = server_address,
+						server_port = server_port,
+						path = server_path,
+						domain_resolver = "direct",
+						detour = "direct"
+					},
+					domain = {}
+				}
+			end
+			local exists
+			for _, d in ipairs(GLOBAL.DNS_SERVER[dns_key].domain) do
+				if d == node.address then exists = true; break end
+			end
+			if not exists then table.insert(GLOBAL.DNS_SERVER[dns_key].domain, node.address) end
+			result.domain_resolver.server = GLOBAL.DNS_SERVER[dns_key].server.tag
+			GLOBAL.VPS_EXCLUDE[node.address] = true
+		end
 
 		local tls = nil
 		if node.protocol == "hysteria" or node.protocol == "hysteria2" or node.protocol == "tuic" or node.protocol == "naive" then
@@ -1721,12 +1771,8 @@ function gen_config(var)
 					remote_server.type = "h3"
 				end
 				remote_server.server = _a.hostname
-				if _a.port then
-					remote_server.server_port = _a.port
-				else
-					remote_server.server_port = 443
-				end
-				remote_server.path = _a.pathname
+				remote_server.server_port = _a.port or 443
+				remote_server.path = _a.pathname or ""
 			end
 			if remote_dns_doh_ip and remote_dns_doh_host ~= remote_dns_doh_ip and not api.is_ip(remote_dns_doh_host) then
 				local domains = {}
@@ -1780,9 +1826,11 @@ function gen_config(var)
 
 		if direct_dns_udp_server or direct_dns_tcp_server then
 			local domain = {}
-			local nodes_domain_text = sys.exec('uci show passwall | grep ".address=" | cut -d "\'" -f 2 | grep "[a-zA-Z]$" | sort -u')
+			local nodes_domain_text = sys.exec([[uci show passwall | sed -n "s/.*\.address='\([^']*\)'/\1/p" | sort -u]])
 			string.gsub(nodes_domain_text, '[^' .. "\r\n" .. ']+', function(w)
-				table.insert(domain, w)
+				if w and w ~= "" and api.datatypes.hostname(w) and not GLOBAL.VPS_EXCLUDE[w] then
+					table.insert(domain, w)
+				end
 			end)
 			if #domain > 0 then
 				table.insert(dns_domain_rules, 1, {
@@ -1922,6 +1970,18 @@ function gen_config(var)
 		}
 	end
 
+	for i, v in pairs(GLOBAL.DNS_SERVER) do
+		table.insert(dns.servers, v.server)
+		if not dns.rules then dns.rules = {} end
+		table.insert(dns.rules, 1, {
+			action = "route",
+			server = v.server.tag,
+			disable_cache = false,
+			rewrite_ttl = 30,
+			domain = v.domain,
+		})
+	end
+
 	if next(ech_domain) ~= nil then
 		table.insert(dns.servers, {
 			tag = "ech-dns",
@@ -1982,6 +2042,12 @@ function gen_config(var)
 		for index, value in ipairs(config.outbounds) do
 			if not value["_flag_proxy_tag"] and not value.detour and value["_id"] and value.server and (value.server_port or value.server_ports) and not no_run then
 				sys.call(string.format("echo '%s' >> %s", value["_id"], api.TMP_PATH .. "/direct_node_list"))
+			end
+			if not value.detour and value.server then
+				value.detour = "direct"
+			end
+			if value.server and not api.datatypes.hostname(value.server) then
+				value.domain_resolver = nil
 			end
 			for k, v in pairs(config.outbounds[index]) do
 				if k:find("_") == 1 then

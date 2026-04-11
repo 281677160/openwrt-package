@@ -106,14 +106,6 @@ run_xray() {
 	[ -n "$dns_listen_port" ] && {
 		json_add_string "dns_listen_port" "${dns_listen_port}"
 		[ -n "$dns_cache" ] && json_add_string "dns_cache" "${dns_cache}"
-
-		local _dns=$(get_first_dns AUTO_DNS 53 | sed 's/#/:/g')
-		local _dns_address=$(echo ${_dns} | awk -F ':' '{print $1}')
-		local _dns_port=$(echo ${_dns} | awk -F ':' '{print $2}')
-
-		DIRECT_DNS_UDP_SERVER=${_dns_address}
-		DIRECT_DNS_UDP_PORT=${_dns_port}
-
 		[ "${node_protocol}" = "_shunt" ] && local write_ipset_direct=$(config_n_get $node write_ipset_direct 0)
 		[ "${write_ipset_direct}" = "1" ] && {
 			direct_dnsmasq_listen_port=$(get_new_port $(expr $dns_listen_port + 1) udp)
@@ -188,38 +180,17 @@ run_xray() {
 		[ -n "$remote_dns_client_ip" ] && json_add_string "remote_dns_client_ip" "${remote_dns_client_ip}"
 		local _json2_arg="$(json_dump)"
 
-		local independent_dns
-		if [ -z "${independent_dns}" ]; then
-			local _json2_keys key
-			json_load "${_json2_arg}"
-			json_get_keys _json2_keys
-			for key in ${_json2_keys}; do
-				json_get_var "_json2_$key" "$key"
-			done
-			json_load "${_json1_arg}"
-			for key in ${_json2_keys}; do
-				eval "local _v=\$_json2_$key"
-				json_add_string "$key" "$_v"
-			done
-		else
-			dns_remote_listen_port=$(get_new_port $(expr ${direct_dnsmasq_listen_port:-${dns_listen_port}} + 1) udp)
-			V2RAY_DNS_REMOTE_CONFIG="${TMP_PATH}/${flag}_dns_remote.json"
-			V2RAY_DNS_REMOTE_LOG="${TMP_PATH}/${flag}_dns_remote.log"
-			V2RAY_DNS_REMOTE_LOG="/dev/null"
-			json_load "${_json2_arg}"
-			json_add_string "dns_out_tag" "remote"
-			json_add_string "dns_listen_port" "${dns_remote_listen_port}"
-			json_add_string "remote_dns_outbound_socks_address" "127.0.0.1"
-			json_add_string "remote_dns_outbound_socks_port" "${socks_port}"
-			_json2_arg="$(json_dump)"
-			lua $UTIL_XRAY gen_dns_config "${_json2_arg}" > $V2RAY_DNS_REMOTE_CONFIG
-			ln_run "$XRAY_BIN" "xray" $V2RAY_DNS_REMOTE_LOG run -c "$V2RAY_DNS_REMOTE_CONFIG"
-
-			json_load "${_json1_arg}"
-			json_add_string "remote_dns_udp_port" "${dns_remote_listen_port}"
-			json_add_string "remote_dns_udp_server" "127.0.0.1"
-			json_add_string "remote_dns_query_strategy" "${remote_dns_query_strategy}"
-		fi
+		local _json2_keys key
+		json_load "${_json2_arg}"
+		json_get_keys _json2_keys
+		for key in ${_json2_keys}; do
+			json_get_var "_json2_$key" "$key"
+		done
+		json_load "${_json1_arg}"
+		for key in ${_json2_keys}; do
+			eval "local _v=\$_json2_$key"
+			json_add_string "$key" "$_v"
+		done
 	}
 
 	[ -n "${redir_port}" ] && {
@@ -290,13 +261,6 @@ run_singbox() {
 		}
 	}
 	[ -n "$dns_listen_port" ] && {
-		local _dns=$(get_first_dns AUTO_DNS 53 | sed 's/#/:/g')
-		local _dns_address=$(echo ${_dns} | awk -F ':' '{print $1}')
-		local _dns_port=$(echo ${_dns} | awk -F ':' '{print $2}')
-
-		DIRECT_DNS_UDP_SERVER=${_dns_address}
-		DIRECT_DNS_UDP_PORT=${_dns_port}
-
 		[ "${node_protocol}" = "_shunt" ] && local write_ipset_direct=$(config_n_get $node write_ipset_direct 0)
 		[ "${write_ipset_direct}" = "1" ] && {
 			direct_dnsmasq_listen_port=$(get_new_port $(expr $dns_listen_port + 1) udp)
@@ -633,8 +597,6 @@ run_global() {
 	TYPE=$(echo $(config_n_get $NODE type) | tr 'A-Z' 'a-z')
 	[ -z "$TYPE" ] && return 1
 
-	mkdir -p ${GLOBAL_ACL_PATH}
-
 	if [ $PROXY_IPV6 == "1" ]; then
 		log_i18n 0 "To enable experimental IPv6 transparent proxy (TProxy), please ensure your node and type support IPv6!"
 	fi
@@ -712,8 +674,62 @@ run_global() {
 		return 1
 	fi
 
+	set_cache_var "ACL_GLOBAL_node" "$NODE"
+	set_cache_var "ACL_GLOBAL_redir_port" "$REDIR_PORT"
+}
+
+run_front_dns() {
+	local switch=0
+	direct_dns_shunt=$(config_t_get global direct_dns_shunt)
+	direct_dns_shunt=$(echo "${direct_dns_shunt}" | grep -v "^#")
+	[ -n "${direct_dns_shunt}" ] && switch=1
+	[ "${switch}" == "1" ] && {
+		local config_file="${TMP_PATH}/direct_dns.json"
+		local log_file="${TMP_PATH}/direct_dns.log"
+		log_file="/dev/null"
+		local listen_port=$(get_new_port 10553)
+		json_init
+		json_add_string "dns_listen_port" "${listen_port}"
+		json_add_string "direct_dns_udp_server" "${DIRECT_DNS_UDP_SERVER}"
+		json_add_string "direct_dns_udp_port" "${DIRECT_DNS_UDP_PORT}"
+		json_add_string "direct_dns_query_strategy" "${DIRECT_DNS_QUERY_STRATEGY}"
+		[ -n "${ACL_GLOBAL_node}" ] && [ -n "${TUN_DNS_PORT}" ] && {
+			json_add_string "default_dns_udp_server" "127.0.0.1"
+			json_add_string "default_dns_udp_port" "${TUN_DNS_PORT}"
+		}
+		local _json_arg="$(json_dump)"
+
+		local preferred_core=""
+		[ -n "${XRAY_BIN}" ] && preferred_core="xray"
+		[ -n "${SINGBOX_BIN}" ] && preferred_core="sing-box"
+
+		if [ "${preferred_core}" = "xray" ]; then
+			lua $UTIL_XRAY gen_front_dns_config "${_json_arg}" > $config_file
+			ln_run "$XRAY_BIN" "xray" "${log_file}" run -c "$config_file"
+		elif [ "${preferred_core}" = "sing-box" ]; then
+			lua $UTIL_SINGBOX gen_front_dns_config "${_json_arg}" > $config_file
+			ln_run "$SINGBOX_BIN" "sing-box" "${log_file}" run -c "$config_file"
+		else
+			return 1
+		fi
+
+		FRONT_DNS_SERVER="127.0.0.1"
+		FRONT_DNS_PORT="${listen_port}"
+	}
+}
+
+run_global_dnsmasq() {
+	[ -z "${ACL_GLOBAL_node}" ] && [ -z "${FRONT_DNS_PORT}" ] && return
 	local RUN_NEW_DNSMASQ=1
 	RUN_NEW_DNSMASQ=${DNS_REDIRECT}
+	DNSMASQ_DEFAULT_DNS="${AUTO_DNS}"
+	DNSMASQ_LOCAL_DNS="${LOCAL_DNS:-${AUTO_DNS}}"
+	DNSMASQ_TUN_DNS="${TUN_DNS}"
+	[ -n "${FRONT_DNS_PORT}" ] && {
+		DNSMASQ_DEFAULT_DNS="${FRONT_DNS_SERVER}#${FRONT_DNS_PORT}"
+		DNSMASQ_LOCAL_DNS="${DNSMASQ_DEFAULT_DNS}"
+		DNSMASQ_TUN_DNS="${DNSMASQ_DEFAULT_DNS}"
+	}
 	if [ "${RUN_NEW_DNSMASQ}" == "0" ]; then
 		#The old logic will be removed in the future.
 		#Run a copy dnsmasq instance, DNS hijack that don't need a proxy devices.
@@ -738,9 +754,9 @@ run_global() {
 		json_add_string "FLAG" "default"
 		json_add_string "TMP_DNSMASQ_PATH" "${GLOBAL_DNSMASQ_CONF_PATH}"
 		json_add_string "DNSMASQ_CONF_FILE" "${GLOBAL_DNSMASQ_CONF}"
-		json_add_string "DEFAULT_DNS" "${AUTO_DNS}"
-		json_add_string "LOCAL_DNS" "${LOCAL_DNS:-${AUTO_DNS}}"
-		json_add_string "TUN_DNS" "${TUN_DNS}"
+		json_add_string "DEFAULT_DNS" "${DNSMASQ_DEFAULT_DNS}"
+		json_add_string "LOCAL_DNS" "${DNSMASQ_LOCAL_DNS}"
+		json_add_string "TUN_DNS" "${DNSMASQ_TUN_DNS}"
 		json_add_string "NFTFLAG" "${nftflag:-0}"
 		json_add_string "NO_LOGIC_LOG" "${NO_LOGIC_LOG:-0}"
 		lua $APP_PATH/helper_dnsmasq.lua add_rule "$(json_dump)"
@@ -753,14 +769,11 @@ run_global() {
 	else
 		#Run a copy dnsmasq instance, DNS hijack for that need proxy devices.
 		GLOBAL_DNSMASQ_PORT=$(get_new_port 11400)
-		run_copy_dnsmasq flag="default" listen_port=$GLOBAL_DNSMASQ_PORT tun_dns="${TUN_DNS}"
+		run_copy_dnsmasq flag="default" listen_port=$GLOBAL_DNSMASQ_PORT tun_dns="${DNSMASQ_TUN_DNS}"
 		DNS_REDIRECT_PORT=${GLOBAL_DNSMASQ_PORT}
 		#dhcp.leases to hosts
 		$APP_PATH/lease2hosts.sh > /dev/null 2>&1 &
 	fi
-
-	set_cache_var "ACL_GLOBAL_node" "$NODE"
-	set_cache_var "ACL_GLOBAL_redir_port" "$REDIR_PORT"
 }
 
 start_socks() {
@@ -1188,7 +1201,10 @@ start() {
 			lua $APP_PATH/helper_dnsmasq.lua restart "$(json_dump)"
 		}
 	fi
+	mkdir -p ${GLOBAL_ACL_PATH}
 	[ "$ENABLED_DEFAULT_ACL" == 1 ] && run_global
+	run_front_dns
+	run_global_dnsmasq
 	[ -n "$USE_TABLES" ] && source $APP_PATH/${USE_TABLES}.sh start
 	set_cache_var "USE_TABLES" "$USE_TABLES"
 	if [ "$ENABLED_DEFAULT_ACL" == 1 ] || [ "$ENABLED_ACLS" == 1 ]; then
@@ -1311,6 +1327,12 @@ get_config() {
 	DEFAULT_DNS=$(uci show dhcp.@dnsmasq[0] | grep "\.server=" | awk -F '=' '{print $2}' | sed "s/'//g" | tr ' ' '\n' | grep -v "\/" | head -2 | sed ':label;N;s/\n/,/;b label')
 	[ -z "${DEFAULT_DNS}" ] && DEFAULT_DNS=$(echo -n $ISP_DNS | tr ' ' '\n' | head -2 | tr '\n' ',' | sed 's/,$//')
 	AUTO_DNS=${DEFAULT_DNS:-119.29.29.29}
+
+	local AUTO_DNS2=$(get_first_dns AUTO_DNS 53 | sed 's/#/:/g')
+	local AUTO_DNS_ADDRESS=$(echo ${AUTO_DNS2} | awk -F ':' '{print $1}')
+	local AUTO_DNS_PORT=$(echo ${AUTO_DNS2} | awk -F ':' '{print $2}')
+	DIRECT_DNS_UDP_SERVER=${AUTO_DNS_ADDRESS}
+	DIRECT_DNS_UDP_PORT=${AUTO_DNS_PORT}
 
 	DNSMASQ_CONF_DIR=/tmp/dnsmasq.d
 	DEFAULT_DNSMASQ_CFGID="$(uci -q show "dhcp.@dnsmasq[0]" | awk 'NR==1 {split($0, conf, /[.=]/); print conf[2]}')"
