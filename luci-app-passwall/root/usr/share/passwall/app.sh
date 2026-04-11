@@ -186,7 +186,18 @@ run_singbox() {
 	[ -n "$no_run" ] && json_add_string "no_run" "1"
 	local _json_arg="$(json_dump)"
 	lua $UTIL_SINGBOX gen_config "${_json_arg}" > $config_file
-	[ -n "$no_run" ] || ln_run "$SINGBOX_BIN" "sing-box" $log_file run -c "$config_file"
+	[ -n "$no_run" ] && return
+
+	local test_log_file=$log_file
+	[ "$test_log_file" = "/dev/null" ] && test_log_file="${TMP_PATH}/${config_file##*/}_test.log"
+	$SINGBOX_BIN check -c "$config_file" > $test_log_file 2>&1; local status=$?
+	if [ "${status}" = 0 ]; then
+		ln_run "$SINGBOX_BIN" "sing-box" "${log_file}" run -c "$config_file"
+	else
+		echolog "Sing-box 配置文件 $config_file 校验有误，进程启动失败，错误信息："
+		cat ${test_log_file} >> ${LOG_FILE}
+	fi
+	[ "$test_log_file" != "$log_file" ] && rm -f "${test_log_file}"
 }
 
 run_xray() {
@@ -275,7 +286,18 @@ run_xray() {
 	[ -n "$no_run" ] && json_add_string "no_run" "1"
 	local _json_arg="$(json_dump)"
 	lua $UTIL_XRAY gen_config "${_json_arg}" > $config_file
-	[ -n "$no_run" ] || ln_run "$XRAY_BIN" "xray" $log_file run -c "$config_file"
+	[ -n "$no_run" ] && return
+
+	local test_log_file=$log_file
+	[ "$test_log_file" = "/dev/null" ] && test_log_file="${TMP_PATH}/${config_file##*/}_test.log"
+	$XRAY_BIN run -test -c "$config_file" > $test_log_file; local status=$?
+	if [ "${status}" = 0 ]; then
+		ln_run "$XRAY_BIN" "xray" "${log_file}" run -c "$config_file"
+	else
+		echolog "Xray 配置文件 $config_file 校验有误，进程启动失败，错误信息："
+		cat ${test_log_file} >> ${LOG_FILE}
+	fi
+	[ "$test_log_file" != "$log_file" ] && rm -f "${test_log_file}"
 }
 
 run_dns2socks() {
