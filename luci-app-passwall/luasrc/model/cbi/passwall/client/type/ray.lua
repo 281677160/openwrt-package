@@ -240,16 +240,6 @@ o = s:option(Value, _n("address"), translate("Address (Support Domain Name)"))
 o = s:option(Value, _n("port"), translate("Port"))
 o.datatype = "port"
 
-local protocols = s.fields[_n("protocol")].keylist
-if #protocols > 0 then
-	for index, value in ipairs(protocols) do
-		if not value:find("^_") then
-			s.fields[_n("address")]:depends({ [_n("protocol")] = value })
-			s.fields[_n("port")]:depends({ [_n("protocol")] = value })
-		end
-	end
-end
-
 o = s:option(Value, _n("uuid"), translate("ID"))
 o.password = true
 o:depends({ [_n("protocol")] = "vmess" })
@@ -735,10 +725,48 @@ o.datatype = "uinteger"
 o.placeholder = 0
 o:depends({ [_n("protocol")] = "vless" })
 
-for i, v in ipairs(s.fields[_n("protocol")].keylist) do
-	if not v:find("^_") and v ~= "hysteria2" then
-		s.fields[_n("tcp_fast_open")]:depends({ [_n("protocol")] = v })
-		s.fields[_n("tcpMptcp")]:depends({ [_n("protocol")] = v })
+o = s:option(ListValue, _n("domain_resolver"), translate("Domain DNS Resolve"))
+o.description = translate("If the node address is a domain name, this DNS will be used for resolution.") .. "<br>" .. string.format('<font color="red">%s</font>',
+		translate("Note: For node-specific DNS only. Keep Auto to avoid extra overhead."))
+o:value("", translate("Auto"))
+o:value("tcp", "TCP")
+o:value("udp", "UDP")
+o:value("https", "DoH")
+
+o = s:option(Value, _n("domain_resolver_dns"), "DNS")
+o.datatype = "or(ipaddr,ipaddrport)"
+o:value("114.114.114.114")
+o:value("223.5.5.5:53")
+o.default = o.keylist[1]
+o:depends({ [_n("domain_resolver")] = "tcp" })
+o:depends({ [_n("domain_resolver")] = "udp" })
+
+o = s:option(Value, _n("domain_resolver_dns_https"), "DNS")
+o:value("https://120.53.53.53/dns-query", "DNSPod")
+o:value("https://223.5.5.5/dns-query", "AliDNS")
+o.default = o.keylist[1]
+o:depends({ [_n("domain_resolver")] = "https" })
+
+o = s:option(ListValue, _n("domain_strategy"), translate("Domain Strategy"), translate("If is domain name, The requested domain name will be resolved to IP before connect."))
+o.default = ""
+o:value("", translate("Auto"))
+o:value("UseIPv4", translate("IPv4 Only"))
+o:value("UseIPv6", translate("IPv6 Only"))
+
+local protocols = s.fields[_n("protocol")].keylist
+if #protocols > 0 then
+	for i, v in ipairs(protocols) do
+		if not v:find("^_") then
+			s.fields[_n("address")]:depends({ [_n("protocol")] = v })
+			s.fields[_n("port")]:depends({ [_n("protocol")] = v })
+			s.fields[_n("domain_resolver")]:depends({ [_n("protocol")] = v })
+			s.fields[_n("domain_strategy")]:depends({ [_n("protocol")] = v })
+
+			if v ~= "hysteria2" then
+				s.fields[_n("tcp_fast_open")]:depends({ [_n("protocol")] = v })
+				s.fields[_n("tcpMptcp")]:depends({ [_n("protocol")] = v })
+			end
+		end
 	end
 end
 end
