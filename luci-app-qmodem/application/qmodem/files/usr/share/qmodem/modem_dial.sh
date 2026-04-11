@@ -1161,6 +1161,7 @@ check_cfun(){
     at_command="AT+CFUN?"
     response=$(at ${at_port} "${at_command}")
     cfun_status=$(echo "$response" | tr -d "\r" | grep "+CFUN:" | awk '{print $2}')
+    cfun_status=$(echo "$cfun_status" | cut -d',' -f1)
     if [ "$cfun_status" = "1" ]; then
         return 0
     else
@@ -1189,8 +1190,7 @@ at_dial_monitor()
         sleep 5
         check_cfun
         if [ $? -ne 0 ]; then
-            m_debug "Failed to set CFUN to 1, continue with monitor"
-            return
+            m_debug "Failed to set CFUN to 1, dailing may not work properly"
         else
             m_debug "Successfully set CFUN to 1"
         fi
