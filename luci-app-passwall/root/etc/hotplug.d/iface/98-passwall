@@ -1,8 +1,19 @@
 #!/bin/sh
 
-[[ "$ACTION" == "ifup" && $(uci get "passwall.@global[0].enabled") == "1" ]] && [ -f /var/lock/passwall_ready.lock ] && {
-	default_device=$(ip route | grep default | awk -F 'dev ' '{print $2}' | awk '{print $1}')
-	[ "$default_device" == "$DEVICE" ] && {
+[ "$ACTION" = "ifup" ] || [ "$ACTION" = "ifupdate" ] || exit 0
+
+[ "$(uci get passwall.@global[0].enabled 2>/dev/null)" = "1" ] && [ -f /var/lock/passwall_ready.lock ] && {
+
+	default_device=$(ip route show default 2>/dev/null | awk -F 'dev ' '{print $2}' | awk '{print $1}' | head -n1)
+	default6_device=$(ip -6 route show default 2>/dev/null | awk -F 'dev ' '{print $2}' | awk '{print $1}' | head -n1)
+	( [ "$default_device" = "$DEVICE" ] || [ "$default6_device" = "$DEVICE" ] ) && {
+
+		if [ "$ACTION" = "ifupdate" ]; then
+			FWI=$(uci -q get firewall.passwall.path 2>/dev/null)
+			[ -n "$FWI" ] && [ -f "$FWI" ] && sh "$FWI" >/dev/null 2>&1 &
+			exit 0
+		fi
+
 		LOCK_FILE_DIR=/var/lock
 		[ ! -d ${LOCK_FILE_DIR} ] && mkdir -p ${LOCK_FILE_DIR}
 		LOCK_FILE="${LOCK_FILE_DIR}/passwall_ifup.lock"

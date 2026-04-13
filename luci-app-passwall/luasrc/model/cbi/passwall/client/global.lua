@@ -823,7 +823,7 @@ for k, v in pairs(nodes_table) do
 			socks:value(v.id, v["remark"])
 			socks.group[#socks.group+1] = (v.group and v.group ~= "") and v.group or translate("default")
 		end
-	else
+	elseif v.protocol ~= "_shunt" then
 		socks:value(v.id, v["remark"])
 		socks.group[#socks.group+1] = (v.group and v.group ~= "") and v.group or translate("default")
 	end
