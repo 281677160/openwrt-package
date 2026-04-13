@@ -357,6 +357,7 @@ set_cache_var() {
 	shift 1
 	local val="$@"
 	[ -n "${key}" ] && [ -n "${val}" ] && {
+		[ ! -d $TMP_PATH ] && mkdir -p $TMP_PATH
 		sed -i "/${key}=/d" $TMP_PATH/var >/dev/null 2>&1
 		echo "${key}=\"${val}\"" >> $TMP_PATH/var
 		eval ${key}=\"${val}\"

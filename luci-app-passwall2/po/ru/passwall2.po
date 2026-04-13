@@ -1777,6 +1777,9 @@ msgstr "Разрешение DNS-запросов для домена"
 msgid "If the node address is a domain name, this DNS will be used for resolution."
 msgstr "Если адрес узла является доменным именем, для разрешения будет использоваться этот DNS-сервер."
 
+msgid "Supports only Xray or Sing-box node types."
+msgstr "Поддерживаются только узлы типа Xray или Sing-box."
+
 msgid "Chain Proxy"
 msgstr "Цепочка прокси"
 
@@ -1792,9 +1795,6 @@ msgid ""
 msgstr ""
 "Цепочка прокси работает только с серверами Xray или Sing-Box.<br>"
 "В качестве звеньев цепочки можно использовать только серверы, добавленные вручную или импортированные."
-
-msgid "Set the default domain resolution strategy for the sing-box node."
-msgstr "Задать стратегию разрешения доменов по умолчанию для сервера Sing-Box."
 
 msgid "Prefer IPv4"
 msgstr "Предпочитать IPv4"

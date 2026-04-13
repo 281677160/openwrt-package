@@ -1094,7 +1094,7 @@ function gen_config(var)
 	end
 
 	function parse_rule_set(w, rs)
-		-- Format: remote:https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/geosite-netflix.srs'
+		-- Format: remote:https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/geosite-netflix.srs'
 		-- Format: local:/usr/share/sing-box/geosite-netflix.srs'
 		local result = nil
 		if w and #w > 0 then
@@ -1768,7 +1768,25 @@ function gen_config(var)
 		reverse_mapping = true, -- After responding to a DNS query, a reverse mapping of the IP address is stored to provide the domain name for routing purposes.
 	}
 
+	table.insert(dns.servers, {
+		type = "local",
+		tag = "local"
+	})
+
+	if direct_dns_udp_server then
+		table.insert(dns.servers, {
+			tag = "direct",
+			type = "udp",
+			server = direct_dns_udp_server,
+			server_port = tonumber(direct_dns_udp_port) or 53,
+			detour = "direct",
+		})
+	end
+
 	for i, v in pairs(GLOBAL.DNS_SERVER) do
+		if direct_dns_udp_server then
+			v.server.domain_resolver = "direct"
+		end
 		table.insert(dns.servers, v.server)
 		table.insert(dns.rules, {
 			action = "route",
@@ -1776,11 +1794,6 @@ function gen_config(var)
 			domain = v.domain,
 		})
 	end
-
-	table.insert(dns.servers, {
-		type = "local",
-		tag = "local"
-	})
 
 	local direct_strategy = "prefer_ipv6"
 	if direct_dns_query_strategy == "UseIPv4" then
@@ -1832,6 +1845,20 @@ function gen_config(var)
 					},
 					domain = domains,
 					server = "hosts"
+				})
+			end
+		end
+
+		if direct_dns_udp_server then
+			local nodes_domain = {}
+			local nodes_domain_text = sys.exec('uci show passwall2 | grep ".address=" | cut -d "\'" -f 2 | grep "[a-zA-Z]$" | sort -u')
+			string.gsub(nodes_domain_text, '[^' .. "\r\n" .. ']+', function(w)
+				table.insert(nodes_domain, w)
+			end)
+			if #nodes_domain > 0 then
+				table.insert(dns_domain_rules, 1, {
+					domain = nodes_domain,
+					outboundTag = "direct"
 				})
 			end
 		end
@@ -1911,30 +1938,6 @@ function gen_config(var)
 				store_fakeip = true,
 				path = CACHE_PATH .. "/singbox_" .. flag .. ".db"
 			}
-		end
-
-		if direct_dns_udp_server then
-			local domain = {}
-			local nodes_domain_text = sys.exec('uci show passwall2 | grep ".address=" | cut -d "\'" -f 2 | grep "[a-zA-Z]$" | sort -u')
-			string.gsub(nodes_domain_text, '[^' .. "\r\n" .. ']+', function(w)
-				table.insert(domain, w)
-			end)
-			if #domain > 0 then
-				table.insert(dns_domain_rules, 1, {
-					domain = domain,
-					outboundTag = "direct"
-				})
-			end
-
-			local server_port = tonumber(direct_dns_udp_port) or 53
-
-			table.insert(dns.servers, {
-				tag = "direct",
-				type = "udp",
-				server = direct_dns_udp_server,
-				server_port = server_port,
-				detour = "direct",
-			})
 		end
 
 		local default_dns_flag = "remote"
