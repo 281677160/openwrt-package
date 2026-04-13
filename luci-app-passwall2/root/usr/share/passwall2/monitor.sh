@@ -18,7 +18,6 @@ while [ "$ENABLED" -eq 1 ]; do
 		for filename in $(ls ${TMP_SCRIPT_FUNC_PATH} | grep -v "^_"); do
 			cmd=$(cat ${TMP_SCRIPT_FUNC_PATH}/${filename})
 			cmd_check=$(echo $cmd | awk -F '>' '{print $1}')
-			[ -n "$(echo $cmd_check | grep "dns2socks")" ] && cmd_check=$(echo $cmd_check | sed "s#:# #g")
 			icount=$(pgrep -f "$(echo $cmd_check)" | wc -l)
 			if [ $icount = 0 ]; then
 				#echo "${cmd} crashed, restarting." >> /tmp/log/passwall2.log

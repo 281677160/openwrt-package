@@ -1866,7 +1866,8 @@ local function update_node(manual)
 						end
 						if domain_strategy then
 							if vvv == "sing-box" then
-								domain_strategy = (domain_strategy == "UseIPv4" and "ipv4_only") or (domain_strategy == "UseIPv6" and "ipv6_only") or domain_strategy
+								local map = { UseIPv4v6 = "prefer_ipv4", UseIPv6v4 = "prefer_ipv6", UseIPv4 = "ipv4_only", UseIPv6 = "ipv6_only" }
+								domain_strategy = map[domain_strategy] or ""
 							end
 							uci:set(appname, cfgid, "domain_strategy", domain_strategy)
 						end
@@ -2085,7 +2086,8 @@ local execute = function()
 			domain_resolver = value.domain_resolver
 			domain_resolver_dns = value.domain_resolver_dns
 			domain_resolver_dns_https = value.domain_resolver_dns_https
-			domain_strategy = (value.domain_strategy == "UseIPv4" or value.domain_strategy == "UseIPv6") and value.domain_strategy or nil
+			local map = { UseIPv4v6 = 1, UseIPv6v4 = 1, UseIPv4 = 1, UseIPv6 = 1 }
+			domain_strategy = (value.domain_strategy and map[value.domain_strategy]) and value.domain_strategy or nil
 
 			-- 订阅组链式代理
 			local function valid_chain_node(node)
