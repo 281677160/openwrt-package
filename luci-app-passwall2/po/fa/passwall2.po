@@ -1776,6 +1776,9 @@ msgstr "حل مشکل DNS دامنه"
 msgid "If the node address is a domain name, this DNS will be used for resolution."
 msgstr "اگر آدرس گره یک نام دامنه باشد، از این DNS برای حل مسئله استفاده خواهد شد."
 
+msgid "Supports only Xray or Sing-box node types."
+msgstr "فقط گره‌های نوع Xray یا Sing-box پشتیبانی می‌شوند."
+
 msgid "Chain Proxy"
 msgstr "پروکسی زنجیره‌ای"
 
@@ -1791,9 +1794,6 @@ msgid ""
 msgstr ""
 "پروکسی زنجیره‌ای فقط با گره‌های Xray یا Sing-box کار می‌کند.<br>"
 "شما فقط می‌توانید از گره‌های دستی یا وارد شده به عنوان گره‌های زنجیره‌ای استفاده کنید."
-
-msgid "Set the default domain resolution strategy for the sing-box node."
-msgstr "تنظیم استراتژی پیش‌فرض حل دامنه برای گره sing-box."
 
 msgid "Prefer IPv4"
 msgstr "ترجیح IPv4"
