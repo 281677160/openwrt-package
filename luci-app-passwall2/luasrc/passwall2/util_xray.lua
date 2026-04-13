@@ -8,7 +8,8 @@ local fs = api.fs
 local CACHE_PATH = api.CACHE_PATH
 
 local GLOBAL = {
-	DNS_SERVER = {}
+	DNS_SERVER = {},
+	DNS_HOSTNAME = {}
 }
 
 local xray_version = api.get_app_version("xray")
@@ -442,6 +443,11 @@ function gen_outbound(flag, node, tag, proxy_table)
 					else
 						config_port = 443
 					end
+					if _a.hostname then
+						if api.datatypes.hostname(_a.hostname) then
+							GLOBAL.DNS_HOSTNAME[_a.hostname] = true
+						end
+					end
 				end
 			else
 				local server_address = node.domain_resolver_dns
@@ -461,7 +467,11 @@ function gen_outbound(flag, node, tag, proxy_table)
 				queryStrategy = node.domain_strategy or "UseIP",
 				address = config_address,
 				port = config_port,
-				domains = {"full:" .. node.address}
+				domains = {"full:" .. node.address},
+				finalQuery = true,
+				disableCache = false,
+				serveStale = true,
+				serveExpiredTTL = 30,
 			}
 		end
 
@@ -1463,13 +1473,6 @@ function gen_config(var)
 	local remote_fakedns_tag = "dns-in-remote-fakedns"
 	local default_dns_tag = "dns-in-default"
 
-	for i, v in pairs(GLOBAL.DNS_SERVER) do
-		table.insert(dns_servers, {
-			server = v,
-			outboundTag = "direct"
-		})
-	end
-
 	dns = {
 		tag = "dns-global",
 		hosts = {},
@@ -1479,6 +1482,13 @@ function gen_config(var)
 		servers = {},
 		queryStrategy = "UseIP"
 	}
+
+	for i, v in pairs(GLOBAL.DNS_SERVER) do
+		table.insert(dns_servers, {
+			server = v,
+			outboundTag = "direct"
+		})
+	end
 
 	local _direct_dns = nil
 	if direct_dns_udp_server then
@@ -1495,6 +1505,27 @@ function gen_config(var)
 				server = _direct_dns
 			})
 		end
+	end
+
+	if next(GLOBAL.DNS_HOSTNAME) then
+		local hostname = {}
+		for line, _ in pairs(GLOBAL.DNS_HOSTNAME) do
+			table.insert(hostname, line)
+		end
+		local new_dns_server
+		if _direct_dns then
+			new_dns_server = api.clone(_direct_dns)
+		else
+			new_dns_server = {
+				address = "localhost"
+			}
+		end
+		new_dns_server.tag = "dns-in-bootstrap"
+		new_dns_server.domains = hostname
+		table.insert(dns_servers, #dns_servers - 1, {
+			outboundTag = "direct",
+			server = new_dns_server
+		})
 	end
 
 	if dns_listen_port then
@@ -1604,9 +1635,13 @@ function gen_config(var)
 			end)
 			if #domain > 0 then
 				table.insert(dns.servers, 1, {
-					tag = "local",
+					tag = "dns-in-vpslist",
 					address = "localhost",
-					domains = domain
+					domains = domain,
+					finalQuery = true,
+					disableCache = false,
+					serveStale = true,
+					serveExpiredTTL = 30,
 				})
 			end
 		end
@@ -2121,11 +2156,15 @@ function gen_front_dns_config(var)
 		end)
 		if #node_domain > 0 then
 			table.insert(dns.servers, {
-				tag = "direct",
+				tag = "dns-in-vpslist",
 				address = direct_dns_udp_server,
 				port = tonumber(direct_dns_udp_port) or 53,
 				queryStrategy = queryStrategy,
-				domains = node_domain
+				domains = node_domain,
+				finalQuery = true,
+				disableCache = false,
+				serveStale = true,
+				serveExpiredTTL = 30,
 			})
 		end
 	end
