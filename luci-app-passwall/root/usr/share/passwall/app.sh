@@ -751,12 +751,10 @@ run_redir() {
 			}
 
 			local protocol=$(config_n_get $node protocol)
-			local default_node=$(config_n_get $node default_node)
 			local v2ray_dns_mode=$(config_t_get global v2ray_dns_mode tcp)
-			[ "${DNS_MODE}" != "sing-box" ] && [ "${DNS_MODE}" != "udp" ] && [ "$protocol" = "_shunt" ] && [ "$default_node" = "_direct" ] && {
+			[ "${DNS_MODE}" != "sing-box" ] && [ "$protocol" = "_shunt" ] && {
 				DNS_MODE="sing-box"
-				v2ray_dns_mode="tcp"
-				echolog "* 当前TCP节点采用Sing-Box分流且默认节点为直连，远程DNS过滤模式将默认使用Sing-Box(TCP)，防止环回！"
+				[ "$v2ray_dns_mode" != "udp" ] && [ "$v2ray_dns_mode" != "tcp" ] && v2ray_dns_mode="tcp"
 			}
 
 			[ "$protocol" = "_shunt" ] && {
@@ -832,12 +830,10 @@ run_redir() {
 			}
 
 			local protocol=$(config_n_get $node protocol)
-			local default_node=$(config_n_get $node default_node)
 			local v2ray_dns_mode=$(config_t_get global v2ray_dns_mode tcp)
-			[ "${DNS_MODE}" != "xray" ] && [ "${DNS_MODE}" != "udp" ] && [ "$protocol" = "_shunt" ] && [ "$default_node" = "_direct" ] && {
+			[ "${DNS_MODE}" != "xray" ] && [ "$protocol" = "_shunt" ] && {
 				DNS_MODE="xray"
-				v2ray_dns_mode="tcp"
-				echolog "* 当前TCP节点采用Xray分流且默认节点为直连，远程DNS过滤模式将默认使用Xray(TCP)，防止环回！"
+				[ "$v2ray_dns_mode" != "udp" ] && [ "$v2ray_dns_mode" != "tcp" ] && v2ray_dns_mode="tcp"
 			}
 
 			[ "$protocol" = "_shunt" ] && {
@@ -1634,9 +1630,6 @@ acl_app() {
 				dns_mode=${dns_mode:-dns2socks}
 				remote_dns=${remote_dns:-1.1.1.1}
 				use_default_dns=${use_default_dns:-direct}
-				[ "$dns_mode" = "sing-box" ] && {
-					[ "$v2ray_dns_mode" = "doh" ] && remote_dns=${remote_dns_doh:-https://1.1.1.1/dns-query}
-				}
 			fi
 
 			[ -n "$tcp_node" ] && {
@@ -1659,6 +1652,17 @@ acl_app() {
 							set_cache_var "ACL_${sid}_dns_port" "${GLOBAL_DNSMASQ_PORT}"
 							set_cache_var "ACL_${sid}_tcp_default" "1"
 						else
+							local type=$(echo $(config_n_get $tcp_node type) | tr 'A-Z' 'a-z')
+							local protocol=$(config_n_get $tcp_node protocol)
+							([ "$type" = "sing-box" ] || [ "$type" = "xray" ]) && [ "$protocol" = "_shunt" ] && [ "$type" != "$dns_mode" ] && {
+								dns_mode=$type
+								([ "$type" = "xray" ] || [ "$type" = "sing-box" ]) && [ "$v2ray_dns_mode" != "udp" ] && [ "$v2ray_dns_mode" != "tcp" ] && v2ray_dns_mode="tcp"
+							}
+							dns_cache_key="${dns_mode}_${remote_dns}_${v2ray_dns_mode:-none}_${remote_dns_client_ip:-0}_${remote_fakedns:-0}"
+							[ "$dns_mode" = "sing-box" ] && [ "$v2ray_dns_mode" != "udp" ] && [ "$v2ray_dns_mode" != "tcp" ] && {
+								dns_cache_key="${dns_mode}_${remote_dns_doh:-https://1.1.1.1/dns-query}_${v2ray_dns_mode:-doh}_${remote_dns_client_ip:-0}_${remote_fakedns:-0}"
+							}
+
 							run_dns() {
 								local _dns_port
 								[ -n $1 ] && _dns_port=$1
@@ -1677,7 +1681,7 @@ acl_app() {
 										[ "$filter_proxy_ipv6" = "1" ] && remote_dns_query_strategy="UseIPv4"
 										run_${type} flag=acl_${sid} type=$dns_mode dns_socks_address=127.0.0.1 dns_socks_port=$socks_port dns_listen_port=${_dns_port} remote_dns_protocol=${v2ray_dns_mode} remote_dns_udp_server=${remote_dns} remote_dns_tcp_server=${remote_dns} remote_dns_doh="${remote_dns_doh}" remote_dns_query_strategy=${remote_dns_query_strategy} remote_dns_client_ip=${remote_dns_client_ip} config_file=$config_file
 									fi
-									set_cache_var "node_${tcp_node}_$(echo -n "${remote_dns}" | md5sum | cut -d " " -f1)" "${_dns_port}"
+									set_cache_var "node_${tcp_node}_$(echo -n "${dns_cache_key}" | md5sum | cut -d " " -f1)" "${_dns_port}"
 								}
 
 								[ "$dns_shunt" = "chinadns-ng" ] && [ -n "$(first_type chinadns-ng)" ] && {
@@ -1734,7 +1738,7 @@ acl_app() {
 									-NO_LOGIC_LOG 1
 								ln_run "$(first_type dnsmasq)" "dnsmasq_${sid}" "/dev/null" -C ${dnsmasq_conf} -x ${acl_path}/dnsmasq.pid
 								set_cache_var "ACL_${sid}_dns_port" "${dnsmasq_port}"
-								set_cache_var "node_${tcp_node}_$(echo -n "${tcp_proxy_mode}${remote_dns}" | md5sum | cut -d " " -f1)" "${dnsmasq_port}"
+								set_cache_var "node_${tcp_node}_$(echo -n "${tcp_proxy_mode}_${dns_cache_key}" | md5sum | cut -d " " -f1)" "${dnsmasq_port}"
 								#dhcp.leases to hosts
 								$APP_PATH/lease2hosts.sh > /dev/null 2>&1 &
 							}
@@ -1743,9 +1747,9 @@ acl_app() {
 							if [ -n "${_socks_port}" ] && [ -n "${_redir_port}" ]; then
 								socks_port=${_socks_port}
 								tcp_port=${_redir_port}
-								_dnsmasq_port=$(get_cache_var "node_${tcp_node}_$(echo -n "${tcp_proxy_mode}${remote_dns}" | md5sum | cut -d " " -f1)")
+								_dnsmasq_port=$(get_cache_var "node_${tcp_node}_$(echo -n "${tcp_proxy_mode}_${dns_cache_key}" | md5sum | cut -d " " -f1)")
 								if [ -z "${_dnsmasq_port}" ]; then
-									_dns_port=$(get_cache_var "node_${tcp_node}_$(echo -n "${remote_dns}" | md5sum | cut -d " " -f1)")
+									_dns_port=$(get_cache_var "node_${tcp_node}_$(echo -n "${dns_cache_key}" | md5sum | cut -d " " -f1)")
 									run_dns ${_dns_port}
 								else
 									[ -n "${_dnsmasq_port}" ] && set_cache_var "ACL_${sid}_dns_port" "${_dnsmasq_port}"
@@ -1757,11 +1761,10 @@ acl_app() {
 								set_cache_var "node_${tcp_node}_redir_port" "${redir_port}"
 								tcp_port=$redir_port
 
-								local type=$(echo $(config_n_get $tcp_node type) | tr 'A-Z' 'a-z')
-								if [ -n "${type}" ] && ([ "${type}" = "sing-box" ] || [ "${type}" = "xray" ]); then
+								if [ "${type}" = "sing-box" ] || [ "${type}" = "xray" ]; then
 									config_file="acl/${tcp_node}_TCP_${redir_port}.json"
 									_extra_param="socks_address=127.0.0.1 socks_port=$socks_port"
-									if ([ "$dns_mode" = "sing-box" ] || [ "$dns_mode" = "xray" ]) && [ "${type}" = "${dns_mode}" ]; then
+									[ "${type}" = "${dns_mode}" ] && {
 										dns_port=$(get_new_port $(expr $dns_port + 1))
 										_dns_port=$dns_port
 										config_file="${config_file//TCP_/DNS_${_dns_port}_TCP_}"
@@ -1769,8 +1772,9 @@ acl_app() {
 										remote_dns_query_strategy="UseIP"
 										[ "$filter_proxy_ipv6" = "1" ] && remote_dns_query_strategy="UseIPv4"
 										remote_dns_doh=${remote_dns_doh:-https://1.1.1.1/dns-query}
-										_extra_param="dns_listen_port=${_dns_port} remote_dns_protocol=${v2ray_dns_mode} remote_dns_udp_server=${remote_dns} remote_dns_tcp_server=${remote_dns} remote_dns_doh=${remote_dns_doh} remote_dns_query_strategy=${remote_dns_query_strategy} remote_dns_client_ip=${remote_dns_client_ip}"
-									fi
+										_extra_param="${_extra_param} dns_listen_port=${_dns_port} remote_dns_protocol=${v2ray_dns_mode} remote_dns_udp_server=${remote_dns} remote_dns_tcp_server=${remote_dns}"
+										_extra_param="${_extra_param} remote_dns_doh=${remote_dns_doh} remote_dns_query_strategy=${remote_dns_query_strategy} remote_dns_client_ip=${remote_dns_client_ip}"
+									}
 									_extra_param="${_extra_param} tcp_proxy_way=$TCP_PROXY_WAY"
 									[ -n "$udp_node" ] && ([ "$udp_node" = "tcp" ] || [ "$udp_node" = "$tcp_node" ]) && {
 										config_file="${config_file//TCP_/TCP_UDP_}"
@@ -1856,7 +1860,7 @@ acl_app() {
 				fi
 			}
 			unset enabled sid remarks sources interface tcp_no_redir_ports udp_no_redir_ports use_global_config tcp_node udp_node use_direct_list use_proxy_list use_block_list use_gfw_list chn_list tcp_proxy_mode udp_proxy_mode filter_proxy_ipv6 dns_mode remote_dns v2ray_dns_mode remote_dns_doh remote_dns_client_ip
-			unset _ip _mac _iprange _ipset _ip_or_mac source_list tcp_port udp_port config_file _extra_param
+			unset _ip _mac _iprange _ipset _ip_or_mac source_list tcp_port udp_port config_file _extra_param dns_cache_key
 			unset _china_ng_listen _chinadns_local_dns _direct_dns_mode chinadns_ng_default_tag dnsmasq_filter_proxy_ipv6 remote_fakedns force_https_soa
 		done
 		unset socks_port redir_port dns_port dnsmasq_port chinadns_port
