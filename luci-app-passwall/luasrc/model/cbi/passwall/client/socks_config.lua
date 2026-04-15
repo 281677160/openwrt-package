@@ -105,9 +105,10 @@ for i, v in pairs(nodes_table) do
 	if v.protocol ~= "_shunt" then
 		o:value(v.id, v.remark)
 		o.group[#o.group+1] = v.group or ""
-		socks_node:value(v.id, v["remark"])
-		socks_node.group[#socks_node.group+1] = (v.group and v.group ~= "") and v.group or translate("default")
+		s.fields["enable_autoswitch"]:depends({ node = v.id })
 	end
+	socks_node:value(v.id, v["remark"])
+	socks_node.group[#socks_node.group+1] = (v.group and v.group ~= "") and v.group or translate("default")
 end
 -- 读取旧 DynamicList
 function o.cfgvalue(self, section)
