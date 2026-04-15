@@ -533,12 +533,12 @@ o = s:taboption("DNS", Flag, "dns_redirect", translate("DNS Redirect"), translat
 o.default = "1"
 o.rmempty = false
 
-local use_nft = m:get("@global_forwarding[0]", "use_nft") == "1"
-local set_title = api.i18n.translate(use_nft and "Clear NFTSET on Reboot" or "Clear IPSET on Reboot")
+local prefer_nft = m:get("@global_forwarding[0]", "prefer_nft") == "1"
+local set_title = api.i18n.translate(prefer_nft and "Clear NFTSET on Reboot" or "Clear IPSET on Reboot")
 o = s:taboption("DNS", Flag, "flush_set_on_reboot", set_title, translate("Clear IPSET/NFTSET on service reboot. This may increase reboot time."))
 o.default = "0"
 
-set_title = api.i18n.translate(use_nft and "Clear NFTSET" or "Clear IPSET")
+set_title = api.i18n.translate(prefer_nft and "Clear NFTSET" or "Clear IPSET")
 o = s:taboption("DNS", DummyValue, "clear_ipset", set_title, translate("Try this feature if the rule modification does not take effect."))
 o.rawhtml = true
 function o.cfgvalue(self, section)
@@ -823,7 +823,7 @@ for k, v in pairs(nodes_table) do
 			socks:value(v.id, v["remark"])
 			socks.group[#socks.group+1] = (v.group and v.group ~= "") and v.group or translate("default")
 		end
-	elseif v.protocol ~= "_shunt" then
+	else
 		socks:value(v.id, v["remark"])
 		socks.group[#socks.group+1] = (v.group and v.group ~= "") and v.group or translate("default")
 	end
