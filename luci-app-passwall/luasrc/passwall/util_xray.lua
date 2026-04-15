@@ -193,13 +193,12 @@ function gen_outbound(flag, node, tag, proxy_table)
 					}
 				} or nil,
 				kcpSettings = (node.transport == "mkcp") and {
-					mtu = tonumber(node.mkcp_mtu),
-					tti = tonumber(node.mkcp_tti),
-					uplinkCapacity = tonumber(node.mkcp_uplinkCapacity),
-					downlinkCapacity = tonumber(node.mkcp_downlinkCapacity),
-					congestion = (node.mkcp_congestion == "1") and true or false,
-					readBufferSize = tonumber(node.mkcp_readBufferSize),
-					writeBufferSize = tonumber(node.mkcp_writeBufferSize)
+					mtu = 1350,
+					tti = 50,
+					uplinkCapacity = 12,
+					downlinkCapacity = 100,
+					CwndMultiplier = 1,
+					MaxSendingWindow = 2 * 1024 * 1024
 				} or nil,
 				wsSettings = (node.transport == "ws") and {
 					path = node.ws_path or "/",
@@ -655,13 +654,12 @@ function gen_config_server(node)
 						}
 					} or nil,
 					kcpSettings = (node.transport == "mkcp") and {
-						mtu = tonumber(node.mkcp_mtu),
-						tti = tonumber(node.mkcp_tti),
-						uplinkCapacity = tonumber(node.mkcp_uplinkCapacity),
-						downlinkCapacity = tonumber(node.mkcp_downlinkCapacity),
-						congestion = (node.mkcp_congestion == "1") and true or false,
-						readBufferSize = tonumber(node.mkcp_readBufferSize),
-						writeBufferSize = tonumber(node.mkcp_writeBufferSize)
+						mtu = 1350,
+						tti = 50,
+						uplinkCapacity = 12,
+						downlinkCapacity = 100,
+						CwndMultiplier = 1,
+						MaxSendingWindow = 2 * 1024 * 1024
 					} or nil,
 					wsSettings = (node.transport == "ws") and {
 						host = node.ws_host or nil,

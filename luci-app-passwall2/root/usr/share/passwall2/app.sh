@@ -1167,6 +1167,7 @@ start() {
 		stop
 	}
 	mkdir -p /tmp/etc /tmp/log $TMP_PATH $TMP_BIN_PATH $TMP_SCRIPT_FUNC_PATH $TMP_ROUTE_PATH $TMP_ACL_PATH $TMP_PATH2
+	get_config
 	export V2RAY_LOCATION_ASSET=$(config_t_get global_rules v2ray_location_asset "/usr/share/v2ray/")
 	export XRAY_LOCATION_ASSET=$V2RAY_LOCATION_ASSET
 	export ENABLE_DEPRECATED_GEOSITE=true
@@ -1275,6 +1276,26 @@ stop() {
 	exit 0
 }
 
+get_direct_dns() {
+	RESOLVFILE=/tmp/resolv.conf.d/resolv.conf.auto
+	[ -f "${RESOLVFILE}" ] && [ -s "${RESOLVFILE}" ] || RESOLVFILE=/tmp/resolv.conf.auto
+
+	ISP_DNS=$(cat $RESOLVFILE 2>/dev/null | grep -E -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | grep -v -E '^(0\.0\.0\.0|127\.0\.0\.1)$' | awk '!seen[$0]++')
+	ISP_DNS6=$(cat $RESOLVFILE 2>/dev/null | grep -E "([A-Fa-f0-9]{1,4}::?){1,7}[A-Fa-f0-9]{1,4}" | awk -F % '{print $1}' | awk -F " " '{print $2}' | grep -v -Fx ::1 | grep -v -Fx :: | awk '!seen[$0]++')
+
+	DNSMASQ_UPSTREAM_DNS=$(uci show dhcp.@dnsmasq[0] | grep "\.server=" | awk -F '=' '{print $2}' | sed "s/'//g" | tr ' ' '\n' | grep -v "\/" | awk '{if($1 ~ /#/) {sub(/#/, "#", $1); print $1} else {print $1"#53"}}' | head -2 | sed ':label;N;s/\n/,/;b label')
+	DEFAULT_DNS="${DNSMASQ_UPSTREAM_DNS}"
+	[ -z "${DEFAULT_DNS}" ] && DEFAULT_DNS=$(echo -n $ISP_DNS | tr ' ' '\n' | head -2 | tr '\n' ',' | sed 's/,$//')
+	AUTO_DNS=${DEFAULT_DNS:-119.29.29.29}
+
+	local AUTO_DNS_1=$(echo ${AUTO_DNS} | awk -F ',' '{print $1}')
+	local AUTO_DNS_2=$(echo ${AUTO_DNS} | awk -F ',' '{print $2}')
+	local AUTO_DNS_ADDRESS=$(echo ${AUTO_DNS_1} | awk -F '#' '{print $1}')
+	local AUTO_DNS_PORT=$(echo ${AUTO_DNS_1} | awk -F '#' '{print $2}')
+	DIRECT_DNS_UDP_SERVER=${AUTO_DNS_ADDRESS}
+	DIRECT_DNS_UDP_PORT=${AUTO_DNS_PORT}
+}
+
 get_config() {
 	ENABLED_DEFAULT_ACL=0
 	ENABLED=$(config_t_get global enabled 0)
@@ -1307,31 +1328,17 @@ get_config() {
 	DNS_CACHE=$(config_t_get global dns_cache 1)
 	DNS_REDIRECT=$(config_t_get global dns_redirect 1)
 
-	RESOLVFILE=/tmp/resolv.conf.d/resolv.conf.auto
-	[ -f "${RESOLVFILE}" ] && [ -s "${RESOLVFILE}" ] || RESOLVFILE=/tmp/resolv.conf.auto
+	get_direct_dns
 
-	ISP_DNS=$(cat $RESOLVFILE 2>/dev/null | grep -E -o "[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+" | grep -v -E '^(0\.0\.0\.0|127\.0\.0\.1)$' | awk '!seen[$0]++')
-	ISP_DNS6=$(cat $RESOLVFILE 2>/dev/null | grep -E "([A-Fa-f0-9]{1,4}::?){1,7}[A-Fa-f0-9]{1,4}" | awk -F % '{print $1}' | awk -F " " '{print $2}' | grep -v -Fx ::1 | grep -v -Fx :: | awk '!seen[$0]++')
-
-	DEFAULT_DNSMASQ_CFGID=$(uci show dhcp.@dnsmasq[0] |  awk -F '.' '{print $2}' | awk -F '=' '{print $1}'| head -1)
-	DEFAULT_DNS=$(uci show dhcp.@dnsmasq[0] | grep "\.server=" | awk -F '=' '{print $2}' | sed "s/'//g" | tr ' ' '\n' | grep -v "\/" | head -2 | sed ':label;N;s/\n/,/;b label')
-	[ -z "${DEFAULT_DNS}" ] && DEFAULT_DNS=$(echo -n $ISP_DNS | tr ' ' '\n' | head -2 | tr '\n' ',' | sed 's/,$//')
-	AUTO_DNS=${DEFAULT_DNS:-119.29.29.29}
-
-	local AUTO_DNS2=$(get_first_dns AUTO_DNS 53 | sed 's/#/:/g')
-	local AUTO_DNS_ADDRESS=$(echo ${AUTO_DNS2} | awk -F ':' '{print $1}')
-	local AUTO_DNS_PORT=$(echo ${AUTO_DNS2} | awk -F ':' '{print $2}')
-	DIRECT_DNS_UDP_SERVER=${AUTO_DNS_ADDRESS}
-	DIRECT_DNS_UDP_PORT=${AUTO_DNS_PORT}
-
-	DNSMASQ_CONF_DIR=/tmp/dnsmasq.d
+	DEFAULT_DNSMASQ_CONF_DIR=/tmp/dnsmasq.d
+	DNSMASQ_CONF_DIR=${DEFAULT_DNSMASQ_CONF_DIR}
 	DEFAULT_DNSMASQ_CFGID="$(uci -q show "dhcp.@dnsmasq[0]" | awk 'NR==1 {split($0, conf, /[.=]/); print conf[2]}')"
 	if [ -f "/tmp/etc/dnsmasq.conf.$DEFAULT_DNSMASQ_CFGID" ]; then
 		DNSMASQ_CONF_DIR="$(awk -F '=' '/^conf-dir=/ {print $2}' "/tmp/etc/dnsmasq.conf.$DEFAULT_DNSMASQ_CFGID")"
 		if [ -n "$DNSMASQ_CONF_DIR" ]; then
 			DNSMASQ_CONF_DIR=${DNSMASQ_CONF_DIR%*/}
 		else
-			DNSMASQ_CONF_DIR="/tmp/dnsmasq.d"
+			DNSMASQ_CONF_DIR=${DEFAULT_DNSMASQ_CONF_DIR}
 		fi
 	fi
 	set_cache_var GLOBAL_DNSMASQ_CONF ${DNSMASQ_CONF_DIR}/dnsmasq-${CONFIG}.conf
@@ -1340,16 +1347,16 @@ get_config() {
 	QUEUE_RUN=1
 }
 
-get_config
-
 arg1=$1
 shift
 case $arg1 in
 run_socks)
+	get_direct_dns
 	QUEUE_RUN=0
 	run_socks $@
 	;;
 socks_node_switch)
+	get_direct_dns
 	QUEUE_RUN=0
 	socks_node_switch $@
 	;;
