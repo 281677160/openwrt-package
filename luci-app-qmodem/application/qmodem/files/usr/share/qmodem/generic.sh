@@ -706,6 +706,24 @@ get_sim_switch_capabilities(){
     json_add_string "supportSwitch" "0"
 }
 
+get_usage_stats()
+{
+    json_add_boolean "available" 0
+    json_add_int "updated_at" 0
+    json_add_int "total_rx_bytes" 0
+    json_add_int "total_tx_bytes" 0
+}
+
+write_usage_stats()
+{
+    return 1
+}
+
+clear_usage_stats()
+{
+    json_add_boolean "result" 0
+}
+
 get_global_disabled_features()
 {
     . /lib/functions.sh
