@@ -25,7 +25,7 @@ if /usr/bin/curl --help all | grep -q "\-\-retry-all-errors"; then
 	extra_params="${extra_params} --retry-all-errors"
 fi
 
-status=$(/usr/bin/curl -I -o /dev/null -skL ${extra_params} --connect-timeout 3 --retry 2 --max-time 10 -w "%{http_code}" "${probeUrl}")
+status=$(/usr/bin/curl -I -o /dev/null -skL ${extra_params} --connect-timeout 3 --retry 1 --max-time 6 -w "%{http_code}" "${probeUrl}")
 
 case "$status" in
 	200|204)
