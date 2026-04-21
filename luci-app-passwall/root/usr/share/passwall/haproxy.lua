@@ -1,7 +1,7 @@
 #!/usr/bin/lua
 
 local api = require ("luci.passwall.api")
-local appname = "passwall"
+local appname = api.appname
 local fs = api.fs
 local jsonc = api.jsonc
 local uci = api.uci
@@ -175,8 +175,8 @@ listen %s
 	if health_check_type == "passwall_logic" then
 		f_out:write(string.format([[
 	option external-check
-	external-check command "/usr/share/passwall/haproxy_check.sh"
-]], port, port))
+	external-check command "/usr/share/%s/haproxy_check.sh"
+]], appname))
 	end
 
 	local count_M, count_B = 1, 1
@@ -206,7 +206,7 @@ listen %s
 		f_out:write("	" .. api.trim(server_conf) .. "\n")
 
 		if o.export ~= "0" then
-			sys.call(string.format(". /usr/share/passwall/utils.sh ; add_ip2route %s %s", o.origin_address, o.export))
+			sys.call(string.format(". /usr/share/%s/utils.sh ; add_ip2route %s %s", appname, o.origin_address, o.export))
 		end
 
 		log(string.format("  | - 出口节点：%s:%s，权重：%s", o.origin_address, o.origin_port, o.lbweight))

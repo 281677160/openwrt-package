@@ -73,6 +73,14 @@ static int pci_irq_vector(struct pci_dev *dev, unsigned int nr)
 #endif
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0)
+#define MHI_PCI_REQUEST_REGION(pdev, bar, name) pci_request_regions((pdev), (name))
+#define MHI_PCI_RELEASE_REGION(pdev, bar) pci_release_regions((pdev))
+#else
+#define MHI_PCI_REQUEST_REGION(pdev, bar, name) pci_request_region((pdev), (bar), (name))
+#define MHI_PCI_RELEASE_REGION(pdev, bar) pci_release_region((pdev), (bar))
+#endif
+
 static struct pci_device_id mhi_pcie_device_id[] = {
 	{PCI_DEVICE(MHI_PCIE_VENDOR_ID, 0x0303)}, //SDX20
 	{PCI_DEVICE(MHI_PCIE_VENDOR_ID, 0x0304)}, //SDX24
@@ -96,7 +104,7 @@ void mhi_deinit_pci_dev(struct mhi_controller *mhi_cntrl)
 	iounmap(mhi_cntrl->regs);
 	mhi_cntrl->regs = NULL;
 	pci_clear_master(pci_dev);
-	pci_release_region(pci_dev, mhi_dev->resn);
+	MHI_PCI_RELEASE_REGION(pci_dev, mhi_dev->resn);
 	pci_disable_device(pci_dev);
 }
 
@@ -121,9 +129,9 @@ static int mhi_init_pci_dev(struct mhi_controller *mhi_cntrl)
 		goto error_enable_device;
 	}
 
-	ret = pci_request_region(pci_dev, mhi_dev->resn, "mhi");
+	ret = MHI_PCI_REQUEST_REGION(pci_dev, mhi_dev->resn, "mhi");
 	if (ret) {
-		MHI_ERR("Error pci_request_region, ret:%d\n", ret);
+		MHI_ERR("Error requesting PCI regions, ret:%d\n", ret);
 		goto error_request_region;
 	}
 
@@ -215,7 +223,7 @@ error_request_region:
 	pci_disable_device(pci_dev);
 
 error_enable_device:
-	pci_release_region(pci_dev, mhi_dev->resn);
+	MHI_PCI_RELEASE_REGION(pci_dev, mhi_dev->resn);
 
 	return ret;
 }
