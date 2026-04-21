@@ -933,8 +933,8 @@ start_haproxy() {
 	[ "$(config_t_get global_haproxy balancing_enable 0)" != "1" ] && return
 	haproxy_path=$TMP_PATH/haproxy
 	haproxy_conf="config.cfg"
-	lua $APP_PATH/haproxy.lua -path ${haproxy_path} -conf ${haproxy_conf} -dns ${LOCAL_DNS:-${AUTO_DNS}}
-	ln_run ${QUEUE_RUN} "$(first_type haproxy)" haproxy "/dev/null" -f "${haproxy_path}/${haproxy_conf}"
+	lua $APP_PATH/haproxy.lua -path ${haproxy_path} -conf ${haproxy_conf}
+	ln_run 0 "$(first_type haproxy)" haproxy "/dev/null" -f "${haproxy_path}/${haproxy_conf}"
 }
 
 run_copy_dnsmasq() {

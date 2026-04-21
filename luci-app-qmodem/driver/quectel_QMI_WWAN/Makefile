@@ -18,6 +18,10 @@ define KernelPackage/qmi_wwan_q
   SUBMENU:=WWAN Support
   TITLE:=Quectel Linux USB QMI WWAN Driver
   DEPENDS:=+kmod-usb-net +kmod-usb-wdm
+  KCONFIG:= \
+	CONFIG_USB_USBNET \
+	CONFIG_USB_NET_DRIVERS \
+	CONFIG_USB_WDM
   FILES:=$(PKG_BUILD_DIR)/qmi_wwan_q.ko
   AUTOLOAD:=$(call AutoLoad,81,qmi_wwan_q)
 endef

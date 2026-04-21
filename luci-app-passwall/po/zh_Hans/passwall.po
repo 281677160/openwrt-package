@@ -1855,6 +1855,12 @@ msgstr "TLS 证书名称（CertName）"
 msgid "TLS is used to verify the leaf certificate name."
 msgstr "TLS 用于验证 leaf 证书的 name。"
 
+msgid "Fetch Manually"
+msgstr "手动获取"
+
+msgid "Fetch Failed"
+msgstr "获取失败"
+
 msgid "ECH Config"
 msgstr "ECH 配置"
 

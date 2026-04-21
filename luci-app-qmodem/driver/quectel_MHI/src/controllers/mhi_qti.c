@@ -109,6 +109,14 @@ static int pci_irq_vector(struct pci_dev *dev, unsigned int nr)
 #endif
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0)
+#define MHI_PCI_REQUEST_REGION(pdev, bar, name) pci_request_regions((pdev), (name))
+#define MHI_PCI_RELEASE_REGION(pdev, bar) pci_release_regions((pdev))
+#else
+#define MHI_PCI_REQUEST_REGION(pdev, bar, name) pci_request_region((pdev), (bar), (name))
+#define MHI_PCI_RELEASE_REGION(pdev, bar) pci_release_region((pdev), (bar))
+#endif
+
 struct firmware_info {
 	unsigned int dev_id;
 	const char *fw_image;
@@ -168,7 +176,7 @@ void mhi_deinit_pci_dev(struct mhi_controller *mhi_cntrl)
 	iounmap(mhi_cntrl->regs);
 	mhi_cntrl->regs = NULL;
 	pci_clear_master(pci_dev);
-	pci_release_region(pci_dev, mhi_dev->resn);
+	MHI_PCI_RELEASE_REGION(pci_dev, mhi_dev->resn);
 	pci_disable_device(pci_dev);
 }
 
@@ -193,9 +201,9 @@ static int mhi_init_pci_dev(struct mhi_controller *mhi_cntrl)
 		goto error_enable_device;
 	}
 
-	ret = pci_request_region(pci_dev, mhi_dev->resn, "mhi");
+	ret = MHI_PCI_REQUEST_REGION(pci_dev, mhi_dev->resn, "mhi");
 	if (ret) {
-		MHI_ERR("Error pci_request_region, ret:%d\n", ret);
+		MHI_ERR("Error requesting PCI regions, ret:%d\n", ret);
 		goto error_request_region;
 	}
 
@@ -328,7 +336,7 @@ error_request_region:
 	pci_disable_device(pci_dev);
 
 error_enable_device:
-	pci_release_region(pci_dev, mhi_dev->resn);
+	MHI_PCI_RELEASE_REGION(pci_dev, mhi_dev->resn);
 
 	return ret;
 }
@@ -912,9 +920,17 @@ int mhi_pci_probe(struct pci_dev *pci_dev,
 	pr_info("%s pci_dev->name = %s, domain=%d, bus=%d, slot=%d, vendor=%04X, device=%04X\n",
 		__func__, dev_name(&pci_dev->dev), domain, bus, slot, pci_dev->vendor, pci_dev->device);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0)
+#if !defined(CONFIG_PCI_MSI) && !defined(CONFIG_GENERIC_MSI_IRQ)
+	dev_err(&pci_dev->dev,
+		"PCI MSI is not enabled in this kernel configuration\n");
+	return -EOPNOTSUPP;
+#endif
+#else
 #if !defined(CONFIG_PCI_MSI)
-        /* MT7621 RTL8198D EcoNet-EN7565 */
+	/* MT7621 RTL8198D EcoNet-EN7565 */
 	#error "pcie msi is not support by this soc! and i donot support INTx (SW1SDX55-2688)"
+#endif
 #endif
 
 	if (!mhi_pci_is_alive(pci_dev)) {
