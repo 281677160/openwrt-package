@@ -1531,3 +1531,31 @@ function cleanEmptyTables(t)
 	end
 	return next(t) and t or nil
 end
+
+function fetch_cert_sha256(host, port, timeout)
+	if not host or not datatypes.hostname(host) then return "" end
+	port = tonumber(port) or 443
+	timeout = tonumber(timeout) or 5
+	local xray = finded_com("xray")
+	local cmd
+	if xray then
+		cmd = string.format(
+			"timeout %d %q tls ping %s:%d 2>/dev/null " ..
+			"| awk 'tolower($0) ~ /without sni/ {f=1} tolower($0) ~ /with sni/ {f=0} " ..
+			"f && tolower($0) ~ /cert.*leaf.*sha256/ {sub(/.*:/,\"\"); gsub(/[[:space:]]/,\"\"); print; exit}'",
+			timeout, xray, host, port
+		)
+	else
+		cmd = string.format(
+			"timeout %d openssl s_client -connect %s:%d -servername %s -showcerts </dev/null 2>/dev/null " ..
+			"| awk 'BEGIN{c=0}/BEGIN CERT/{c++} c==1{print} /END CERT/{if(c==1)exit}' " ..
+			"| openssl x509 -outform der 2>/dev/null " ..
+			"| sha256sum 2>/dev/null",
+			timeout, host, port, host
+		)
+	end
+	local out = trim(sys.exec(cmd))
+	local fp = out:match("^([0-9a-fA-F]+)")
+	if not fp then return "" end
+	return fp:upper()
+end

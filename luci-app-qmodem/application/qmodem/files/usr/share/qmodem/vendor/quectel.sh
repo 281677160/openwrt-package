@@ -1736,3 +1736,56 @@ set_sim_slot(){
     response=$(at $at_port $at_command)
     json_add_string "result" "$response"
 }
+
+get_usage_stats()
+{
+    local response tx_bytes rx_bytes updated_at
+
+    response=$(at "$at_port" "AT+QGDNRCNT?")
+    tx_bytes=$(echo "$response" | awk -F'[:, ]+' '/\+QGDNRCNT:/ {gsub(/\r/, "", $2); print $2; exit}')
+    rx_bytes=$(echo "$response" | awk -F'[:, ]+' '/\+QGDNRCNT:/ {gsub(/\r/, "", $3); print $3; exit}')
+
+    case "$tx_bytes" in
+        ''|*[!0-9]*)
+            tx_bytes=0
+            ;;
+    esac
+    case "$rx_bytes" in
+        ''|*[!0-9]*)
+            rx_bytes=0
+            ;;
+    esac
+
+    if echo "$response" | grep -q "+QGDNRCNT:"; then
+        updated_at=$(date +%s)
+        json_add_boolean "available" 1
+        json_add_int "updated_at" "$updated_at"
+        json_add_int "total_rx_bytes" "$rx_bytes"
+        json_add_int "total_tx_bytes" "$tx_bytes"
+    else
+        json_add_boolean "available" 0
+        json_add_int "updated_at" 0
+        json_add_int "total_rx_bytes" 0
+        json_add_int "total_tx_bytes" 0
+    fi
+}
+
+write_usage_stats()
+{
+    local response
+
+    response=$(at "$at_port" "AT+QGDNRCNT=1")
+    echo "$response" | grep -qi "OK"
+}
+
+clear_usage_stats()
+{
+    local response
+
+    response=$(at "$at_port" "AT+QGDNRCNT=0")
+    if echo "$response" | grep -qi "OK"; then
+        json_add_boolean "result" 1
+    else
+        json_add_boolean "result" 0
+    fi
+}

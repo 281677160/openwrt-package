@@ -115,6 +115,8 @@ function index()
 
 	--[[geoview]]
 	entry({"admin", "services", appname, "geo_view"}, call("geo_view")).leaf = true
+
+	entry({"admin", "services", appname, "fetch_certsha256"}, call("fetch_certsha256")).leaf = true
 end
 
 local function http_write_json(content)
@@ -1025,4 +1027,16 @@ function flush_set()
 	if redirect == "1" then
 		http.redirect(api.url("log"))
 	end
+end
+
+function fetch_certsha256()
+	local id = http.formvalue("id") or ""
+	local address = (id ~= "") and uci:get(appname, id, "address") or ""
+	local port = (id ~= "") and uci:get(appname, id, "port") or 0
+	if id == "" or address == "" or not api.datatypes.hostname(address) or port == 0 then
+		http_write_json({ code = 1 })
+		return
+	end
+	local data = api.fetch_cert_sha256(address, port, 5)
+	http_write_json(data ~= "" and { code = 0, data = data } or { code = 1 })
 end

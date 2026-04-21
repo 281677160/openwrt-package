@@ -93,10 +93,10 @@ test_auto_switch() {
 		test_node ${main_node}
 		[ $? -eq 0 ] && {
 			#主节点正常，切换到主节点
-			echolog "Socks切换检测：${id}主节点【$(config_n_get $main_node type)：[$(config_n_get $main_node remarks)]】正常，切换到主节点！"
-			$APP_FILE socks_node_switch flag=${id} new_node=${main_node}
+			echolog "Socks切换检测：端口[${socks_port}] 主节点【$(config_n_get $main_node type)：[$(config_n_get $main_node remarks)]】正常，切换到主节点！"
+			NO_REC_PROCESS=1 $APP_FILE socks_node_switch flag=${id} new_node=${main_node}
 			[ $? -eq 0 ] && {
-				echolog "Socks切换检测：${id}节点切换完毕！"
+				echolog "Socks切换检测：端口[${socks_port}] 节点切换完毕！"
 			}
 			return 0
 		}
@@ -123,7 +123,7 @@ test_auto_switch() {
 			new_node=$([ "$now_node" = "$main_node" ] && echo "$b_nodes" || echo "$main_node")
 			msg="切换到$([ "$now_node" = "$main_node" ] && echo 备用节点 || echo 主节点)检测！"
 		fi
-		echolog "Socks切换检测：${id}【$(config_n_get $now_node type)：[$(config_n_get $now_node remarks)]】异常，$msg"
+		echolog "Socks切换检测：端口[${socks_port}]【$(config_n_get $now_node type)：[$(config_n_get $now_node remarks)]】异常，$msg"
 		test_node ${new_node}
 		if [ $? -eq 0 ]; then
 #			[ "$restore_switch" = "0" ] && {
@@ -131,10 +131,10 @@ test_auto_switch() {
 #				[ -z "$(echo $b_nodes | grep $main_node)" ] && uci add_list $CONFIG.${id}.autoswitch_backup_node=$main_node
 #				uci commit $CONFIG
 #			}
-			echolog "Socks切换检测：${id}【$(config_n_get $new_node type)：[$(config_n_get $new_node remarks)]】正常，切换到此节点！"
-			$APP_FILE socks_node_switch flag=${id} new_node=${new_node}
+			echolog "Socks切换检测：端口[${socks_port}]【$(config_n_get $new_node type)：[$(config_n_get $new_node remarks)]】正常，切换到此节点！"
+			NO_REC_PROCESS=1 $APP_FILE socks_node_switch flag=${id} new_node=${new_node}
 			[ $? -eq 0 ] && {
-				echolog "Socks切换检测：${id}节点切换完毕！"
+				echolog "Socks切换检测：端口[${socks_port}] 节点切换完毕！"
 			}
 			return 0
 		else

@@ -680,6 +680,20 @@ mwan3_start() {
 	nft list chain ip mangle mwan3_hook >/dev/null 2>&1 && nft insert rule ip mangle mwan3_hook ct mark ${FWMARK} counter return >/dev/null 2>&1
 }
 
+update_wan_sets() {
+	local WAN_IP=$(get_wan_ips ip4)
+	[ -n "$WAN_IP" ] && {
+		nft flush set $NFTABLE_NAME $NFTSET_WAN
+		echo "$WAN_IP" | insert_nftset $NFTSET_WAN "-1"
+	}
+
+	local WAN6_IP=$(get_wan_ips ip6)
+	[ -n "${WAN6_IP}" ] && {
+		nft flush set $NFTABLE_NAME $NFTSET_WAN6
+		echo "$WAN6_IP" | insert_nftset $NFTSET_WAN6 "-1"
+	}
+}
+
 add_firewall_rule() {
 	log_i18n 0 "Starting to load %s firewall rules..." "nftables"
 	gen_nft_tables
@@ -713,6 +727,8 @@ add_firewall_rule() {
 		[ -n "$lan_ip" ] && echo $lan_ip | insert_nftset $NFTSET_LAN "-1"
 		[ -n "$lan_ip6" ] && echo $lan_ip6 | insert_nftset $NFTSET_LAN6 "-1"
 	}
+
+	update_wan_sets
 
 	[ -n "$ISP_DNS" ] && {
 		echo "$ISP_DNS" | insert_nftset $NFTSET_LAN 0
@@ -835,14 +851,9 @@ add_firewall_rule() {
 		nft "add rule $NFTABLE_NAME nat_output meta l4proto {icmp,icmpv6} counter jump PSW2_ICMP_REDIRECT"
 	fi
 
-	WAN_IP=$(get_wan_ips ip4)
-	[ -n "${WAN_IP}" ] && {
-		nft flush set $NFTABLE_NAME $NFTSET_WAN
-		echo $WAN_IP | insert_nftset $NFTSET_WAN "-1"
-		[ -z "${is_tproxy}" ] && nft "add rule $NFTABLE_NAME PSW2_NAT ip daddr @$NFTSET_WAN counter return comment \"WAN_IP_RETURN\""
-		nft "add rule $NFTABLE_NAME PSW2_MANGLE ip daddr @$NFTSET_WAN counter return comment \"WAN_IP_RETURN\""
-	}
-	unset WAN_IP
+	#ipv4 wan_ip
+	[ -z "${is_tproxy}" ] && nft "add rule $NFTABLE_NAME PSW2_NAT ip daddr @$NFTSET_WAN counter return comment \"WAN_IP_RETURN\""
+	nft "add rule $NFTABLE_NAME PSW2_MANGLE ip daddr @$NFTSET_WAN counter return comment \"WAN_IP_RETURN\""
 
 	ip rule add fwmark ${FWMARK} table 999 priority 999
 	ip route add local 0.0.0.0/0 dev lo table 999
@@ -867,10 +878,11 @@ add_firewall_rule() {
 			local dns_port=$(echo $auto_dns | awk -F '#' '{print $2}')
 			if [[ "$dns_address" == *::* ]]; then
 				nft "insert rule $NFTABLE_NAME PSW2_OUTPUT_MANGLE_V6 meta l4proto udp ip6 daddr ${dns_address} $(factor ${dns_port:-53} "udp dport") counter return"
+				log_i18n 1 "$(i18n "Add direct DNS to %s: %s" "nftables" "[${dns_address}]:${dns_port:-53}")"
 			else
 				nft "insert rule $NFTABLE_NAME PSW2_OUTPUT_MANGLE ip protocol udp ip daddr ${dns_address} $(factor ${dns_port:-53} "udp dport") counter return"
+				log_i18n 1 "$(i18n "Add direct DNS to %s: %s" "nftables" "${dns_address}:${dns_port:-53}")"
 			fi
-			log_i18n 1 "$(i18n "Add direct DNS to %s: %s" "nftables" "${dns_address}:${dns_port:-53}")"
 		done
 	}
 
@@ -879,13 +891,7 @@ add_firewall_rule() {
 		nft "add rule $NFTABLE_NAME mangle_prerouting meta nfproto {ipv6} counter jump PSW2_MANGLE_V6"
 		nft "add rule $NFTABLE_NAME mangle_output meta nfproto {ipv6} counter jump PSW2_OUTPUT_MANGLE_V6 comment \"PSW2_OUTPUT_MANGLE\""
 
-		WAN6_IP=$(get_wan_ips ip6)
-		[ -n "${WAN6_IP}" ] && {
-			nft flush set $NFTABLE_NAME $NFTSET_WAN6
-			echo $WAN6_IP | insert_nftset $NFTSET_WAN6 "-1"
-			nft "add rule $NFTABLE_NAME PSW2_MANGLE_V6 ip6 daddr @$NFTSET_WAN6 counter return comment \"WAN6_IP_RETURN\""
-		}
-		unset WAN6_IP
+		nft "add rule $NFTABLE_NAME PSW2_MANGLE_V6 ip6 daddr @$NFTSET_WAN6 counter return comment \"WAN6_IP_RETURN\""
 
 		ip -6 rule add fwmark ${FWMARK} table 999 priority 999
 		ip -6 route add local ::/0 dev lo table 999
@@ -894,7 +900,7 @@ add_firewall_rule() {
 	[ "$ENABLED_DEFAULT_ACL" == 1 ] && {
 		TCP_LOCALHOST_PROXY=$LOCALHOST_PROXY
 		UDP_LOCALHOST_PROXY=$LOCALHOST_PROXY
-		
+
 		msg="$(i18n "[Local],")"
 		[ "$TCP_NO_REDIR_PORTS" != "disable" ] && {
 			nft "add rule $NFTABLE_NAME $nft_output_chain ip protocol tcp $(factor $TCP_NO_REDIR_PORTS "tcp dport") counter return"
@@ -906,7 +912,7 @@ add_firewall_rule() {
 				log 1 "${msg}$(i18n "not proxy all %s" "TCP")"
 			fi
 		}
-		
+
 		[ "$UDP_NO_REDIR_PORTS" != "disable" ] && {
 			nft "add rule $NFTABLE_NAME PSW2_OUTPUT_MANGLE ip protocol udp $(factor $UDP_NO_REDIR_PORTS "udp dport") counter return"
 			nft "add rule $NFTABLE_NAME PSW2_OUTPUT_MANGLE_V6 meta l4proto udp $(factor $UDP_NO_REDIR_PORTS "udp dport") counter return"
@@ -1088,20 +1094,9 @@ gen_include() {
 
 	local __nft=" "
 	__nft=$(cat <<- EOF
-		. $UTILS_PATH
 		[ -z "\$(nft list chain $NFTABLE_NAME mangle_prerouting | grep PSW2)" ] && nft -f ${nft_chain_file}
-		WAN_IP=\$(get_wan_ips ip4)
-		[ ! -z "\${WAN_IP}" ] && {
-			nft flush set $NFTABLE_NAME $NFTSET_WAN
-			echo "\${WAN_IP}" | sh ${MY_PATH} insert_nftset $NFTSET_WAN "-1"
-		}
-		[ "$PROXY_IPV6" == "1" ] && {
-			WAN6_IP=\$(get_wan_ips ip6)
-			[ ! -z "\${WAN6_IP}" ] && {
-				nft flush set $NFTABLE_NAME $NFTSET_WAN6
-				echo "\${WAN6_IP}" | sh ${MY_PATH} insert_nftset $NFTSET_WAN6 "-1"
-			}
-		}
+
+		${MY_PATH} update_wan_sets
 	EOF
 	)
 
@@ -1149,6 +1144,9 @@ mwan3_start)
 	;;
 mwan3_stop)
 	mwan3_stop
+	;;
+update_wan_sets)
+	update_wan_sets "$@"
 	;;
 stop)
 	stop

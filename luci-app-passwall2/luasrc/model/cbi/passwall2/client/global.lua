@@ -268,8 +268,8 @@ o = s:taboption("DNS", Flag, "dns_redirect", translate("DNS Redirect"), translat
 o.default = "1"
 o.rmempty = false
 
-local use_nft = m:get("@global_forwarding[0]", "use_nft") == "1"
-local set_title = api.i18n.translate(use_nft and "Clear NFTSET" or "Clear IPSET")
+local prefer_nft = m:get("@global_forwarding[0]", "prefer_nft") == "1"
+local set_title = api.i18n.translate(prefer_nft and "Clear NFTSET" or "Clear IPSET")
 o = s:taboption("DNS", DummyValue, "clear_ipset", set_title, translate("Try this feature if the rule modification does not take effect."))
 o.rawhtml = true
 function o.cfgvalue(self, section)
