@@ -380,7 +380,7 @@ if api.compare_versions(xray_version, ">=", "26.1.31") then
 	o:depends({ [_n("tls")] = true, [_n("reality")] = false })
 	o:depends({ [_n("protocol")] = "hysteria2" })
 	o.description = translate("Once set, connects only when the server’s chain fingerprint matches.") ..
-			string.format("<a href='#' onclick='fetchCertSha256(); return false;'>%s</a>", "[ " .. translate("Fetch Manually") .. " ]")
+			string.format("<a href='javascript:void(0)' onclick='javascript:fetchCertSha256(this)'>%s</a>", "→ " .. translate("Fetch Manually"))
 
 	o = s:option(Value, _n("tls_CertByName"), translate("TLS Certificate Name (CertName)"), translate("TLS is used to verify the leaf certificate name."))
 	o:depends({ [_n("tls")] = true, [_n("reality")] = false })
