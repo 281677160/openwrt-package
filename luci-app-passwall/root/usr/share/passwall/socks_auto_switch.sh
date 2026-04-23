@@ -5,6 +5,12 @@ APP_FILE=${APP_PATH}/app.sh
 
 flag=0
 
+check_process() {
+	while pgrep -af "${CONFIG}/" | grep -E 'app\.sh.*(start|stop)|nftables\.sh|iptables\.sh|subscribe\.lua' >/dev/null; do
+		sleep 6s
+	done
+}
+
 test_url() {
 	local url=$1
 	local try=1
@@ -48,6 +54,7 @@ test_node() {
 	local node_id=$1
 	local _type=$(echo $(config_n_get ${node_id} type) | tr 'A-Z' 'a-z')
 	[ -n "${_type}" ] && {
+		check_process
 		local _tmp_port=$(get_new_port 48800 tcp,udp)
 		NO_REC_PROCESS=1 $APP_FILE run_socks flag="test_node_${node_id}" node=${node_id} bind=127.0.0.1 socks_port=${_tmp_port} config_file=test_node_${node_id}.json
 		sleep 2s
@@ -92,6 +99,7 @@ test_auto_switch() {
 	if [ "$restore_switch" = "1" ] && [ -n "$main_node" ] && [ "$now_node" != "$main_node" ]; then
 		test_node ${main_node}
 		[ $? -eq 0 ] && {
+			check_process
 			#主节点正常，切换到主节点
 			echolog "Socks切换检测：端口[${socks_port}] 主节点【$(config_n_get $main_node type)：[$(config_n_get $main_node remarks)]】正常，切换到主节点！"
 			NO_REC_PROCESS=1 $APP_FILE socks_node_switch flag=${id} new_node=${main_node}
@@ -131,6 +139,7 @@ test_auto_switch() {
 #				[ -z "$(echo $b_nodes | grep $main_node)" ] && uci add_list $CONFIG.${id}.autoswitch_backup_node=$main_node
 #				uci commit $CONFIG
 #			}
+			check_process
 			echolog "Socks切换检测：端口[${socks_port}]【$(config_n_get $new_node type)：[$(config_n_get $new_node remarks)]】正常，切换到此节点！"
 			NO_REC_PROCESS=1 $APP_FILE socks_node_switch flag=${id} new_node=${new_node}
 			[ $? -eq 0 ] && {
@@ -170,11 +179,7 @@ start() {
 			sleep 6s
 			continue
 		}
-		pgrep -af "${CONFIG}/" | awk '/app\.sh.*(start|stop)/ || /nftables\.sh/ || /iptables\.sh/ { found = 1 } END { exit !found }' && {
-			# 特定任务执行中不检测
-			sleep 6s
-			continue
-		}
+		check_process
 		touch $LOCK_FILE
 		test_auto_switch "$backup_node"
 		rm -f $LOCK_FILE
