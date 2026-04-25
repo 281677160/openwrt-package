@@ -1,89 +1,83 @@
 #!/bin/sh
 
-. /lib/functions.sh
-. /usr/share/qmodem/modem_util.sh
+. /usr/share/libubox/jshn.sh
 
-MIN_INTERVAL=60
-DEFAULT_INTERVAL=300
+QMODEM_UBUS_OBJECT="qmodem"
+QMODEM_UBUS_METHOD="save_stats"
 
-sanitize_interval()
+is_valid_interval()
 {
-    local interval="$1"
-
-    case "$interval" in
+    case "$1" in
         ''|*[!0-9]*)
-            interval="$DEFAULT_INTERVAL"
+            return 1
+            ;;
+        *)
+            return 0
             ;;
     esac
-
-    [ "$interval" -lt "$MIN_INTERVAL" ] && interval="$MIN_INTERVAL"
-    echo "$interval"
 }
 
-load_vendor_script()
-{
-    local vendor="$1"
-    local vendor_script_prefix="/usr/share/qmodem/vendor"
-    local dynamic_load_json="$vendor_script_prefix/dynamic_load.json"
-    local vendor_file="${vendor_script_prefix}/$(jq -r --arg vendor "$vendor" '.[$vendor]' "$dynamic_load_json" 2>/dev/null)"
-
-    . /usr/share/qmodem/generic.sh
-    [ -n "$vendor" ] && [ -f "$vendor_file" ] && . "$vendor_file"
-}
-
-write_device_usage_stats()
+build_payload()
 {
     local config_section="$1"
-    local state manufacturer vendor_key at_port override_at_port use_ubus
 
-    config_load qmodem
+    json_init
+    json_add_string config_section "$config_section"
+    json_dump
+}
 
-    config_get state "$config_section" state
-    [ "$state" = "disabled" ] && return 0
+save_usage_stats()
+{
+    local config_section="$1"
+    local payload response status
 
-    config_get manufacturer "$config_section" manufacturer
-    vendor_key=$(echo "$manufacturer" | tr '[:upper:]' '[:lower:]')
-    [ "$vendor_key" = "quectel" ] || return 0
+    payload=$(build_payload "$config_section")
+    response=$(ubus call "$QMODEM_UBUS_OBJECT" "$QMODEM_UBUS_METHOD" "$payload" 2>/dev/null) || {
+        logger -t qmodem_usage_stats "ubus call failed for $config_section"
+        return 1
+    }
 
-    config_get at_port "$config_section" at_port
-    config_get override_at_port "$config_section" override_at_port
-    [ -n "$override_at_port" ] && at_port="$override_at_port"
-    [ -n "$at_port" ] || return 0
-
-    config_get use_ubus "$config_section" use_ubus
-    use_ubus_flag=""
-    [ "$use_ubus" = "1" ] && use_ubus_flag="-u"
-
-    load_vendor_script "$vendor_key"
-    if ! write_usage_stats; then
+    status=$(jsonfilter -s "$response" -e '@.result.status' 2>/dev/null)
+    if [ "$status" != "1" ]; then
         logger -t qmodem_usage_stats "failed to persist usage stats for $config_section"
+        return 1
     fi
 }
 
 loop()
 {
-    local config_section="$1"
-    local interval
+    local interval="$1"
+    local config_section="$2"
 
-    interval=$(sanitize_interval "$2")
+    is_valid_interval "$interval" || exit 1
     [ -n "$config_section" ] || exit 1
 
     while true; do
-        write_device_usage_stats "$config_section"
+        save_usage_stats "$config_section"
         sleep "$interval"
     done
 }
 
+run_once()
+{
+    local config_section="$1"
+
+    [ -n "$config_section" ] || exit 1
+
+    save_usage_stats "$config_section"
+}
+
 case "$1" in
     loop)
-        loop "$2" "$3"
+        shift
+        loop "$@"
         ;;
     run_once)
-        [ -n "$2" ] || exit 1
-        write_device_usage_stats "$2"
+        shift
+        run_once "$@"
         ;;
     *)
-        echo "Usage: $0 {loop <config_section> <interval>|run_once <config_section>}" >&2
+        echo "Usage: $0 {loop <interval> <config_section>|run_once <config_section>}" >&2
         exit 1
         ;;
 esac
