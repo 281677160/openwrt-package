@@ -75,6 +75,7 @@
 a-normal-day.com
 a248.e.akamai.net
 aamacau.com
+aave.com
 abc.net.au
 abc.xyz
 abebooks.co.uk
@@ -183,11 +184,9 @@ angela-merkel.de
 angola.org
 angularjs.org
 aniscartujo.com
-annas-archive.in
-annas-archive.li
-annas-archive.org
-annas-archive.pm
-annas-archive.se
+annas-archive.gd
+annas-archive.gl
+annas-archive.pk
 anobii.com
 anonfiles.com
 anonymouse.org
@@ -224,6 +223,7 @@ apkpure.com
 apkpure.net
 app.box.com
 app.cloudcone.com
+app.element.io
 app.smartmailcloud.com
 appadvice.com
 appbrain.com
@@ -235,6 +235,7 @@ appsocks.net
 appspot.com
 appsto.re
 aptoide.com
+archive-it.org
 archive.fo
 archive.is
 archive.li
@@ -263,6 +264,7 @@ asianews.it
 asianfanfics.com
 asiansexdiary.com
 asiaone.com
+asiasociety.org
 ask.com
 askstudent.com
 askynz.net
@@ -290,6 +292,7 @@ avdb.tv
 avg.com
 avgle.com
 avidemux.org
+avistaz.to
 avmo.pw
 avmoo.pw
 avoision.com
@@ -354,6 +357,7 @@ beijing1989.com
 beijing2022.art
 beijingspring.com
 bell.wiki
+bellingcat.com
 berlinerbericht.de
 berlintwitterwall.com
 bestvpn.com
@@ -741,8 +745,8 @@ chrome.com
 chromecast.com
 chromeexperiments.com
 chromestatus.com
-chromium.org
 ci-en.jp
+cia.gov
 cici.com
 ciciai.com
 cirosantilli.com
@@ -841,6 +845,7 @@ cpj.org
 cpu-monkey.com
 cq99.us
 crackle.com
+crashlytics.com
 crazypool.org
 crazyshit.com
 crbug.com
@@ -976,6 +981,7 @@ dmcdn.net
 dmhy.org
 dmm.co.jp
 dns.cloudflare.com
+dns.sb
 dns2go.com
 dnscrypt.org
 dnssec.net
@@ -986,6 +992,7 @@ docker.io
 dockerstatus.com
 docs.new
 documentingreality.com
+doh.sb
 dolc.de
 dolf.org.hk
 dongtaiwang.com
@@ -993,6 +1000,7 @@ dongtaiwang.net
 doom9.org
 doosho.com
 doourbest.org
+dot.sb
 dotplane.com
 dotsub.com
 dotvpn.com
@@ -1003,7 +1011,6 @@ doublethinklab.org
 douchi.space
 dougscripts.com
 doujincafe.com
-download.aircrack-ng.org
 download.dappcdn.com
 dpool.top
 dpp.org.tw
@@ -1789,8 +1796,6 @@ hk.gradconnection.com
 hk.jiepang.com
 hk01.com
 hka8964.wordpress.com
-hkacg.com
-hkacg.net
 hkanews.wordpress.com
 hkbookcity.com
 hkchronicles.com
@@ -2010,6 +2015,7 @@ islamhouse.com
 ismaelan.com
 ismprofessional.net
 israbox.com
+issues.chromium.org
 issuu.com
 isupportuyghurs.org
 italiatibet.org
@@ -2151,6 +2157,7 @@ lama.com.tw
 lamayeshe.com
 lamnia.co.uk
 landofhope.tv
+lantern.io
 laogai.org
 laogairesearch.org
 laqingdan.net
@@ -2305,7 +2312,6 @@ mediafreakcity.com
 mediawiki.org
 medium.com
 meee.com.tw
-meetup.com
 mega.co.nz
 mega.io
 mega.nz
@@ -2373,6 +2379,7 @@ mirrorbooks.com
 mirrormedia.mg
 missav.com
 missav.ws
+mistral.ai
 mitbbs.com
 miuipolska.pl
 mixero.com
@@ -2435,7 +2442,6 @@ muzi.com
 muzi.net
 muzu.tv
 mvg.jp
-mx981.com
 my-private-network.co.uk
 my.pcloud.com
 myaudiocast.com
@@ -2604,8 +2610,10 @@ ogate.org
 ohmyrss.com
 ok.ru
 okayfreedom.com
+okcoin.com
 okex.com
 okk.tw
+oklink.com
 okpool.me
 okx.com
 old.honeynet.org
@@ -2639,6 +2647,7 @@ ooni.io
 ooni.org
 open.firstory.me
 openai.com
+openart.ai
 opencritic.com
 opendemocracy.net
 openid.net
@@ -2656,6 +2665,7 @@ orient-doll.com
 orientaldaily.com.my
 orn.jp
 osfoora.com
+osmand.net
 otcbtc.com
 otto.de
 ourdearamy.com
@@ -2876,7 +2886,6 @@ pursuestar.com
 putty.org
 pximg.net
 python.com.tw
-pytorch.org
 qbittorrent.org
 qgirl.com.tw
 qi-gong.me
@@ -2930,6 +2939,7 @@ rationalwiki.org
 raw.githack.com
 rawgit.com
 rawgithub.com
+rawstory.com
 rcam.target.com
 rcinet.ca
 rd.com
@@ -2941,6 +2951,7 @@ readydown.com
 realcourage.org
 realitykings.com
 reason.com
+recordedfuture.com
 recoveryversion.com.tw
 red-lang.org
 redbubble.com
@@ -2976,6 +2987,7 @@ rixcloud.com
 rixcloud.us
 rlwlw.com
 rmbl.ws
+roblox.com
 robustnessiskey.com
 rocket-inc.net
 rocket.chat
@@ -3009,13 +3021,6 @@ rxhj.net
 s-cute.com
 s.yimg.com
 s3-ap-northeast-1.amazonaws.com
-s3-ap-northeast-2.amazonaws.com
-s3-ap-southeast-1.amazonaws.com
-s3-ap-southeast-2.amazonaws.com
-s3-eu-central-1.amazonaws.com
-s3.ap-northeast-2.amazonaws.com
-s3.eu-central-1.amazonaws.com
-s3.us-east-1.amazonaws.com
 sacks.com
 sacom.hk
 sadistic-v.com
@@ -3037,6 +3042,7 @@ savetibet.org
 savetibetstore.org
 saveuighur.org
 sbme.me
+sbti.unun.dev
 scache.vzw.com
 scache1.vzw.com
 scache2.vzw.com
@@ -3193,7 +3199,6 @@ southmongolia.org
 southnews.com.tw
 southpark.cc.com
 sowers.org.hk
-soylentnews.org
 spaces.hightail.com
 spacex.com
 spankbang.com
@@ -3341,7 +3346,6 @@ tbsn.org
 tbssqh.org
 teachparentstech.org
 technews.tw
-techspot.com
 techviz.net
 teck.in
 teco-hk.org
@@ -3355,7 +3359,6 @@ telegram.me
 telegram.org
 telegram.space
 telegramdownload.com
-telegraph.co.uk
 telesco.pe
 tellapart.com
 temu.com
@@ -3407,6 +3410,7 @@ thetvdb.com
 thewgo.org
 thewirechina.com
 theync.com
+thinkchina.sg
 thinkgeek.com
 thinkingtaiwan.com
 thinkwithgoogle.com
@@ -3822,7 +3826,6 @@ vrchat.com
 vrporn.com
 vrsmash.com
 vtunnel.com
-vuku.cc
 vultryhw.com
 w-pool.com
 w3s.link
@@ -4021,6 +4024,7 @@ xbtce.com
 xcafe.in
 xcancel.com
 xcity.jp
+xdaforums.com
 xerotica.com
 xfinity.com
 xfxssr.me
@@ -4036,16 +4040,17 @@ xijie.wordpress.com
 xing.com
 xinjiangpolicefiles.org
 xinmiao.com.hk
-xjp.cc
 xjtravelguide.com
 xm.com
 xml-training-guide.com
 xn--11xs86f.icu
+xn--1jqvh729avzfcy2d8ummib.com
 xn--4gq171p.com
 xn--9iqy04a7fi01l.com
 xn--9pr62r24a.com
 xn--czq75pvv1aj5c.org
 xn--i2ru8q2qg.com
+xn--kcrv3utim32hx9f6qe.com
 xn--ngstr-lra8j.com
 xn--noss43i.com
 xn--oiq.cc

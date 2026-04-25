@@ -458,6 +458,16 @@ return view.extend({
 		});
 	}
 
+	o = s.option(form.Value, 'bridge_port', _('Bridge Port'));
+	o.description = _('Default bridge port for passthrough. Device-level bridge_port overrides this slot default.');
+	o.optional = true;
+	o.modalonly = true;
+	if (this.networkInterfaces && this.networkInterfaces.length > 0) {
+		this.networkInterfaces.forEach(function(iface) {
+			o.value(iface.id, iface.label);
+		});
+	}
+
 	o = s.option(form.Value, 'associated_usb', _('Associated USB'));
 	o.description = _('For M.2 slots with both PCIe and USB support, specify the associated USB port (for ttyUSB access)');
 	o.depends('type', 'pcie');
