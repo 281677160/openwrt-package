@@ -331,6 +331,16 @@ return view.extend({
 	o.rmempty = false;
 	o.modalonly = true;
 
+	o = s.option(form.Value, 'bridge_port', _('Bridge Port'));
+	o.description = _('Device-level bridge port for passthrough. If set, it overrides the slot default bridge port.');
+	o.rmempty = true;
+	o.modalonly = true;
+	if (this.networkInterfaces && this.networkInterfaces.length > 0) {
+		this.networkInterfaces.forEach(function(iface) {
+			o.value(iface.id, iface.label);
+		});
+	}
+
 	o = s.option(form.Flag, 'do_not_add_dns', _('Do Not modify resolv.conf'));
 	o.description = _('quectel-CM will append the DNS server to the resolv.conf file by default.if you do not want to modify the resolv.conf file, please check this option.');
 	o.default = '0';
