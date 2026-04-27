@@ -605,6 +605,18 @@ o.default = "0"
 o.rmempty = false
 o:depends({dns_mode = "sing-box"})
 o:depends({dns_mode = "xray"})
+o.validate = function(self, value, t)
+	if value and value == "1" then
+		local _dns_mode = s.fields["dns_mode"]:formvalue(t)
+		local _tcp_node = s.fields["tcp_node"]:formvalue(t)
+		if _dns_mode and _tcp_node then
+			if (m:get(_tcp_node, "type") or ""):lower() ~= _dns_mode then
+				return nil, translatef("TCP node must be '%s' type to use FakeDNS.", _dns_mode)
+			end
+		end
+	end
+	return value
+end
 
 o = s:option(ListValue, "chinadns_ng_default_tag", translate("Default DNS"))
 o.default = "none"

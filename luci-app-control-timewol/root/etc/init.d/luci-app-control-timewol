@@ -9,7 +9,7 @@
 
 START=99
 
-CONFIG=timewol
+CONFIG="luci-app-control-timewol"
 
 uci_get_by_type() {
 	local index=0
