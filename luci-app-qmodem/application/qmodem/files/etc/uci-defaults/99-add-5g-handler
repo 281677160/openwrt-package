@@ -110,6 +110,20 @@ modem_settings()
 		add_usb_slot_cfg "4g2" "1-1.1" "4g4" "green:network3" "" "" "" "" "22"
 		uci commit qmodem
 		;;
+	misectel,m02k45)
+		#usb slot
+		uci set qmodem.usb0="modem-slot"
+		uci set qmodem.usb0.slot="2-1"
+		uci set qmodem.usb0.type="usb0"
+		uci set qmodem.usb0.alias="wwan0"
+		#pcie slot
+		uci set qmodem.pcie0="modem-slot"
+		uci set qmodem.pcie0.slot="0002:01:00.0"
+		uci set qmodem.pcie0.type="pcie"
+		uci set	qmodem.pcie0.associated_usb='2-1'
+		uci set qmodem.pcie0.alias="pcie0"
+		uci commit qmodem
+		;;
 	p2w,r619ac*)
 		add_usb_slot_cfg "minipcie" "3-1" "wwan0" "blue:power" "" "" "" "" "10"
 		uci commit qmodem
