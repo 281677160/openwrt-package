@@ -97,7 +97,7 @@ local function curl(url, file)
 	local http_code = 0
 	local header_str = ""
 	local args = {
-		"-skL",
+		"-fskL",
 		"--retry 3",
 		"--connect-timeout 3",
 		"--max-time 300",
@@ -122,7 +122,7 @@ local function curl(url, file)
 	if header_str ~= "" then
 		header_str = header_str:gsub("\r", "")
 	end
-	return http_code, header_str
+	return return_code, http_code, header_str
 end
 
 --check excluded domain
@@ -400,7 +400,7 @@ end
 
 --fetch rule
 local function fetch_rule(rule_name, rule_type, url, exclude_domain, max_retries)
-	local sret = 200
+	local sret = 0
 	local max_attempts = max_retries or 2
 	local rule_dataset = {}
 	local file_tmp = "/tmp/" .. rule_name .. "_tmp"
@@ -418,8 +418,8 @@ local function fetch_rule(rule_name, rule_type, url, exclude_domain, max_retries
 
 		if v ~= "geo2rule" then
 			for i = 1, max_attempts do
-				local http_code, header = curl(v, current_file)
-				if http_code == 200 and not non_file_check(current_file, header) then
+				local return_code, http_code, header = curl(v, current_file)
+				if return_code == 0 and not non_file_check(current_file, header) then
 					success = true
 					break
 				end
@@ -483,13 +483,13 @@ local function fetch_rule(rule_name, rule_type, url, exclude_domain, max_retries
 				f:close()
 			end
 		else
-			sret = 0
+			sret = 1
 			log(string.format("%s 第%d条规则: %s 下载失败！", rule_name, k, v))
 		end
 		os.remove(current_file)
 	end
 
-	if sret == 200 then
+	if sret == 0 then
 		local result_list = {}
 		for line, _ in pairs(rule_dataset) do table.insert(result_list, line) end
 		table.sort(result_list)
@@ -539,7 +539,7 @@ local function fetch_geofile(geo_name, geo_type, url)
 		return sys.call("sha256sum -c " .. sha_file .. " > /dev/null 2>&1") == 0
 	end
 
-	local sha_verify, _ = curl(sha_url, sha_path) == 200
+	local sha_verify = select(1, curl(sha_url, sha_path)) == 0
 	if sha_verify then
 		local f = io.open(sha_path, "r")
 		if f then
@@ -563,17 +563,17 @@ local function fetch_geofile(geo_name, geo_type, url)
 		end
 	end
 
-	local sret_tmp, header = curl(url, tmp_path)
-	if sret_tmp == 200 and non_file_check(tmp_path, header) then
+	local sret_tmp, _, header = curl(url, tmp_path)
+	if sret_tmp == 0 and non_file_check(tmp_path, header) then
 		log(geo_type .. " 下载文件过程出错，尝试重新下载。")
 		os.remove(tmp_path)
-		sret_tmp, header= curl(url, tmp_path)
-		if sret_tmp == 200 and non_file_check(tmp_path, header) then
-			sret_tmp = 0
+		sret_tmp, _, header= curl(url, tmp_path)
+		if sret_tmp == 0 and non_file_check(tmp_path, header) then
+			sret_tmp = 1
 			log(geo_type .. " 下载文件过程出错，请检查网络或下载链接后重试！")
 		end
 	end
-	if sret_tmp == 200 then
+	if sret_tmp == 0 then
 		if sha_verify then
 			if verify_sha256(sha_path) then
 				sys.call(string.format("mkdir -p %s && mv -f %s %s", backup_path, asset_path, backup_path))
