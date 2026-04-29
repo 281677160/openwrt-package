@@ -70,7 +70,7 @@ local api = self.api
 				alert(res && res.msg ? res.msg : "<%:Fetch Failed%> !");
 				return;
 			}
-			const inputs = document.querySelectorAll('input[id$=".xray_tls_CertSha"]');
+			const inputs = document.querySelectorAll('input[id$=".xray_tls_pinSHA256"]');
 			inputs.forEach(function(input) {
 				input.value = res.data;
 			});

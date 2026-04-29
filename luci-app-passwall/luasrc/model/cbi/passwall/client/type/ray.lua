@@ -376,7 +376,7 @@ if api.compare_versions(os.date("%Y.%m.%d"), "<", "2026.6.1") then
 end
 
 if api.compare_versions(xray_version, ">=", "26.1.31") then
-	o = s:option(Value, _n("tls_CertSha"), translate("TLS Chain Fingerprint (SHA256)"))
+	o = s:option(Value, _n("tls_pinSHA256"), translate("TLS Chain Fingerprint (SHA256)"))
 	o:depends({ [_n("tls")] = true, [_n("reality")] = false })
 	o:depends({ [_n("protocol")] = "hysteria2" })
 	o.description = translate("Once set, connects only when the server’s chain fingerprint matches.") ..
@@ -400,13 +400,6 @@ o:depends({ [_n("ech")] = true })
 o.validate = function(self, value)
 	return api.trim(value:gsub("[\r\n]", ""))
 end
-
-o = s:option(ListValue, _n("ech_ForceQuery"), translate("ECH Query Policy"), translate("Controls the policy used when performing DNS queries for ECH configuration."))
-o.default = "full"
-o:value("none")
-o:value("half")
-o:value("full")
-o:depends({ [_n("ech")] = true })
 
 -- [[ REALITY部分 ]] --
 o = s:option(Value, _n("reality_publicKey"), translate("Public Key"))
