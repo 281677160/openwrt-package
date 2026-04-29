@@ -178,6 +178,9 @@ msgstr "请求协议"
 msgid "Remote DNS DoH"
 msgstr "远程 DNS DoH"
 
+msgid "Format: URL[,IP] (omit the latter if URL is an IP)"
+msgstr "格式：URL[,IP]（URL 为 IP 时可省略后半部分）"
+
 msgid "Notify the DNS server when the DNS query is notified, the location of the client (cannot be a private IP address)."
 msgstr "用于 DNS 查询时通知 DNS 服务器，客户端所在的地理位置（不能是私有 IP 地址）。"
 
@@ -1866,12 +1869,6 @@ msgstr "ECH 配置"
 
 msgid "ECH Key"
 msgstr "ECH 密钥"
-
-msgid "ECH Query Policy"
-msgstr "ECH 查询策略"
-
-msgid "Controls the policy used when performing DNS queries for ECH configuration."
-msgstr "控制使用 DNS 查询 ECH 配置时的策略。"
 
 msgid "ECH Query Domain"
 msgstr "ECH 查询域名"

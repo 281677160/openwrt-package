@@ -1828,7 +1828,7 @@ function gen_config(var)
 			local domain = {}
 			local nodes_domain_text = sys.exec([[uci show passwall | sed -n "s/.*\.address='\([^']*\)'/\1/p" | sort -u]])
 			string.gsub(nodes_domain_text, '[^' .. "\r\n" .. ']+', function(w)
-				if w and w ~= "" and api.datatypes.hostname(w) and not GLOBAL.VPS_EXCLUDE[w] then
+				if not api.vps_domain_exclude(w) and api.datatypes.hostname(w) and not GLOBAL.VPS_EXCLUDE[w] then
 					table.insert(domain, w)
 				end
 			end)
