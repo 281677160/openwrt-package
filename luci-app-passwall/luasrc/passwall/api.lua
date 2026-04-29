@@ -1555,3 +1555,17 @@ function fetch_cert_sha256(host, port, timeout)
 	if not fp then return "" end
 	return fp:upper()
 end
+
+function vps_domain_exclude(domain)
+	if trim(domain) == "" then return true end
+	local map = {
+		["engage.cloudflareclient.com"] = 1,
+		["google.com"] = 1, ["www.google.com"] = 1,
+		["youtube.com"] = 1, ["www.youtube.com"] = 1,
+		["github.com"] = 1, ["telegram.org"] = 1,
+		["cloudflare.com"] = 1, ["www.cloudflare.com"] = 1,
+		["bing.com"] = 1, ["www.bing.com"] = 1, ["x.com"] = 1
+	}
+	if map[domain] then return true end
+	return false
+end

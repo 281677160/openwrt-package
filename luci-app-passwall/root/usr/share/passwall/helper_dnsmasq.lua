@@ -371,7 +371,7 @@ function add_rule(var)
 					setflag_6 .. "passwall_vps6"
 				}
 				local function process_address(address)
-					if address == "engage.cloudflareclient.com" then return end
+					if api.vps_domain_exclude(address) then return end
 					if datatypes.hostname(address) then
 						set_domain_dns(address, fwd_dns)
 						set_domain_ipset(address, table.concat(sets, ","))
