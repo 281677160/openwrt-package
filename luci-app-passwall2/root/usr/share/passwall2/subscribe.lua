@@ -23,7 +23,6 @@ local uci = api.uci
 local fs = api.fs
 local log = api.log
 local i18n = api.i18n
-uci:revert(appname)
 
 local has_ss = api.is_finded("ss-redir")
 local has_ss_rust = api.is_finded("sslocal")
@@ -301,7 +300,12 @@ do
 					currentNodes[#currentNodes + 1] = {
 						log = true,
 						node = node,
-						currentNode = node and uci:get_all(appname, node) or nil,
+						currentNode = (function()
+							if node and node:find("Socks_") then
+								return { Socks = node }
+							end
+							return node and uci:get_all(appname, node) or nil
+						end)(),
 						remarks = node,
 						set = function(o, server)
 							if o and server and server ~= "nil" then
@@ -325,7 +329,7 @@ do
 
 			-- Backup Node
 			local currentNode = uci:get_all(appname, node_id) or nil
-			if currentNode and currentNode.fallback_node then
+			if currentNode and currentNode.fallback_node and not currentNode.fallback_node:find("Socks_") then
 				CONFIG[#CONFIG + 1] = {
 					log = true,
 					id = node_id,
@@ -349,7 +353,12 @@ do
 					currentNodes[#currentNodes + 1] = {
 						log = true,
 						node = node,
-						currentNode = node and uci:get_all(appname, node) or nil,
+						currentNode = (function()
+							if node and node:find("Socks_") then
+								return { Socks = node }
+							end
+							return node and uci:get_all(appname, node) or nil
+						end)(),
 						remarks = node,
 						set = function(o, server)
 							if o and server and server ~= "nil" then
@@ -645,7 +654,7 @@ local function processData(szType, content, add_mode, group, sub_cfg)
 		if info.tls == "tls" or info.tls == "1" then
 			result.tls = "1"
 			result.tls_serverName = (info.sni and info.sni ~= "") and info.sni or info.host
-			result.tls_CertSha = info.pcs
+			result.tls_pinSHA256 = info.pcs
 			result.tls_CertByName = info.vcn
 			local insecure = info.allowinsecure or info.allowInsecure or info.insecure
 			result.tls_allowInsecure = (insecure == "1" or insecure == "0") and insecure or (sub_allowinsecure and "1" or "0")
@@ -915,7 +924,7 @@ local function processData(szType, content, add_mode, group, sub_cfg)
 							result.ech = "1"
 							result.ech_config = params.ech
 						end
-						result.tls_CertSha = params.pcs
+						result.tls_pinSHA256 = params.pcs
 						result.tls_CertByName = params.vcn
 						if params.security == "reality" then
 							result.reality = "1"
@@ -1028,7 +1037,7 @@ local function processData(szType, content, add_mode, group, sub_cfg)
 
 			result.tls = '1'
 			result.tls_serverName = params.peer or params.sni or ""
-			result.tls_CertSha = params.pcs
+			result.tls_pinSHA256 = params.pcs
 			result.tls_CertByName = params.vcn
 			local insecure = params.allowinsecure or params.allowInsecure or params.insecure
 			result.tls_allowInsecure = (insecure == "1" or insecure == "0") and insecure or (sub_allowinsecure and "1" or "0")
@@ -1271,7 +1280,7 @@ local function processData(szType, content, add_mode, group, sub_cfg)
 					result.ech = "1"
 					result.ech_config = params.ech
 				end
-				result.tls_CertSha = params.pcs
+				result.tls_pinSHA256 = params.pcs
 				result.tls_CertByName = params.vcn
 				if params.security == "reality" then
 					result.reality = "1"
@@ -1382,11 +1391,10 @@ local function processData(szType, content, add_mode, group, sub_cfg)
 			result.address = host_port
 		end
 		result.tls_serverName = params.sni
-		result.tls_CertSha = params.pcs
+		result.tls_pinSHA256 = params.pcs or params.pinsha256
 		result.tls_CertByName = params.vcn
 		local insecure = params.allowinsecure or params.insecure
 		result.tls_allowInsecure = (insecure == "1" or insecure == "0") and insecure or (sub_allowinsecure and "1" or "0")
-		result.hysteria2_tls_pinSHA256 = params.pinSHA256
 		result.hysteria2_hop = params.mport
 
 		if (sub_hysteria2_type == "sing-box" and has_singbox) or (sub_hysteria2_type == "xray" and has_xray) then
@@ -1608,9 +1616,9 @@ local function processData(szType, content, add_mode, group, sub_cfg)
 end
 
 local function curl(url, file, ua, mode)
-	if not url or url == "" then return 404 end
+	if not url or url == "" then return 22, 404 end
 	local curl_args = {
-		"-skL", "-w %{http_code}", "--retry 3", "--connect-timeout 3", "-H 'Accept-Encoding: identity'"
+		"-fskL", "-w %{http_code}", "--retry 3", "--connect-timeout 3", "-H 'Accept-Encoding: identity'"
 	}
 	if ua and ua ~= "" and ua ~= "curl" then
 		ua = (ua == "passwall2") and ("passwall2/" .. api.get_version()) or ua
@@ -1625,7 +1633,7 @@ local function curl(url, file, ua, mode)
 	else
 		return_code, result = api.curl_auto(url, file, curl_args)
 	end
-	return tonumber(result)
+	return return_code, tonumber(result)
 end
 
 function get_headers()
@@ -1733,6 +1741,10 @@ local function select_node(nodes, config, parentConfig)
 	end
 	if config.currentNode then
 		local server
+		-- Load balancing, keeping the original ID of the Socks [port] node in urltest.
+		if config.currentNode["Socks"] then
+			server = config.currentNode.Socks
+		end
 		-- Special priority: cfgid
 		if config.currentNode[".name"] then
 			for index, node in pairs(nodes) do
@@ -1945,7 +1957,6 @@ local function update_node(manual)
 			end
 		end
 	end
-	api.uci_save(uci, appname, true)
 
 	if next(CONFIG) then
 		local nodes = {}
@@ -1969,9 +1980,9 @@ local function update_node(manual)
 				select_node(nodes, config)
 			end
 		end
-
-		api.uci_save(uci, appname, true)
 	end
+
+	api.uci_save(uci, appname, true)
 
 	if arg[3] == "cron" then
 		if not fs.access("/var/lock/" .. appname .. ".lock") then
@@ -2111,8 +2122,9 @@ local execute = function()
 				local result = (not access_mode) and i18n.translatef("Auto") or (access_mode == "direct" and i18n.translatef("Direct") or (access_mode == "proxy" and i18n.translatef("Proxy") or i18n.translatef("Auto")))
 				log(1, i18n.translatef("Start subscribing: %s", '【' .. remark .. '】' .. url .. ' [' .. result .. ']'))
 				tmp_file = "/tmp/" .. cfgid
-				value.http_code = curl(url, tmp_file, ua, access_mode)
-				if value.http_code ~= 200 then
+				local return_code
+				return_code, value.http_code = curl(url, tmp_file, ua, access_mode)
+				if return_code ~= 0 then
 					fail_list[#fail_list + 1] = value
 					luci.sys.call("rm -f " .. tmp_file)
 				end
@@ -2151,7 +2163,36 @@ local execute = function()
 	end
 end
 
+local function check_instance(action)
+	local sub_lock = "/var/lock/" .. appname .. "_subscribe.lock"
+	local rule_lock = "/var/lock/" .. appname .. "_rule_update.lock"
+
+	if action == "start" then
+		math.randomseed(os.time() + math.floor(os.clock() * 1000))
+		api.nixio.nanosleep(0, math.random(100, 1000) * 1000000)
+		if fs.access(sub_lock) then
+			log(0, i18n.translatef("[Subscription] instance is running; please try again later.") .. "\n")
+			os.exit(0)
+		else
+			luci.sys.call("touch " .. sub_lock)
+			uci:revert(appname)
+		end
+	elseif action == "end" then
+		luci.sys.call("rm -f " .. sub_lock)
+		return
+	end
+
+	if fs.access(rule_lock) then
+		log(0, i18n.translatef("[Rule Update] instance is running; [Subscription] queue and wait.") .. "\n")
+	end
+	while fs.access(rule_lock) do
+		api.nixio.nanosleep(2, 0)
+	end
+end
+
 if arg[1] then
+	check_instance("start")
+
 	if arg[1] == "start" then
 		log(0, i18n.translatef("Start subscribing..."))
 		xpcall(execute, function(e)
@@ -2170,4 +2211,6 @@ if arg[1] then
 	elseif arg[1] == "truncate" then
 		truncate_nodes(arg[2])
 	end
+
+	check_instance("end")
 end

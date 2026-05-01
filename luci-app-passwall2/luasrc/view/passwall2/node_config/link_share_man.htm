@@ -306,7 +306,7 @@ local current_node = map:get(section)
 					params += opt.query("alpn", dom_prefix + "alpn");
 					params += opt.query("sni", dom_prefix + "tls_serverName");
 					params += opt.query("allowinsecure", dom_prefix + "tls_allowInsecure");
-					params += opt.query("pcs", dom_prefix + "tls_CertSha");
+					params += opt.query("pcs", dom_prefix + "tls_pinSHA256");
 					params += opt.query("vcn", dom_prefix + "tls_CertByName");
 					params += opt.query("ech", dom_prefix + "ech_config");
 				}
@@ -499,7 +499,7 @@ local current_node = map:get(section)
 				params += opt.query("alpn", dom_prefix + "alpn");
 				params += opt.query("sni", dom_prefix + "tls_serverName");
 				params += opt.query("allowinsecure", dom_prefix + "tls_allowInsecure");
-				params += opt.query("pcs", dom_prefix + "tls_CertSha");
+				params += opt.query("pcs", dom_prefix + "tls_pinSHA256");
 				params += opt.query("vcn", dom_prefix + "tls_CertByName");
 				params += opt.query("ech", dom_prefix + "ech_config");
 			}
@@ -570,7 +570,7 @@ local current_node = map:get(section)
 				params += opt.query("alpn", dom_prefix + "alpn");
 				params += opt.query("sni", dom_prefix + "tls_serverName");
 				params += opt.query("allowinsecure", dom_prefix + "tls_allowInsecure");
-				params += opt.query("pcs", dom_prefix + "tls_CertSha");
+				params += opt.query("pcs", dom_prefix + "tls_pinSHA256");
 				params += opt.query("vcn", dom_prefix + "tls_CertByName");
 				params += opt.query("ech", dom_prefix + "ech_config");
 			}
@@ -591,14 +591,14 @@ local current_node = map:get(section)
 			var params = "";
 			params += opt.query("sni", dom_prefix + "tls_serverName");
 			params += opt.query("insecure", dom_prefix + "tls_allowInsecure");
-			params += opt.query("pcs", dom_prefix + "tls_CertSha");
+			params += opt.query("pinSHA256", dom_prefix + "tls_pinSHA256");
+			params += opt.query("pcs", dom_prefix + "tls_pinSHA256");
 			params += opt.query("vcn", dom_prefix + "tls_CertByName");
 			
 			var v_password = null;
 			
 			if (v_type === "Hysteria2") {
 				v_password = opt.get("hysteria2_auth_password");
-				params += opt.query("pinSHA256", "hysteria2_tls_pinSHA256");
 				var dom_obfs = opt.get("hysteria2_obfs");
 				if (dom_obfs && dom_obfs.value != "") {
 					params += "&obfs=" + "salamander";
@@ -1069,7 +1069,7 @@ local current_node = map:get(section)
 						}
 						opt.set(dom_prefix + 'ech', !!queryParam.ech);
 						opt.set(dom_prefix + 'ech_config', queryParam.ech || '');
-						opt.set(dom_prefix + 'tls_CertSha', queryParam.pcs || '');
+						opt.set(dom_prefix + 'tls_pinSHA256', queryParam.pcs || '');
 						opt.set(dom_prefix + 'tls_CertByName', queryParam.vcn || '');
 					}
 
@@ -1308,7 +1308,7 @@ local current_node = map:get(section)
 			if (queryParam.security === "tls") {
 				opt.set(dom_prefix + 'tls_serverName', queryParam.peer || queryParam.sni || "");
 				opt.set(dom_prefix + 'alpn', queryParam.alpn || 'default');
-				opt.set(dom_prefix + 'tls_CertSha', queryParam.pcs || '');
+				opt.set(dom_prefix + 'tls_pinSHA256', queryParam.pcs || '');
 				opt.set(dom_prefix + 'tls_CertByName', queryParam.vcn || '');
 			}
 			opt.set(
@@ -1472,7 +1472,7 @@ local current_node = map:get(section)
 					}
 					opt.set(dom_prefix + 'ech', !!queryParam.ech);
 					opt.set(dom_prefix + 'ech_config', queryParam.ech || '');
-					opt.set(dom_prefix + 'tls_CertSha', queryParam.pcs || '');
+					opt.set(dom_prefix + 'tls_pinSHA256', queryParam.pcs || '');
 					opt.set(dom_prefix + 'tls_CertByName', queryParam.vcn || '');
 				}
 
@@ -1613,9 +1613,6 @@ local current_node = map:get(section)
 				if (queryParam["obfs-password"] || queryParam["obfs_password"]) {
 					opt.set(dom_prefix + 'obfs', queryParam["obfs-password"] || queryParam["obfs_password"]);
 				}
-				if (queryParam.pinSHA256) {
-					opt.set(dom_prefix + 'tls_pinSHA256', queryParam.pinSHA256);
-				}
 				opt.set(dom_prefix + 'hop', queryParam.mport || "");
 			}
 			
@@ -1627,7 +1624,7 @@ local current_node = map:get(section)
 				dom_prefix + 'tls_allowInsecure',
 				!((queryParam.allowinsecure ?? '0') === '0' && (queryParam.allowInsecure ?? '0') === '0' && (queryParam.insecure ?? '0') === '0')
 			);
-			opt.set(dom_prefix + 'tls_CertSha', queryParam.pcs || '');
+			opt.set(dom_prefix + 'tls_pinSHA256', queryParam.pcs || queryParam.pinSHA256 || '');
 			opt.set(dom_prefix + 'tls_CertByName', queryParam.vcn || '');
 			if (m.hash) {
 				opt.set('remarks', decodeURIComponent(m.hash.substr(1)));
