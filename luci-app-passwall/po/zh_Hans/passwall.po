@@ -139,9 +139,6 @@ msgstr "%s 不能为空。"
 msgid "Filter Mode"
 msgstr "过滤模式"
 
-msgid "A/AAAA type"
-msgstr "A/AAAA 类型"
-
 msgid "TCP node must be '%s' type to use FakeDNS."
 msgstr "TCP 节点必须是 '%s' 类型才能使用 FakeDNS。"
 
@@ -178,8 +175,8 @@ msgstr "请求协议"
 msgid "Remote DNS DoH"
 msgstr "远程 DNS DoH"
 
-msgid "Format: URL[,IP] (omit the latter if URL is an IP)"
-msgstr "格式：URL[,IP]（URL 为 IP 时可省略后半部分）"
+msgid "Format: URL[,IP] (optional IP to map the domain in the URL)"
+msgstr "格式：URL[,IP]（IP 可选，用于绑定 URL 中的域名）"
 
 msgid "Notify the DNS server when the DNS query is notified, the location of the client (cannot be a private IP address)."
 msgstr "用于 DNS 查询时通知 DNS 服务器，客户端所在的地理位置（不能是私有 IP 地址）。"
