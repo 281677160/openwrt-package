@@ -649,13 +649,9 @@ add_firewall_rule() {
 	ipset -! create $IPSET_LAN6 nethash family inet6 maxelem 1048576
 	ipset -! create $IPSET_VPS6 nethash family inet6 maxelem 1048576
 	ipset -! create $IPSET_WAN6 nethash family inet6 maxelem 1048576
-	
-	ipset -! -R <<-EOF
-		$(ip address show | grep -w "inet" | awk '{print $2}' | awk -F '/' '{print $1}' | sed -e "s/^/add $IPSET_LOCAL /")
-	EOF
-	ipset -! -R <<-EOF
-		$(ip address show | grep -w "inet6" | awk '{print $2}' | awk -F '/' '{print $1}' | sed -e "s/^/add $IPSET_LOCAL6 /")
-	EOF
+
+	get_local_ips ip4 | sed "s/^/add $IPSET_LOCAL /" | ipset -! -R
+	get_local_ips ip6 | sed "s/^/add $IPSET_LOCAL6 /" | ipset -! -R
 
 	ipset -! -R <<-EOF
 		$(gen_lanlist | sed -e "s/^/add $IPSET_LAN /")
@@ -749,9 +745,9 @@ add_firewall_rule() {
 	$ipt_n -N PSW2_DNS
 	if [ $(config_t_get global dns_redirect "1") = "0" ]; then
 		#Only hijack when dest address is local IP
-		$ipt_n -I PREROUTING $(dst $IPSET_LOCAL) -j PSW2_DNS
+		$ipt_n -I PREROUTING -m set --match-set $IPSET_LAN src $(dst $IPSET_LOCAL) -j PSW2_DNS
 	else
-		$ipt_n -I PREROUTING -j PSW2_DNS
+		$ipt_n -I PREROUTING -m set --match-set $IPSET_LAN src -j PSW2_DNS
 	fi
 
 	$ipt_m -N PSW2_DIVERT
@@ -799,9 +795,9 @@ add_firewall_rule() {
 	$ip6t_n -N PSW2_DNS
 	if [ $(config_t_get global dns_redirect "1") = "0" ]; then
 		#Only hijack when dest address is local IP
-		$ip6t_n -I PREROUTING $(dst $IPSET_LOCAL6) -j PSW2_DNS
+		$ip6t_n -I PREROUTING -m set --match-set $IPSET_LAN6 src $(dst $IPSET_LOCAL6) -j PSW2_DNS
 	else
-		$ip6t_n -I PREROUTING -j PSW2_DNS
+		$ip6t_n -I PREROUTING -m set --match-set $IPSET_LAN6 src -j PSW2_DNS
 	fi
 
 	$ip6t_m -N PSW2_DIVERT

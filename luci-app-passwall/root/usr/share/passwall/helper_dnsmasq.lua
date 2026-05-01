@@ -286,17 +286,22 @@ function add_rule(var)
 		if domain == "" or domain:find("#") then
 			return
 		end
-		table.insert(excluded_domain, domain)
+		excluded_domain[domain] = true
 	end
 
 	local function check_excluded_domain(domain)
 		if domain == "" or domain:find("#") then
 			return false
 		end
-		for k,v in ipairs(excluded_domain) do
-			if domain == v or domain:sub(-#("."..v)) == "."..v then
+		if excluded_domain[domain] then
+			return true
+		end
+		local pos = domain:find(".", 1, true)
+		while pos do
+			if excluded_domain[domain:sub(pos + 1)] then
 				return true
 			end
+			pos = domain:find(".", pos + 1, true)
 		end
 		return false
 	end

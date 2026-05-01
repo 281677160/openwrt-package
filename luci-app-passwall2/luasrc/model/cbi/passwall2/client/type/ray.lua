@@ -374,7 +374,7 @@ if api.compare_versions(os.date("%Y.%m.%d"), "<", "2026.6.1") then
 end
 
 if api.compare_versions(xray_version, ">=", "26.1.31") then
-	o = s:option(Value, _n("tls_CertSha"), translate("TLS Chain Fingerprint (SHA256)"), translate("Once set, connects only when the server’s chain fingerprint matches."))
+	o = s:option(Value, _n("tls_pinSHA256"), translate("TLS Chain Fingerprint (SHA256)"))
 	o:depends({ [_n("tls")] = true, [_n("reality")] = false })
 	o:depends({ [_n("protocol")] = "hysteria2" })
 
@@ -505,6 +505,11 @@ o:depends({ [_n("transport")] = "mkcp" })
 
 o = s:option(Value, _n("mkcp_domain"), translate("Camouflage Domain"), translate("Use it together with the DNS disguised type. You can fill in any domain."))
 o:depends({ [_n("mkcp_guise")] = "dns" })
+
+o = s:option(Value, _n("mkcp_mtu"), translate("KCP MTU"))
+o.datatype = "uinteger"
+o.default = 1350
+o:depends({ [_n("transport")] = "mkcp" })
 
 o = s:option(Value, _n("mkcp_seed"), translate("KCP Seed"))
 o:depends({ [_n("transport")] = "mkcp" })

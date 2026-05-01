@@ -142,9 +142,10 @@ get_ip_port_from() {
 
 parse_doh() {
 	local __doh=$1 __url_var=$2 __host_var=$3 __port_var=$4 __bootstrap_var=$5
-	__doh=$(echo -e "$__doh" | tr -d ' \t\n')
+	__doh=$(printf '%s' "$__doh" | tr -d ' \t\n')
 	local __url=${__doh%%,*}
 	local __bootstrap=${__doh#*,}
+	[ "$__bootstrap" = "$__doh" ] && __bootstrap=""
 	local __host_port=$(lua_api "get_domain_from_url(\"${__url}\")")
 	local __host __port
 	if echo "${__host_port}" | grep -q '^\[.*\]:[0-9]\+$'; then

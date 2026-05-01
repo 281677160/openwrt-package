@@ -712,8 +712,8 @@ add_firewall_rule() {
 	gen_nftset $NFTSET_VPS6 ipv6_addr 0 "-1"
 	gen_nftset $NFTSET_WAN6 ipv6_addr 0 "-1"
 
-	ip address show | grep -w "inet" | awk '{print $2}' | awk -F '/' '{print $1}' | insert_nftset $NFTSET_LOCAL "-1"
-	ip address show | grep -w "inet6" | awk '{print $2}' | awk -F '/' '{print $1}' | insert_nftset $NFTSET_LOCAL6 "-1"
+	get_local_ips ip4 | insert_nftset $NFTSET_LOCAL "-1"
+	get_local_ips ip6 | insert_nftset $NFTSET_LOCAL6 "-1"
 
 	# Ignore special IP ranges
 	local lan_ifname lan_ip
@@ -786,10 +786,11 @@ add_firewall_rule() {
 	nft "flush chain $NFTABLE_NAME PSW2_DNS"
 	if [ $(config_t_get global dns_redirect "1") = "0" ]; then
 		#Only hijack when dest address is local IP
-		nft "insert rule $NFTABLE_NAME dstnat ip daddr @${NFTSET_LOCAL} jump PSW2_DNS"
-		nft "insert rule $NFTABLE_NAME dstnat ip6 daddr @${NFTSET_LOCAL6} jump PSW2_DNS"
+		nft "insert rule $NFTABLE_NAME dstnat ip saddr @${NFTSET_LAN} ip daddr @${NFTSET_LOCAL} jump PSW2_DNS"
+		nft "insert rule $NFTABLE_NAME dstnat ip6 saddr @${NFTSET_LAN6} ip6 daddr @${NFTSET_LOCAL6} jump PSW2_DNS"
 	else
-		nft "insert rule $NFTABLE_NAME dstnat jump PSW2_DNS"
+		nft "insert rule $NFTABLE_NAME dstnat ip saddr @${NFTSET_LAN} jump PSW2_DNS"
+		nft "insert rule $NFTABLE_NAME dstnat ip6 saddr @${NFTSET_LAN6} jump PSW2_DNS"
 	fi
 
 	# for ipv4 ipv6 tproxy mark
