@@ -2230,6 +2230,12 @@ msgstr "ورودی %s:%s"
 msgid "Node: %s:%s, Weight: %s"
 msgstr "گره: %s:%s، وزن: %s"
 
+msgid "[Rule update] instance is running; please try again later."
+msgstr "نمونه [به‌روزرسانی قانون] در حال اجرا است؛ لطفاً بعداً دوباره امتحان کنید."
+
+msgid "[Subscription] instance is running; [Rule Update] queue and wait."
+msgstr "نمونه [اشتراک] در حال اجرا است؛ [به‌روزرسانی قانون] در صف انتظار قرار می‌گیرد."
+
 msgid "Start updating the rules..."
 msgstr "شروع به‌روزرسانی قوانین..."
 
@@ -2382,6 +2388,12 @@ msgstr "دریافت محتوای اشتراک برای [%s] خالی است. ا
 
 msgid "Proxy"
 msgstr "پروکسی"
+
+msgid "[Subscription] instance is running; please try again later."
+msgstr "نمونه [اشتراک] در حال اجرا است؛ لطفاً بعداً دوباره امتحان کنید."
+
+msgid "[Rule Update] instance is running; [Subscription] queue and wait."
+msgstr "نمونه [به‌روزرسانی قانون] در حال اجرا است؛ [اشتراک] در صف انتظار قرار دارد."
 
 msgid "Start subscribing..."
 msgstr "شروع اشتراک‌گیری..."

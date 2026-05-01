@@ -1,0 +1,45 @@
+#!/bin/sh /etc/rc.common
+START=99
+STOP=13
+USE_PROCD=1
+
+service_triggers()
+{
+	procd_add_reload_trigger "qmodem"
+
+}
+
+start_service(){
+    load_led_services
+}
+
+stop_service(){
+    config_load qmodem
+    config_foreach _turn_off_leds modem-device
+}
+
+load_led_services(){
+    config_load qmodem
+    config_foreach _led_services modem-device
+}
+
+
+_led_services()
+{
+    local led_script
+    config_get led_script "$1" led_script
+    if [ -n "$led_script" ] && [ -x "/usr/share/qmodem/led_scripts/${led_script}.sh" ]; then
+        procd_open_instance led_$1
+        procd_set_param command "/usr/share/qmodem/led_scripts/${led_script}.sh" "$1"
+        procd_set_param respawn 120 15 10
+        procd_close_instance
+    fi
+}
+
+_turn_off_leds(){
+    local led_script
+    config_get led_script "$1" led_script
+    if [ -n "$led_script" ] && [ -x "/usr/share/qmodem/led_scripts/${led_script}.sh" ]; then
+        /usr/share/qmodem/led_scripts/${led_script}.sh "$1" "off"
+    fi
+}

@@ -181,6 +181,7 @@ run_singbox() {
 			[ "$remote_dns_protocol" = "http3" ] && json_add_string "remote_dns_http3" "1"
 		;;
 	esac
+
 	[ -n "$remote_dns_client_ip" ] && json_add_string "remote_dns_client_ip" "${remote_dns_client_ip}"
 	[ "$remote_fakedns" = "1" ] && json_add_string "remote_dns_fake" "1"
 	[ -n "$no_run" ] && json_add_string "no_run" "1"
@@ -259,29 +260,24 @@ run_xray() {
 	[ -n "$dns_cache" ] && json_add_string "dns_cache" "${dns_cache}"
 
 	case "$remote_dns_protocol" in
-		udp)
-			local _dns=$(get_first_dns remote_dns_udp_server 53 | sed 's/#/:/g')
+		udp|tcp)
+			local _proto="$remote_dns_protocol"
+			local _dns=$(get_first_dns remote_dns_${_proto}_server 53 | sed 's/#/:/g')
 			local _dns_address=$(echo ${_dns} | awk -F ':' '{print $1}')
 			local _dns_port=$(echo ${_dns} | awk -F ':' '{print $2}')
-			json_add_string "remote_dns_udp_server" "${_dns_address}"
-			json_add_string "remote_dns_udp_port" "${_dns_port}"
+			json_add_string "remote_dns_${_proto}_server" "${_dns_address}"
+			json_add_string "remote_dns_${_proto}_port" "${_dns_port}"
 		;;
-		tcp|tcp+doh)
-			local _dns=$(get_first_dns remote_dns_tcp_server 53 | sed 's/#/:/g')
-			local _dns_address=$(echo ${_dns} | awk -F ':' '{print $1}')
-			local _dns_port=$(echo ${_dns} | awk -F ':' '{print $2}')
-			json_add_string "remote_dns_tcp_server" "${_dns_address}"
-			json_add_string "remote_dns_tcp_port" "${_dns_port}"
-			[ "$remote_dns_protocol" = "tcp+doh" ] && {
-				local _doh_url _doh_host _doh_port _doh_bootstrap
-				parse_doh "$remote_dns_doh" _doh_url _doh_host _doh_port _doh_bootstrap
-				[ -n "$_doh_bootstrap" ] && json_add_string "remote_dns_doh_ip" "${_doh_bootstrap}"
-				json_add_string "remote_dns_doh_port" "${_doh_port}"
-				json_add_string "remote_dns_doh_url" "${_doh_url}"
-				json_add_string "remote_dns_doh_host" "${_doh_host}"
-			}
+		doh)
+			local _doh_url _doh_host _doh_port _doh_bootstrap
+			parse_doh "$remote_dns_doh" _doh_url _doh_host _doh_port _doh_bootstrap
+			[ -n "$_doh_bootstrap" ] && json_add_string "remote_dns_doh_ip" "${_doh_bootstrap}"
+			json_add_string "remote_dns_doh_port" "${_doh_port}"
+			json_add_string "remote_dns_doh_url" "${_doh_url}"
+			json_add_string "remote_dns_doh_host" "${_doh_host}"
 		;;
 	esac
+
 	json_add_string "loglevel" "$loglevel"
 	[ -n "$no_run" ] && json_add_string "no_run" "1"
 	local _json_arg="$(json_dump)"
@@ -585,7 +581,13 @@ run_redir() {
 		server_host=$(config_n_get $node address)
 		port=$(config_n_get $node port)
 	else
-		type="socks"
+		if [ "${DNS_MODE}" = "xray" ]; then
+			type="xray"
+		elif [ "${DNS_MODE}" = "sing-box" ]; then
+			type="sing-box"
+		else
+			type="socks"
+		fi
 		server_host="127.0.0.1"
 		port=$node2socks_port
 		remarks="Socks 配置($port 端口)"
@@ -754,7 +756,7 @@ run_redir() {
 			local v2ray_dns_mode=$(config_t_get global v2ray_dns_mode tcp)
 			[ "${DNS_MODE}" != "sing-box" ] && [ "$protocol" = "_shunt" ] && {
 				DNS_MODE="sing-box"
-				[ "$v2ray_dns_mode" != "udp" ] && [ "$v2ray_dns_mode" != "tcp" ] && v2ray_dns_mode="tcp"
+				[ "$v2ray_dns_mode" = "tcp+doh" ] && v2ray_dns_mode="tcp"
 			}
 
 			[ "$protocol" = "_shunt" ] && {
@@ -793,7 +795,7 @@ run_redir() {
 						resolve_dns_log="Sing-Box DNS(127.0.0.1#${resolve_dns_port}) -> ${_proto}://${REMOTE_DNS}"
 					;;
 					doh|http3)
-						remote_dns_doh=$(config_t_get global remote_dns_doh "https://1.1.1.1/dns-query")
+						local remote_dns_doh=$(config_t_get global remote_dns_doh "https://1.1.1.1/dns-query")
 						_args="${_args} remote_dns_doh=${remote_dns_doh}"
 						resolve_dns_log="Sing-Box DNS(127.0.0.1#${resolve_dns_port}) -> ${remote_dns_doh}"
 					;;
@@ -833,8 +835,10 @@ run_redir() {
 			local v2ray_dns_mode=$(config_t_get global v2ray_dns_mode tcp)
 			[ "${DNS_MODE}" != "xray" ] && [ "$protocol" = "_shunt" ] && {
 				DNS_MODE="xray"
-				[ "$v2ray_dns_mode" != "udp" ] && [ "$v2ray_dns_mode" != "tcp" ] && v2ray_dns_mode="tcp"
+				[ "$v2ray_dns_mode" = "http3" ] && v2ray_dns_mode="tcp"
 			}
+			#兼容旧模式，择机移除
+			[ "$v2ray_dns_mode" = "tcp+doh" ] && v2ray_dns_mode="tcp"
 
 			[ "$protocol" = "_shunt" ] && {
 				local geoip_path="${V2RAY_LOCATION_ASSET%*/}/geoip.dat"
@@ -866,19 +870,15 @@ run_redir() {
 
 				_args="${_args} remote_dns_protocol=${v2ray_dns_mode}"
 				case "$v2ray_dns_mode" in
-					udp)
-						_args="${_args} remote_dns_udp_server=${REMOTE_DNS}"
-						resolve_dns_log="Xray DNS(127.0.0.1#${resolve_dns_port}) -> udp://${REMOTE_DNS}"
+					udp|tcp)
+						local _proto="$v2ray_dns_mode"
+						_args="${_args} remote_dns_${_proto}_server=${REMOTE_DNS}"
+						resolve_dns_log="Xray DNS(127.0.0.1#${resolve_dns_port}) -> ${_proto}://${REMOTE_DNS}"
 					;;
-					tcp|tcp+doh)
-						_args="${_args} remote_dns_tcp_server=${REMOTE_DNS}"
-						if [ "$v2ray_dns_mode" = "tcp+doh" ]; then
-							remote_dns_doh=$(config_t_get global remote_dns_doh "https://1.1.1.1/dns-query")
-							_args="${_args} remote_dns_doh=${remote_dns_doh}"
-							resolve_dns_log="Xray DNS(127.0.0.1#${resolve_dns_port}) -> (${remote_dns_doh})(A/AAAA) + tcp://${REMOTE_DNS}"
-						else
-							resolve_dns_log="Xray DNS(127.0.0.1#${resolve_dns_port}) -> tcp://${REMOTE_DNS}"
-						fi
+					doh)
+						local remote_dns_doh=$(config_t_get global remote_dns_doh "https://1.1.1.1/dns-query")
+						_args="${_args} remote_dns_doh=${remote_dns_doh}"
+						resolve_dns_log="Xray DNS(127.0.0.1#${resolve_dns_port}) -> ${remote_dns_doh}"
 					;;
 				esac
 				local remote_fakedns=$(config_t_get global remote_fakedns 0)
@@ -1348,7 +1348,7 @@ start_dns() {
 					echolog "  - Sing-Box DNS(${TUN_DNS}) -> ${_proto}://${REMOTE_DNS}"
 				;;
 				doh|http3)
-					remote_dns_doh=$(config_t_get global remote_dns_doh "https://1.1.1.1/dns-query")
+					local remote_dns_doh=$(config_t_get global remote_dns_doh "https://1.1.1.1/dns-query")
 					_args="${_args} remote_dns_doh=${remote_dns_doh}"
 					echolog "  - Sing-Box DNS(${TUN_DNS}) -> ${remote_dns_doh}"
 
@@ -1376,26 +1376,24 @@ start_dns() {
 			[ -n "${_remote_dns_client_ip}" ] && _args="${_args} remote_dns_client_ip=${_remote_dns_client_ip}"
 			TCP_PROXY_DNS=1
 			local v2ray_dns_mode=$(config_t_get global v2ray_dns_mode tcp)
+			#兼容旧模式，择机移除
+			[ "$v2ray_dns_mode" = "tcp+doh" ] && v2ray_dns_mode="tcp"
 			_args="${_args} dns_listen_port=${NEXT_DNS_LISTEN_PORT}"
 			_args="${_args} remote_dns_protocol=${v2ray_dns_mode}"
 			case "$v2ray_dns_mode" in
-				udp)
-					_args="${_args} remote_dns_udp_server=${REMOTE_DNS}"
-					echolog "  - Xray DNS(${TUN_DNS}) -> udp://${REMOTE_DNS}"
+				udp|tcp)
+					local _proto="$v2ray_dns_mode"
+					_args="${_args} remote_dns_${_proto}_server=${REMOTE_DNS}"
+					echolog "  - Xray DNS(${TUN_DNS}) -> ${_proto}://${REMOTE_DNS}"
 				;;
-				tcp|tcp+doh)
-					_args="${_args} remote_dns_tcp_server=${REMOTE_DNS}"
-					if [ "$v2ray_dns_mode" = "tcp+doh" ]; then
-						remote_dns_doh=$(config_t_get global remote_dns_doh "https://1.1.1.1/dns-query")
-						_args="${_args} remote_dns_doh=${remote_dns_doh}"
-						echolog "  - Xray DNS(${TUN_DNS}) -> (${remote_dns_doh})(A/AAAA) + tcp://${REMOTE_DNS}"
+				doh)
+					local remote_dns_doh=$(config_t_get global remote_dns_doh "https://1.1.1.1/dns-query")
+					_args="${_args} remote_dns_doh=${remote_dns_doh}"
+					echolog "  - Xray DNS(${TUN_DNS}) -> ${remote_dns_doh}"
 
-						local _doh_url _doh_host _doh_port _doh_bootstrap
-						parse_doh "$remote_dns_doh" _doh_url _doh_host _doh_port _doh_bootstrap
-						[ -n "${_doh_bootstrap}" ] && REMOTE_DNS="${REMOTE_DNS},${_doh_bootstrap}#${_doh_port}"
-					else
-						echolog "  - Xray DNS(${TUN_DNS}) -> tcp://${REMOTE_DNS}"
-					fi
+					local _doh_url _doh_host _doh_port _doh_bootstrap
+					parse_doh "$remote_dns_doh" _doh_url _doh_host _doh_port _doh_bootstrap
+					[ -n "${_doh_bootstrap}" ] && REMOTE_DNS="${REMOTE_DNS},${_doh_bootstrap}#${_doh_port}"
 				;;
 			esac
 			_args="${_args} dns_socks_address=127.0.0.1 dns_socks_port=${tcp_node_socks_port}"
@@ -1654,14 +1652,25 @@ acl_app() {
 							set_cache_var "ACL_${sid}_dns_port" "${GLOBAL_DNSMASQ_PORT}"
 							set_cache_var "ACL_${sid}_tcp_default" "1"
 						else
-							local type=$(echo $(config_n_get $tcp_node type) | tr 'A-Z' 'a-z')
-							local protocol=$(config_n_get $tcp_node protocol)
+							local type protocol
+							if [ "$(config_get_type ${tcp_node#Socks_})" = "socks" ]; then
+								if [ "${dns_mode}" = "xray" ]; then
+									type="xray"
+								elif [ "${dns_mode}" = "sing-box" ]; then
+									type="sing-box"
+								fi
+							else
+								type=$(echo $(config_n_get $tcp_node type) | tr 'A-Z' 'a-z')
+								protocol=$(config_n_get $tcp_node protocol)
+							fi
+							#兼容旧模式，择机移除
+							[ "$v2ray_dns_mode" = "tcp+doh" ] && v2ray_dns_mode="tcp"
 							([ "$type" = "sing-box" ] || [ "$type" = "xray" ]) && [ "$protocol" = "_shunt" ] && [ "$type" != "$dns_mode" ] && {
 								dns_mode=$type
-								([ "$type" = "xray" ] || [ "$type" = "sing-box" ]) && [ "$v2ray_dns_mode" != "udp" ] && [ "$v2ray_dns_mode" != "tcp" ] && v2ray_dns_mode="tcp"
+								[ "$type" = "xray" ] && [ "$v2ray_dns_mode" = "http3" ] && v2ray_dns_mode="tcp"
 							}
 							dns_cache_key="${dns_mode}_${remote_dns}_${v2ray_dns_mode:-none}_${remote_dns_client_ip:-0}_${remote_fakedns:-0}"
-							[ "$dns_mode" = "sing-box" ] && [ "$v2ray_dns_mode" != "udp" ] && [ "$v2ray_dns_mode" != "tcp" ] && {
+							([ "$v2ray_dns_mode" = "doh" ] || [ "$v2ray_dns_mode" = "http3" ]) && {
 								dns_cache_key="${dns_mode}_${remote_dns_doh:-https://1.1.1.1/dns-query}_${v2ray_dns_mode:-doh}_${remote_dns_client_ip:-0}_${remote_fakedns:-0}"
 							}
 
@@ -1735,7 +1744,7 @@ acl_app() {
 								lua $APP_PATH/helper_dnsmasq.lua add_rule -FLAG ${sid} -TMP_DNSMASQ_PATH ${dnsmasq_conf_path} -DNSMASQ_CONF_FILE ${dnsmasq_conf} \
 									-LISTEN_PORT ${dnsmasq_port} -DEFAULT_DNS ${DEFAULT_DNS} -LOCAL_DNS $LOCAL_DNS \
 									-USE_DIRECT_LIST "${use_direct_list}" -USE_PROXY_LIST "${use_proxy_list}" -USE_BLOCK_LIST "${use_block_list}" -USE_GFW_LIST "${use_gfw_list}" -CHN_LIST "${chn_list}" \
-									-TUN_DNS "127.0.0.1#${_dns_port}" -REMOTE_FAKEDNS 0 -USE_DEFAULT_DNS "${use_default_dns:-direct}" -CHINADNS_DNS ${_china_ng_listen:-0} \
+									-TUN_DNS "127.0.0.1#${_dns_port}" -REMOTE_FAKEDNS ${remote_fakedns:-0} -USE_DEFAULT_DNS "${use_default_dns:-direct}" -CHINADNS_DNS ${_china_ng_listen:-0} \
 									-TCP_NODE $tcp_node -DEFAULT_PROXY_MODE ${tcp_proxy_mode} -NO_PROXY_IPV6 ${dnsmasq_filter_proxy_ipv6:-0} -NFTFLAG ${nftflag:-0} \
 									-NO_LOGIC_LOG 1
 								ln_run "$(first_type dnsmasq)" "dnsmasq_${sid}" "/dev/null" -C ${dnsmasq_conf} -x ${acl_path}/dnsmasq.pid
@@ -1775,7 +1784,7 @@ acl_app() {
 										[ "$filter_proxy_ipv6" = "1" ] && remote_dns_query_strategy="UseIPv4"
 										remote_dns_doh=${remote_dns_doh:-https://1.1.1.1/dns-query}
 										_extra_param="${_extra_param} dns_listen_port=${_dns_port} remote_dns_protocol=${v2ray_dns_mode} remote_dns_udp_server=${remote_dns} remote_dns_tcp_server=${remote_dns}"
-										_extra_param="${_extra_param} remote_dns_doh=${remote_dns_doh} remote_dns_query_strategy=${remote_dns_query_strategy} remote_dns_client_ip=${remote_dns_client_ip}"
+										_extra_param="${_extra_param} remote_dns_doh=${remote_dns_doh} remote_dns_query_strategy=${remote_dns_query_strategy} remote_fakedns=${remote_fakedns:-0} remote_dns_client_ip=${remote_dns_client_ip}"
 									}
 									_extra_param="${_extra_param} tcp_proxy_way=$TCP_PROXY_WAY"
 									[ -n "$udp_node" ] && ([ "$udp_node" = "tcp" ] || [ "$udp_node" = "$tcp_node" ]) && {
@@ -1841,7 +1850,16 @@ acl_app() {
 								set_cache_var "node_${udp_node}_redir_port" "${redir_port}"
 								udp_port=$redir_port
 
-								local type=$(echo $(config_n_get $udp_node type) | tr 'A-Z' 'a-z')
+								local type
+								if [ "$(config_get_type ${udp_node#Socks_})" = "socks" ]; then
+									if [ "${dns_mode}" = "xray" ]; then
+										type="xray"
+									elif [ "${dns_mode}" = "sing-box" ]; then
+										type="sing-box"
+									fi
+								else
+									type=$(echo $(config_n_get $udp_node type) | tr 'A-Z' 'a-z')
+								fi
 								if [ -n "${type}" ] && ([ "${type}" = "sing-box" ] || [ "${type}" = "xray" ]); then
 									config_file="acl/${udp_node}_UDP_${redir_port}.json"
 									config_file="$TMP_PATH/$config_file"

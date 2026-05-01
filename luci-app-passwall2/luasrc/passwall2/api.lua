@@ -122,21 +122,17 @@ function get_new_port()
 end
 
 function exec_call(cmd)
-	local process = io.popen(cmd .. '; echo -e "\n$?"')
-	local lines = {}
-	local result = ""
-	local return_code
-	for line in process:lines() do
-		lines[#lines + 1] = line
+	math.randomseed(os.time())
+	local tag = "\x01__RC__" .. tostring(math.random(100000, 999999)) .. "\x01"
+	local f = io.popen('(' .. cmd .. '); printf "\\n' .. tag .. '%d" "$?"')
+	local out = f:read("*a") or ""
+	f:close()
+	local rc = out:match(tag .. "(%d+)%s*$")
+	if not rc then
+		return 255, trim(out)
 	end
-	process:close()
-	if #lines > 0 then
-		return_code = lines[#lines]
-		for i = 1, #lines - 1 do
-			result = result .. lines[i] .. ((i == #lines - 1) and "" or "\n")
-		end
-	end
-	return tonumber(return_code), trim(result)
+	out = out:gsub("\n?" .. tag .. "%d+%s*$", "")
+	return tonumber(rc), trim(out)
 end
 
 function base64Decode(text)

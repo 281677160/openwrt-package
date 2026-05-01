@@ -2228,6 +2228,12 @@ msgstr "Вход %s:%s"
 msgid "Node: %s:%s, Weight: %s"
 msgstr "Сервер: %s:%s, вес: %s"
 
+msgid "[Rule update] instance is running; please try again later."
+msgstr "Экземпляр [Обновление правила] запущен; пожалуйста, попробуйте позже."
+
+msgid "[Subscription] instance is running; [Rule Update] queue and wait."
+msgstr "Экземпляр [Подписка] запущен; [Обновление правила] поставить в очередь и ждать."
+
 msgid "Start updating the rules..."
 msgstr "Начало обновления правил..."
 
@@ -2380,6 +2386,12 @@ msgstr "Содержимое подписки [%s] пусто. Возможно,
 
 msgid "Proxy"
 msgstr "Прокси"
+
+msgid "[Subscription] instance is running; please try again later."
+msgstr "Экземпляр [Подписки] запущен; пожалуйста, попробуйте позже."
+
+msgid "[Rule Update] instance is running; [Subscription] queue and wait."
+msgstr "Экземпляр [Обновление правила] запущен; [Подписка] ставится в очередь и ожидает."
 
 msgid "Start subscribing..."
 msgstr "Начало подписки..."
