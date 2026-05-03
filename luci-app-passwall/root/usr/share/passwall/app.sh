@@ -172,12 +172,7 @@ run_singbox() {
 			json_add_string "remote_dns_${_proto}_port" "${_dns_port}"
 		;;
 		doh|http3)
-			local _doh_url _doh_host _doh_port _doh_bootstrap
-			parse_doh "$remote_dns_doh" _doh_url _doh_host _doh_port _doh_bootstrap
-			[ -n "$_doh_bootstrap" ] && json_add_string "remote_dns_doh_ip" "${_doh_bootstrap}"
-			json_add_string "remote_dns_doh_port" "${_doh_port}"
-			json_add_string "remote_dns_doh_url" "${_doh_url}"
-			json_add_string "remote_dns_doh_host" "${_doh_host}"
+			json_add_string "remote_dns_doh" "${remote_dns_doh}"
 			[ "$remote_dns_protocol" = "http3" ] && json_add_string "remote_dns_http3" "1"
 		;;
 	esac
@@ -269,12 +264,7 @@ run_xray() {
 			json_add_string "remote_dns_${_proto}_port" "${_dns_port}"
 		;;
 		doh)
-			local _doh_url _doh_host _doh_port _doh_bootstrap
-			parse_doh "$remote_dns_doh" _doh_url _doh_host _doh_port _doh_bootstrap
-			[ -n "$_doh_bootstrap" ] && json_add_string "remote_dns_doh_ip" "${_doh_bootstrap}"
-			json_add_string "remote_dns_doh_port" "${_doh_port}"
-			json_add_string "remote_dns_doh_url" "${_doh_url}"
-			json_add_string "remote_dns_doh_host" "${_doh_host}"
+			json_add_string "remote_dns_doh" "${remote_dns_doh}"
 		;;
 	esac
 
@@ -1139,109 +1129,106 @@ clean_crontab() {
 }
 
 start_crontab() {
-	if [ "$ENABLED_DEFAULT_ACL" == 1 ] || [ "$ENABLED_ACLS" == 1 ]; then
-		start_daemon=$(config_t_get global_delay start_daemon 0)
-		[ "$start_daemon" = "1" ] && $APP_PATH/monitor.sh > /dev/null 2>&1 &
+	local update_loop
+
+	if [ "$ENABLED_DEFAULT_ACL" = "1" ] || [ "$ENABLED_ACLS" = "1" ]; then
+		local start_daemon=$(config_t_get global_delay start_daemon 0)
+		[ "$start_daemon" = "1" ] && $APP_PATH/monitor.sh >/dev/null 2>&1 &
 	fi
 
-	[ -f "${LOCK_PATH}/${CONFIG}_cron.lock" ] && {
+	if [ -f "${LOCK_PATH}/${CONFIG}_cron.lock" ]; then
 		rm -f "${LOCK_PATH}/${CONFIG}_cron.lock"
 		echolog "当前为计划任务自动运行，不重新配置定时任务。"
 		return
-	}
+	fi
 
 	clean_crontab
 
-	[ "$ENABLED" != 1 ] && {
+	if [ "$ENABLED" != "1" ]; then
 		/etc/init.d/cron restart
 		return
+	fi
+
+	build_time() {
+		local w="$1"
+		local h="$2"
+		local expr="0 $h * * $w"
+		[ "$w" = "7" ] && expr="0 $h * * *"
+		echo "$expr"
 	}
 
-	stop_week_mode=$(config_t_get global_delay stop_week_mode)
-	stop_time_mode=$(config_t_get global_delay stop_time_mode)
-	if [ -n "$stop_week_mode" ]; then
-		local t="0 $stop_time_mode * * $stop_week_mode"
-		[ "$stop_week_mode" = "7" ] && t="0 $stop_time_mode * * *"
-		if [ "$stop_week_mode" = "8" ]; then
+	add_service_cron() {
+		local week="$1"
+		local hour="$2"
+		local action="$3"
+		local logmsg="$4"
+		[ -z "$week" ] && return
+		local svr_t=$(build_time "$week" "$hour")
+		if [ "$week" = "8" ]; then
 			update_loop=1
 		else
-			echo "$t /etc/init.d/$CONFIG stop > /dev/null 2>&1 &" >>/etc/crontabs/root
+			echo "$svr_t /etc/init.d/$CONFIG $action > /dev/null 2>&1 &" >>/etc/crontabs/root
 		fi
-		echolog "配置定时任务：自动关闭服务。"
-	fi
-	start_week_mode=$(config_t_get global_delay start_week_mode)
-	start_time_mode=$(config_t_get global_delay start_time_mode)
-	if [ -n "$start_week_mode" ]; then
-		local t="0 $start_time_mode * * $start_week_mode"
-		[ "$start_week_mode" = "7" ] && t="0 $start_time_mode * * *"
-		if [ "$start_week_mode" = "8" ]; then
-			update_loop=1
-		else
-			echo "$t /etc/init.d/$CONFIG start > /dev/null 2>&1 &" >>/etc/crontabs/root
-		fi
-		echolog "配置定时任务：自动开启服务。"
-	fi
-	restart_week_mode=$(config_t_get global_delay restart_week_mode)
-	restart_time_mode=$(config_t_get global_delay restart_time_mode)
-	if [ -n "$restart_week_mode" ]; then
-		local t="0 $restart_time_mode * * $restart_week_mode"
-		[ "$restart_week_mode" = "7" ] && t="0 $restart_time_mode * * *"
-		if [ "$restart_week_mode" = "8" ]; then
-			update_loop=1
-		else
-			echo "$t /etc/init.d/$CONFIG restart > /dev/null 2>&1 &" >>/etc/crontabs/root
-		fi
-		echolog "配置定时任务：自动重启服务。"
-	fi
+		echolog "$logmsg"
+	}
 
-	autoupdate=$(config_t_get global_rules auto_update)
-	weekupdate=$(config_t_get global_rules week_update)
-	dayupdate=$(config_t_get global_rules time_update)
+	# ===== stop/start/restart =====
+	add_service_cron "$(config_t_get global_delay stop_week_mode)" "$(config_t_get global_delay stop_time_mode)" "stop" "配置定时任务：自动关闭服务。"
+
+	add_service_cron "$(config_t_get global_delay start_week_mode)" "$(config_t_get global_delay start_time_mode)" "start" "配置定时任务：自动开启服务。"
+
+	add_service_cron "$(config_t_get global_delay restart_week_mode)" "$(config_t_get global_delay restart_time_mode)" "restart" "配置定时任务：自动重启服务。"
+
+	# ===== rule update =====
+	local autoupdate=$(config_t_get global_rules auto_update)
+	local weekupdate=$(config_t_get global_rules week_update)
+	local dayupdate=$(config_t_get global_rules time_update)
 	if [ "$autoupdate" = "1" ]; then
-		local t="0 $dayupdate * * $weekupdate"
-		[ "$weekupdate" = "7" ] && t="0 $dayupdate * * *"
+		local rule_t=$(build_time "$weekupdate" "$dayupdate")
 		if [ "$weekupdate" = "8" ]; then
 			update_loop=1
 		else
-			echo "$t lua $APP_PATH/rule_update.lua log all cron > /dev/null 2>&1 &" >>/etc/crontabs/root
+			echo "$rule_t lua $APP_PATH/rule_update.lua log all cron > /dev/null 2>&1 &" >>/etc/crontabs/root
 		fi
 		echolog "配置定时任务：自动更新规则。"
 	fi
 
-	TMP_SUB_PATH=$TMP_PATH/sub_crontabs
-	mkdir -p $TMP_SUB_PATH
+	# ===== subscribe =====
+	local TMP_SUB_PATH=$TMP_PATH/sub_crontabs
+	mkdir -p "$TMP_SUB_PATH"
+	local item cfgid remark week_update time_update
 	for item in $(uci show ${CONFIG} | grep "=subscribe_list" | cut -d '.' -sf 2 | cut -d '=' -sf 1); do
-		if [ "$(config_n_get $item auto_update 0)" = "1" ]; then
+		if [ "$(config_n_get "$item" auto_update 0)" = "1" ]; then
 			cfgid=$(uci show ${CONFIG}.$item | head -n 1 | cut -d '.' -sf 2 | cut -d '=' -sf 1)
-			remark=$(config_n_get $item remark)
-			week_update=$(config_n_get $item week_update)
-			time_update=$(config_n_get $item time_update)
-			echo "$cfgid" >> $TMP_SUB_PATH/${week_update}_${time_update}
+			remark=$(config_n_get "$item" remark)
+			week_update=$(config_n_get "$item" week_update)
+			time_update=$(config_n_get "$item" time_update)
+			echo "$cfgid" >> "$TMP_SUB_PATH/${week_update}_${time_update}"
 			echolog "配置定时任务：自动更新【$remark】订阅。"
 		fi
 	done
-
-	[ -d "${TMP_SUB_PATH}" ] && {
-		for name in $(ls ${TMP_SUB_PATH}); do
-			week_update=$(echo $name | awk -F '_' '{print $1}')
-			time_update=$(echo $name | awk -F '_' '{print $2}')
-			cfgids=$(echo -n $(cat ${TMP_SUB_PATH}/${name}) | sed 's# #,#g')
-			local t="0 $time_update * * $week_update"
-			[ "$week_update" = "7" ] && t="0 $time_update * * *"
+	if [ -d "$TMP_SUB_PATH" ]; then
+		local name cfgids
+		for name in $(ls "$TMP_SUB_PATH"); do
+			week_update=${name%_*}
+			time_update=${name#*_}
+			cfgids=$(tr '\n' ',' < "$TMP_SUB_PATH/$name" | sed 's/,$//')
+			local sub_t=$(build_time "$week_update" "$time_update")
 			if [ "$week_update" = "8" ]; then
 				update_loop=1
 			else
-				echo "$t lua $APP_PATH/subscribe.lua start $cfgids cron > /dev/null 2>&1 &" >>/etc/crontabs/root
+				echo "$sub_t lua $APP_PATH/subscribe.lua start $cfgids cron > /dev/null 2>&1 &" >>/etc/crontabs/root
 			fi
 		done
-		rm -rf $TMP_SUB_PATH
-	}
+		rm -rf "$TMP_SUB_PATH"
+	fi
 
-	if [ "$ENABLED_DEFAULT_ACL" == 1 ] || [ "$ENABLED_ACLS" == 1 ]; then
-		[ "$update_loop" = "1" ] && {
-			$APP_PATH/tasks.sh > /dev/null 2>&1 &
+	# ===== loop =====
+	if [ "$ENABLED_DEFAULT_ACL" = "1" ] || [ "$ENABLED_ACLS" = "1" ]; then
+		if [ "$update_loop" = "1" ]; then
+			$APP_PATH/tasks.sh >/dev/null 2>&1 &
 			echolog "自动更新：启动循环更新进程。"
-		}
+		fi
 	else
 		echolog "运行于非代理模式，仅允许服务启停的定时任务。"
 	fi
@@ -1351,10 +1338,6 @@ start_dns() {
 					local remote_dns_doh=$(config_t_get global remote_dns_doh "https://1.1.1.1/dns-query")
 					_args="${_args} remote_dns_doh=${remote_dns_doh}"
 					echolog "  - Sing-Box DNS(${TUN_DNS}) -> ${remote_dns_doh}"
-
-					local _doh_url _doh_host _doh_port _doh_bootstrap
-					parse_doh "$remote_dns_doh" _doh_url _doh_host _doh_port _doh_bootstrap
-					[ -n "${_doh_bootstrap}" ] && REMOTE_DNS="${_doh_bootstrap}#${_doh_port}"
 				;;
 			esac
 			_args="${_args} dns_socks_address=127.0.0.1 dns_socks_port=${tcp_node_socks_port}"
@@ -1390,10 +1373,6 @@ start_dns() {
 					local remote_dns_doh=$(config_t_get global remote_dns_doh "https://1.1.1.1/dns-query")
 					_args="${_args} remote_dns_doh=${remote_dns_doh}"
 					echolog "  - Xray DNS(${TUN_DNS}) -> ${remote_dns_doh}"
-
-					local _doh_url _doh_host _doh_port _doh_bootstrap
-					parse_doh "$remote_dns_doh" _doh_url _doh_host _doh_port _doh_bootstrap
-					[ -n "${_doh_bootstrap}" ] && REMOTE_DNS="${REMOTE_DNS},${_doh_bootstrap}#${_doh_port}"
 				;;
 			esac
 			_args="${_args} dns_socks_address=127.0.0.1 dns_socks_port=${tcp_node_socks_port}"
