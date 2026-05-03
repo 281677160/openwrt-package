@@ -145,6 +145,8 @@ function gen_outbound(flag, node, tag, proxy_table)
 			tag = tag .. ":" .. remarks
 		end
 
+		node.address = (node.address or ""):lower()
+
 		result = {
 			_id = node_id,
 			_flag = flag,
@@ -166,7 +168,7 @@ function gen_outbound(flag, node, tag, proxy_table)
 			local server_port
 			local server_path
 			if dns_proto == "https" then
-				local _a = api.parseURL(node.domain_resolver_dns_https)
+				local _a = api.parseDoH(node.domain_resolver_dns_https)
 				if _a then
 					server_address = _a.hostname
 					server_port = _a.port or 443
@@ -1024,10 +1026,7 @@ function gen_config(var)
 	local remote_dns_udp_port = var["remote_dns_udp_port"]
 	local remote_dns_tcp_server = var["remote_dns_tcp_server"]
 	local remote_dns_tcp_port = var["remote_dns_tcp_port"]
-	local remote_dns_doh_url = var["remote_dns_doh_url"]
-	local remote_dns_doh_host = var["remote_dns_doh_host"]
-	local remote_dns_doh_ip = var["remote_dns_doh_ip"]
-	local remote_dns_doh_port = var["remote_dns_doh_port"]
+	local remote_dns_doh = var["remote_dns_doh"]
 	local remote_dns_http3 = var["remote_dns_http3"]
 	local remote_dns_client_ip = var["remote_dns_client_ip"]
 	local remote_dns_query_strategy = var["remote_dns_query_strategy"]
@@ -1271,7 +1270,7 @@ function gen_config(var)
 			end
 			if #ut_nodes == 0 then return nil end
 			local valid_nodes = {}
-			for i = 1, #ut_nodes do
+			for i = 1, #(ut_nodes or {}) do
 				local ut_node_id = ut_nodes[i]
 				local ut_node_tag = "ut-" .. ut_node_id
 				local is_new_ut_node = true
@@ -1762,13 +1761,15 @@ function gen_config(var)
 			remote_server.type = "udp"
 			remote_server.server = remote_dns_udp_server
 			remote_server.server_port = server_port
+
 		elseif remote_dns_tcp_server then
 			local server_port = tonumber(remote_dns_tcp_port) or 53
 			remote_server.type = "tcp"
 			remote_server.server = remote_dns_tcp_server
 			remote_server.server_port = server_port
-		elseif remote_dns_doh_url then
-			local _a = api.parseURL(remote_dns_doh_url)
+
+		elseif remote_dns_doh then
+			local _a = api.parseDoH(remote_dns_doh)
 			if _a then
 				remote_server.type = "https"
 				if remote_dns_http3 then
@@ -1777,15 +1778,16 @@ function gen_config(var)
 				remote_server.server = _a.hostname
 				remote_server.server_port = _a.port or 443
 				remote_server.path = _a.pathname or ""
-			end
-			if api.datatypes.hostname(remote_dns_doh_host) then
-				if remote_dns_doh_ip and remote_dns_doh_host ~= remote_dns_doh_ip and api.is_ip(remote_dns_doh_ip) then
-					if not hosts_predefined then hosts_predefined = {} end
-					hosts_predefined[remote_dns_doh_host] = remote_dns_doh_ip
-					remote_server_domain_resolver = "hosts"
-				else
-					GLOBAL.DNS_HOSTNAME[remote_dns_doh_host] = true
-					remote_server_domain_resolver = "direct"
+
+				if api.datatypes.hostname(_a.hostname) then
+					if _a.hostip then
+						if not hosts_predefined then hosts_predefined = {} end
+						hosts_predefined[_a.hostname] = _a.hostip
+						remote_server_domain_resolver = "hosts"
+					else
+						GLOBAL.DNS_HOSTNAME[_a.hostname] = true
+						remote_server_domain_resolver = "direct"
+					end
 				end
 			end
 		end
@@ -1823,6 +1825,7 @@ function gen_config(var)
 			local domain = {}
 			local nodes_domain_text = sys.exec([[uci show passwall | sed -n "s/.*\.address='\([^']*\)'/\1/p" | sort -u]])
 			string.gsub(nodes_domain_text, '[^' .. "\r\n" .. ']+', function(w)
+				w = (w or ""):lower()
 				if not api.vps_domain_exclude(w) and api.datatypes.hostname(w) and not GLOBAL.VPS_EXCLUDE[w] then
 					table.insert(domain, w)
 				end
