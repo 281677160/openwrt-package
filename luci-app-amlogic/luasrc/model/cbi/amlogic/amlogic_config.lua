@@ -60,7 +60,7 @@ kernel_path.rmempty = false
 
 --6. Set OpenWrt Kernel Tags
 -- Read the currently SAVED value of the kernel path.
-local current_kernel_path = trim(luci.sys.exec("uci get amlogic.@amlogic[0].amlogic_kernel_path 2>/dev/null") or "")
+local current_kernel_path = trim(luci.sys.exec("uci get amlogic.config.amlogic_kernel_path 2>/dev/null") or "")
 -- If it's not set yet, use its default value for the logic below.
 if current_kernel_path == "" then
     current_kernel_path = kernel_path.default
@@ -86,7 +86,7 @@ if (string.find(current_kernel_path, "ophub/kernel")) then
 end
 -- Determine the default kernel tag based on existing config or system info.
 local kernel_tagsname
-local existing_tag = trim(luci.sys.exec("uci get amlogic.@amlogic[0].amlogic_kernel_tags 2>/dev/null") or "")
+local existing_tag = trim(luci.sys.exec("uci get amlogic.config.amlogic_kernel_tags 2>/dev/null") or "")
 if existing_tag ~= "" then
     kernel_tagsname = existing_tag
 else
@@ -131,7 +131,15 @@ local default_kernel_branch = luci.sys.exec("uname -r | grep -oE '^[1-9].[0-9]{1
 kernel_branch.default = trim(default_kernel_branch)
 kernel_branch.rmempty = false
 
---8.Restore configuration
+--8.Set plugin branch
+plugin_branch = o:option(Value, "amlogic_plugin_branch", translate("Set plugin branch:"))
+plugin_branch.description = translate("Set the branch of the luci-app-amlogic plugin used in [Only update Amlogic Service]. Default (empty) uses the main (Lua) branch.")
+plugin_branch:value("", translate("main [Lua version]"))
+plugin_branch:value("js", translate("js [JavaScript version]"))
+plugin_branch.default = ""
+plugin_branch.rmempty = true
+
+--9.Restore configuration
 firmware_config = o:option(Flag, "amlogic_firmware_config", translate("Keep config update:"))
 firmware_config.description = translate("Set whether to keep the current config during [Online Download Update] and [Manually Upload Update].")
 firmware_config.default = "1"
