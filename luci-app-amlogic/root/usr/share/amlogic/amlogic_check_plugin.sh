@@ -64,19 +64,40 @@ fi
 tolog "PLATFORM: [ ${PLATFORM} ]"
 sleep 2
 
-# Read plugin branch from UCI config; default to "" (main-lua) when missing or empty
-# When amlogic_plugin_branch is missing, add it with empty value (main-lua default)
-if [[ -f "${AMLOGIC_CONFIG_FILE}" ]]; then
-    plugin_branch="$(uci get amlogic.config.amlogic_plugin_branch 2>/dev/null | xargs)"
-    if ! grep -q "amlogic_plugin_branch" "${AMLOGIC_CONFIG_FILE}" 2>/dev/null; then
-        uci set amlogic.config.amlogic_plugin_branch='' 2>/dev/null
-        uci commit amlogic 2>/dev/null
-        plugin_branch=""
+# Read and resolve plugin_branch from UCI config.
+# Normalise to canonical values: "main" (JS) or "lua".
+# Priority: UCI value → auto-detect from system.
+plugin_branch="$(uci get amlogic.config.amlogic_plugin_branch 2>/dev/null | tr '[:upper:]' '[:lower:]' | xargs)"
+
+# Normalize aliases (js / javascript / main → "main"; anything else → "lua")
+case "${plugin_branch}" in
+js | javascript | main)
+    plugin_branch="main"
+    ;;
+lua)
+    plugin_branch="lua"
+    ;;
+*)
+    # Empty, unknown, or missing → auto-detect from system
+    if [[ -f "/www/luci-static/resources/luci.js" ]]; then
+        plugin_branch="main"
+    else
+        plugin_branch="lua"
     fi
-else
-    plugin_branch=""
+    ;;
+esac
+
+# Safety check: "main" requires JS LuCI; fall back when absent
+if [[ "${plugin_branch}" == "main" && ! -f "/www/luci-static/resources/luci.js" ]]; then
+    plugin_branch="lua"
+    tolog "Warning: JS LuCI not found, falling back to lua branch."
 fi
-tolog "Plugin branch: [ ${plugin_branch:-main-lua} ]"
+
+# Persist the resolved value back to UCI (covers migration + branch-switch cases)
+uci set amlogic.config.amlogic_plugin_branch="${plugin_branch}" 2>/dev/null
+uci commit amlogic 2>/dev/null
+
+tolog "Plugin branch: [ ${plugin_branch} ]"
 sleep 1
 get_plugin_info() {
     package_manager=""
@@ -88,7 +109,8 @@ get_plugin_info() {
         local full_v
         full_v="$(opkg list-installed | grep '^luci-app-amlogic ' | awk '{print $3}')"
         current_plugin_v="$(echo "${full_v}" | cut -d'-' -f1)"
-        current_plugin_release="$(echo "${full_v}" | cut -d'-' -f2)"
+        # Strip optional "r" prefix from release (e.g. "r2" -> "2")
+        current_plugin_release="$(echo "${full_v}" | cut -d'-' -f2 | sed 's/^r//')"
     elif command -v apk >/dev/null 2>&1; then
         package_manager="apk"
         # Package name e.g. "luci-app-amlogic-3.1.295-r2"
@@ -113,7 +135,8 @@ check_plugin() {
     sleep 2
 
     tolog "02. Start querying plugin version..."
-    if [[ "${plugin_branch}" == "js" ]]; then
+    if [[ "${plugin_branch}" == "main" ]]; then
+        # JS branch: match tags ending with -js (e.g. 3.1.305-js)
         latest_version="$(
             curl -fsSL -m 10 \
                 https://github.com/ophub/luci-app-amlogic/releases |
@@ -121,11 +144,12 @@ check_plugin() {
                 sort -urV | head -n 1
         )"
     else
+        # Lua branch: match tags with digits only, no suffix (e.g. 3.1.305)
         latest_version="$(
             curl -fsSL -m 10 \
                 https://github.com/ophub/luci-app-amlogic/releases |
                 grep -oE 'expanded_assets/[0-9]+\.[0-9]+\.[0-9]+' | sed 's|expanded_assets/||g' |
-                grep -v '\-js' |
+                grep -v -- '-' |
                 sort -urV | head -n 1
         )"
     fi
@@ -136,13 +160,13 @@ check_plugin() {
     tolog "02.01 Current version: ${current_plugin_v}, Latest version: ${latest_version}"
     sleep 2
 
-    # Strip variant suffix (e.g. "-js") from latest_version to get the numeric part.
+    # Strip variant suffix (e.g. "-lua") from latest_version to get the numeric part.
     latest_version_base="${latest_version%%-*}"
 
     # Determine target PKG_RELEASE for the selected branch:
-    #   js branch  -> release 2
-    #   lua branch -> release 1
-    if [[ "${plugin_branch}" == "js" ]]; then
+    #   main branch -> release 2 (tag: 3.x.xxx-js)
+    #   lua branch  -> release 1 (tag: 3.x.xxx, no suffix)
+    if [[ "${plugin_branch}" == "main" ]]; then
         target_release="2"
     else
         target_release="1"
