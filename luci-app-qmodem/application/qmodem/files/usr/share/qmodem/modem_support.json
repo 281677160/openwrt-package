@@ -899,6 +899,20 @@
                     "ncm"
                 ]
             },
+            "fm170-eau": {
+                "manufacturer_id": "2cb7",
+                "manufacturer": "fibocom",
+                "platform": "qualcomm",
+                "data_interface": "usb",
+                "pdp_index": "1",
+                "modes": [
+                    "qmi",
+                    "gobinet",
+                    "ecm",
+                    "mbim",
+                    "rndis"
+                ]
+            },
             "fm190w-gl": {
                 "manufacturer_id": "2cb7",
                 "manufacturer": "fibocom",
@@ -1684,6 +1698,16 @@
                 ]
             },
             "fm150-ae": {
+                "manufacturer": "fibocom",
+                "platform": "qualcomm",
+                "data_interface": "pcie",
+                "pdp_index": "1",
+                "modes": [
+                    "qmi",
+                    "mbim"
+                ]
+            },
+            "fm170-eau": {
                 "manufacturer": "fibocom",
                 "platform": "qualcomm",
                 "data_interface": "pcie",
