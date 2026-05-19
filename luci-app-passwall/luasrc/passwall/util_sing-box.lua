@@ -103,8 +103,8 @@ function gen_outbound(flag, node, tag, proxy_table)
 		local run_socks_instance = true
 		if proxy_table ~= nil and type(proxy_table) == "table" then
 			proxy_tag = proxy_table.tag or nil
-			fragment = (proxy_table.fragment and node.protocol ~= "naive") and true or nil
-			record_fragment = (proxy_table.record_fragment and node.protocol ~= "naive") and true or nil
+			fragment = (proxy_table.fragment and node.protocol ~= "naive" and not node.hysteria2_realms) and true or nil
+			record_fragment = (proxy_table.record_fragment and node.protocol ~= "naive" and not node.hysteria2_realms) and true or nil
 			run_socks_instance = proxy_table.run_socks_instance
 		end
 
@@ -472,6 +472,7 @@ function gen_outbound(flag, node, tag, proxy_table)
 						table.insert(server_ports, range)
 					end
 				end
+				result.server_port = nil
 			end
 			protocol_table = {
 				server_ports = next(server_ports) and server_ports or nil,
@@ -528,6 +529,10 @@ function gen_outbound(flag, node, tag, proxy_table)
 						table.insert(server_ports, range)
 					end
 				end
+				result.server_port = nil
+			end
+			if node.hysteria2_realms then
+				server_ports = {}
 			end
 			local interval, interval_max
 			if next(server_ports) then
@@ -571,7 +576,18 @@ function gen_outbound(flag, node, tag, proxy_table)
 					return (t and t >= 2 and t <= 60) and t or nil
 				end)(node.hysteria2_keep_alive_period),
 				disable_path_mtu_discovery = version_ge_1_14_0 and (tonumber(node.hysteria2_disable_mtu_discovery) == 1) or nil,
-				tls = tls
+				tls = tls,
+				realm = node.hysteria2_realms and (function()
+					result.server = nil
+					result.server_port = nil
+					local realm = api.parse_realm_uri(node.hysteria2_realm_url)
+					if realm then
+						realm.server_url = realm.server_url and "https://" .. realm.server_url or nil
+						realm.stun_servers = realm.stun_servers or node.hysteria2_realm_stun
+						return realm
+					end
+					return nil
+				end)() or nil
 			}
 		end
 
@@ -908,7 +924,17 @@ function gen_config_server(node)
 				}
 			},
 			ignore_client_bandwidth = (node.hysteria2_ignore_client_bandwidth == "1") and true or false,
-			tls = tls
+			tls = tls,
+			realm = node.hysteria2_realms and (function()
+				local realm = api.parse_realm_uri(node.hysteria2_realm_url)
+				if realm then
+					realm.server_url = realm.server_url and "https://" .. realm.server_url or nil
+					realm.stun_servers = realm.stun_servers or node.hysteria2_realm_stun
+					realm.stun_domain_resolver = "direct"
+					return realm
+				end
+				return nil
+			end)() or nil
 		}
 	end
 
@@ -1411,6 +1437,10 @@ function gen_config(var)
 						default_outTag = to_outbound.tag
 					end
 				end
+			end
+			if node.chain_proxy == "3" and node.outbound_iface then
+				outbound.detour = nil
+				outbound.bind_interface = node.outbound_iface
 			end
 			return default_outTag, last_insert_outbound
 		end
@@ -1980,6 +2010,10 @@ function gen_config(var)
 		}
 	end
 
+	route.default_domain_resolver = {
+		server = "direct"
+	}
+
 	if not dns.rules then dns.rules = {} end
 
 	for i, v in pairs(GLOBAL.DNS_SERVER) do
@@ -2076,19 +2110,15 @@ function gen_config(var)
 			type = "direct",
 			tag = "direct",
 			routing_mark = 255,
-			domain_resolver = {
-				server = "direct",
-				strategy = "prefer_ipv6"
-			}
 		})
 		for index, value in ipairs(config.outbounds) do
 			if not value["_flag_proxy_tag"] and not value.detour and value["_id"] and value.server and (value.server_port or value.server_ports) and not no_run then
 				sys.call(string.format("echo '%s' >> %s", value["_id"], api.TMP_PATH .. "/direct_node_list"))
 			end
-			if not value.detour and value.server then
+			if not value.detour and not value.bind_interface and value.server then
 				value.detour = "direct"
 			end
-			if value.server and not api.datatypes.hostname(value.server) then
+			if (value.server and not api.datatypes.hostname(value.server)) and not value.realm then
 				value.domain_resolver = nil
 			end
 			for k, v in pairs(config.outbounds[index]) do
