@@ -472,9 +472,10 @@ function get_valid_nodes()
 				end
 			end
 			local port = e.port or e.hysteria_hop or e.hysteria2_hop
-			if (port and e.address) or e.hysteria2_realms then
+			local is_realm = (e.type == "Hysteria2" or e.protocol == 'hysteria2') and e.hysteria2_realms or nil
+			if (port and e.address) or is_realm then
 				local address = e.address
-				if is_ip(address) or datatypes.hostname(address) or e.hysteria2_realms then
+				if is_ip(address) or datatypes.hostname(address) or is_realm then
 					if (e.type == "sing-box" or e.type == "Xray") and e.protocol then
 						local protocol = e.protocol
 						if protocol == "vmess" then
@@ -501,10 +502,11 @@ function get_valid_nodes()
 						type_name = type_name .. " " .. protocol
 					end
 					if is_ipv6(address) then address = get_ipv6_full(address) end
+					type_name = is_realm and type_name .. " Realm" or type_name
 					e["remark"] = trim("%s：[%s]" % {type_name, e.remarks})
 					if show_node_info == "1" then
 						port = (port or ""):gsub(":", "-")
-						if not e.hysteria2_realms then
+						if not is_realm then
 							e["remark"] = trim("%s：[%s] %s:%s" % {type_name, e.remarks, address, port})
 						end
 					end
@@ -595,6 +597,9 @@ function get_node_remarks(n)
 					protocol = protocol:gsub("^%l",string.upper)
 				end
 				type_name = type_name .. " " .. protocol
+			end
+			if (n.type == "Hysteria2" or n.protocol == 'hysteria2') and n.hysteria2_realms then
+				type_name = type_name .. " Realm"
 			end
 			remarks = trim("%s：[%s]" % {type_name, n.remarks})
 		end
@@ -1594,4 +1599,30 @@ function vps_domain_exclude(domain)
 	}
 	if map[domain] then return true end
 	return false
+end
+
+function parse_realm_uri(uri)
+	if type(uri) ~= "string" then return nil end
+	-- realm://token@server/realm_id?query
+	local token, server_url, realm_id, query = trim(uri):match("^realm://([^@]+)@([^/]+)/([^?]*)%??(.*)$")
+	if not token or not server_url or not realm_id then return nil end
+	realm_id = realm_id:gsub("/+$", "")
+	local realm = {
+		token = token,
+		server_url = server_url,
+		realm_id = realm_id
+	}
+	-- 解析 query 中的 stun=
+	if query and query ~= "" then
+		local stun_servers = {}
+		for key, value in query:gmatch("([^&=?]+)=([^&]+)") do
+			if key == "stun" and value ~= "" then
+				stun_servers[#stun_servers + 1] = value
+			end
+		end
+		if #stun_servers > 0 then
+			realm.stun_servers = stun_servers
+		end
+	end
+	return realm
 end

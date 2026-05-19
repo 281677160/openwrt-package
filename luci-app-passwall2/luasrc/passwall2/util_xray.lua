@@ -794,6 +794,9 @@ function gen_config_server(node)
 				config.outbounds[index][k] = nil
 			end
 		end
+		if value.protocol == "freedom" and api.compare_versions(xray_version, "<", "26.5.3") then -- Todo is to remove it
+			value.settings = nil
+		end
 	end
 
 	return config
@@ -1049,10 +1052,10 @@ function gen_config(var)
 		if #valid_nodes == 0 then return nil end
 
 		-- fallback node
-		local fallback_node_tag = nil
 		local fallback_node_id = _node.fallback_node
-		if not fallback_node_id or fallback_node_id == "" then fallback_node_id = nil end
-		if fallback_node_id then
+		fallback_node_id = (fallback_node_id and fallback_node_id ~= "") and fallback_node_id or nil
+		local fallback_node_tag = (fallback_node_id == "_direct") and "direct" or "blackhole"
+		if fallback_node_id and fallback_node_id ~= "_direct" then
 			local is_new_node = true
 			for _, outbound in ipairs(outbounds) do
 				if string.sub(outbound.tag, 1, #fallback_node_id) == fallback_node_id then
@@ -1082,7 +1085,13 @@ function gen_config(var)
 				type = _node.balancingStrategy,
 				settings = {
 					expected = _node.expected and tonumber(_node.expected) and tonumber(_node.expected) or 2,
-					maxRTT = "1s"
+					maxRTT = "1s",
+					tolerance = (function(t)
+						t = tonumber(t) or 0
+						if t < 1 then return nil end
+						if t > 100 then t = 100 end
+						return t / 100
+					end)(_node.tolerance)
 				}
 			}
 		else
@@ -1264,9 +1273,9 @@ function gen_config(var)
 								interface = node.iface
 							}
 						},
-						settings = {
+						settings = (api.compare_versions(xray_version, ">", "26.4.25")) and {  -- Todo: Remove version check
 							finalRules = {{ action = "allow" }}
-						}
+						} or nil
 					}
 					sys.call(string.format("mkdir -p %s && touch %s/%s", api.TMP_IFACE_PATH, api.TMP_IFACE_PATH, node.iface))
 				end
@@ -1763,15 +1772,22 @@ function gen_config(var)
 								end
 							end
 						end
-						local dns_block_mode = "host"
-						dns_block_mode = ""
-						if dns_block_mode == "host" and dns_outboundTag == "blackhole" then
-							for d_i, d_k in ipairs(value.domain) do
-								dns.hosts[d_k] = "0.0.0.0"
+						local dns_block = true -- If you do not want the blackhole rule to use DNS routing, please change it to `nil` or do not assign a value.
+						if dns_outboundTag == "blackhole" then
+							if dns_block then
+								local dns_block_mode = "Hosts" -- use the Hosts mode to block.
+								if dns_block_mode == "Hosts" then
+									for d_i, d_k in ipairs(value.domain) do
+										dns.hosts[d_k] = "0.0.0.0"
+									end
+									dns_server = nil
+								end
+							else
+								dns_server = nil
 							end
-							dns_server = nil
 						end
 						if dns_server then
+							dns_server.finalQuery = true
 							dns_server.domains = value.domain
 							if value.shunt_rule_name then
 								dns_server.tag = "dns-in-" .. value.shunt_rule_name
@@ -1806,7 +1822,7 @@ function gen_config(var)
 				string.gsub(direct_ipset, '[^' .. "," .. ']+', function(w)
 					sys.call("ipset -q -F " .. w)
 				end)
-				local ipset_prefix_name = "passwall2_" .. node_id .. "_"
+				local ipset_prefix_name = "psw2_" .. node_id .. "_"
 				local ipset_list = sys.exec("ipset list | grep 'Name: ' | grep '" .. ipset_prefix_name .. "' | awk '{print $2}'")
 				string.gsub(ipset_list, '[^' .. "\r\n" .. ']+', function(w)
 					sys.call("ipset -q -F " .. w)
@@ -1825,7 +1841,7 @@ function gen_config(var)
 				end)
 				local family = "inet"
 				local table_name = "passwall2"
-				local nftset_prefix_name = "passwall2_" .. node_id .. "_"
+				local nftset_prefix_name = "psw2_" .. node_id .. "_"
 				local nftset_list = sys.exec("nft -a list sets | grep -E '" .. nftset_prefix_name .. "' | awk -F 'set ' '{print $2}' | awk '{print $1}'")
 				string.gsub(nftset_list, '[^' .. "\r\n" .. ']+', function(w)
 					sys.call(string.format("nft flush set %s %s %s 2>/dev/null", family, table_name, w))
@@ -2080,7 +2096,12 @@ function gen_proto_config(var)
 	end
 
 	table.insert(outbounds, {
-		protocol = "freedom", tag = "direct", settings = {finalRules = {{ action = "allow" }}}, sockopt = {mark = 255}
+		protocol = "freedom",
+		tag = "direct",
+		settings = (api.compare_versions(xray_version, ">", "26.4.25")) and { -- Todo: Remove version check
+			finalRules = {{ action = "allow" }}
+		} or nil,
+		sockopt = {mark = 255}
 	})
 	
 	local config = {
