@@ -505,6 +505,7 @@ local function processData(szType, content, add_mode, group, sub_cfg)
 	local sub_vmess_type = DEFAULT_VMESS_TYPE
 	local sub_vless_type = DEFAULT_VLESS_TYPE
 	local sub_hysteria2_type = DEFAULT_HYSTERIA2_TYPE
+	local sub_hy_up_mbps, sub_hy_down_mbps = 1000, 1000
 	if sub_cfg then
 		if sub_cfg.allowInsecure and sub_cfg.allowInsecure ~= "1" then
 			sub_allowinsecure = nil
@@ -529,6 +530,8 @@ local function processData(szType, content, add_mode, group, sub_cfg)
 		if hysteria2_type ~= "global" and core_has[hysteria2_type] then
 			sub_hysteria2_type = hysteria2_type
 		end
+		sub_hy_up_mbps = sub_cfg.hysteria_up_mbps
+		sub_hy_down_mbps = sub_cfg.hysteria_down_mbps
 	end
 	local result = {
 		timeout = 60,
@@ -1351,8 +1354,8 @@ local function processData(szType, content, add_mode, group, sub_cfg)
 		local insecure = params.allowinsecure or params.allowInsecure or params.insecure
 		result.tls_allowInsecure = (insecure == "1" or insecure == "0") and insecure or (sub_allowinsecure and "1" or "0")
 		result.alpn = params.alpn
-		result.hysteria_up_mbps = params.upmbps
-		result.hysteria_down_mbps = params.downmbps
+		result.hysteria_up_mbps = params.upmbps or sub_hy_up_mbps
+		result.hysteria_down_mbps = params.downmbps or sub_hy_down_mbps
 		result.hysteria_hop = params.mport
 
 	elseif szType == 'hysteria2' or szType == 'hy2' then
@@ -1396,6 +1399,8 @@ local function processData(szType, content, add_mode, group, sub_cfg)
 		result.tls_CertByName = params.vcn
 		local insecure = params.allowinsecure or params.insecure
 		result.tls_allowInsecure = (insecure == "1" or insecure == "0") and insecure or (sub_allowinsecure and "1" or "0")
+		result.hysteria2_up_mbps = params.upmbps or sub_hy_up_mbps
+		result.hysteria2_down_mbps = params.downmbps or sub_hy_down_mbps
 		result.hysteria2_hop = params.mport
 		if params["obfs-password"] or params["obfs_password"] then
 			result.hysteria2_obfs_type = "salamander"
@@ -1883,7 +1888,7 @@ local function update_node(manual)
 		local list = v["list"]
 		local sub_cfg = v["sub_cfg"]
 		local domain_resolver, domain_resolver_dns, domain_resolver_dns_https, domain_strategy
-		local preproxy_node_group, to_node_group, chain_node_type = "", "", ""
+		local preproxy_node_group, to_node_group, outbound_iface_group, chain_node_type = "", "", "", ""
 		-- Subscription Group Chain Agent
 		local function valid_chain_node(node)
 			if not node then return "" end
@@ -1904,6 +1909,8 @@ local function update_node(manual)
 			domain_strategy = (sub_cfg.domain_strategy and map[sub_cfg.domain_strategy]) and sub_cfg.domain_strategy or nil
 			preproxy_node_group = (sub_cfg.chain_proxy == "1") and valid_chain_node(sub_cfg.preproxy_node) or ""
 			to_node_group = (sub_cfg.chain_proxy == "2") and valid_chain_node(sub_cfg.to_node) or ""
+			outbound_iface_group = (sub_cfg.chain_proxy == "3") and sub_cfg.outbound_iface or ""
+			chain_node_type = (outbound_iface_group ~= "") and "iface" or chain_node_type
 		end
 		for _, vv in ipairs(list) do
 			local cfgid = uci:section(appname, "nodes", api.gen_short_uuid())
@@ -1941,6 +1948,9 @@ local function update_node(manual)
 						elseif to_node_group ~= "" then
 							uci:set(appname, cfgid, "chain_proxy", "2")
 							uci:set(appname, cfgid, "to_node", to_node_group)
+						elseif outbound_iface_group ~= "" then
+							uci:set(appname, cfgid, "chain_proxy", "3")
+							uci:set(appname, cfgid, "outbound_iface", outbound_iface_group)
 						end
 					end		
 				end
