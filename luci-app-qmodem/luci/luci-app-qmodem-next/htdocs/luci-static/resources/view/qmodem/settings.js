@@ -118,6 +118,46 @@ return view.extend({
 		o.description = _('Once enabled, the USB ports will be scanned on every boot.');
 		o.default = '1';
 
+		o = s.option(form.ListValue, 'scan_log_level', _('Scan Log Level'));
+		o.value('debug', _('Debug'));
+		o.value('info', _('Info'));
+		o.value('notice', _('Notice'));
+		o.value('warn', _('Warning'));
+		o.value('err', _('Error'));
+		o.default = 'info';
+
+		o = s.option(form.Value, 'scan_workers', _('Scan Workers'));
+		o.datatype = 'and(uinteger,min(1),max(16))';
+		o.default = '4';
+
+		o = s.option(form.Value, 'at_probe_workers', _('AT Probe Workers'));
+		o.datatype = 'and(uinteger,min(1),max(16))';
+		o.default = '4';
+
+		o = s.option(form.Value, 'at_timeout_fast', _('Fast AT Timeout'));
+		o.description = _('Units: seconds');
+		o.datatype = 'and(uinteger,min(1),max(30))';
+		o.default = '2';
+
+		o = s.option(form.Value, 'at_timeout_model', _('Model AT Timeout'));
+		o.description = _('Units: seconds');
+		o.datatype = 'and(uinteger,min(1),max(60))';
+		o.default = '8';
+
+		o = s.option(form.Value, 'hotplug_add_delay', _('Hotplug Add Delay'));
+		o.description = _('Units: seconds');
+		o.datatype = 'and(uinteger,min(0),max(60))';
+		o.default = '8';
+
+		o = s.option(form.Value, 'add_retry_delay', _('Add Retry Delay'));
+		o.description = _('Units: seconds');
+		o.datatype = 'and(uinteger,min(0),max(60))';
+		o.default = '8';
+
+		o = s.option(form.Value, 'add_retry_max', _('Add Retry Max'));
+		o.datatype = 'and(uinteger,min(0),max(20))';
+		o.default = '5';
+
 		o = s.option(form.Flag, 'try_preset_usb', _('Try Preset USB Port'));
 		o.description = _('Attempt to use pre-configured USB settings from the CPE vendor.');
 		o.default = '0';
