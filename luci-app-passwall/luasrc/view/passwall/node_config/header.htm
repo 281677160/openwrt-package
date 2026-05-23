@@ -21,7 +21,7 @@ local api = self.api
 
 	function getOption(opt) {
 		var obj;
-		var id = 'cbid.<%=api.appname%>.' + node_id + '.' + opt;
+		var id = 'cbid.<%=self.config%>.' + node_id + '.' + opt;
 		obj = document.getElementsByName(id)[0] || document.getElementById(id);
 		if (obj) {
 			var combobox = document.getElementById('cbi.combobox.' + id);
