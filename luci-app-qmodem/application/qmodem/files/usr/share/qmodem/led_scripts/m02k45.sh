@@ -12,6 +12,7 @@
 # MODEM_CFG / AT_PORT / NET_DEV / USE_UBUS_DAEMON
 
 . /usr/share/qmodem/modem_util.sh
+. /usr/share/qmodem/led_scripts/connectivity.sh
 . /lib/functions.sh
 
 LED_4G_POOR="4g:yellow"
@@ -108,7 +109,7 @@ sim_inserted() {
 }
 
 internet_led() {
-	if wget-ssl --spider --quiet --tries=1 --timeout=3 www.baidu.com; then
+	if qmodem_connectivity_probe 3; then
 		led_turn "${LED_INTERNET_BLUE}" "1"
 		led_turn "${LED_INTERNET_RED}" "0"
 	else
