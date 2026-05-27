@@ -683,6 +683,11 @@ local function processData(szType, content, add_mode, group, sub_cfg)
 			result.tls = "0"
 		end
 
+		if info.ech and info.ech ~= "" then
+			result.ech = "1"
+			result.ech_config = info.ech
+		end
+
 		result.tcp_fast_open = info.tfo
 
 		info.fm = (info.fm and info.fm ~= "") and UrlDecode(info.fm) or nil
@@ -1413,7 +1418,7 @@ local function processData(szType, content, add_mode, group, sub_cfg)
 		result.hysteria2_down_mbps = params.downmbps or sub_hy_down_mbps
 		result.hysteria2_hop = params.mport
 		if params["obfs-password"] or params["obfs_password"] then
-			result.hysteria2_obfs_type = "salamander"
+			result.hysteria2_obfs_type = params.obfs or "salamander"
 			result.hysteria2_obfs_password = params["obfs-password"] or params["obfs_password"]
 		end
 
