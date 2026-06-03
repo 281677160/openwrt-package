@@ -44,10 +44,10 @@ local header_type_list = {
 local xray_version = api.get_app_version("xray")
 
 o = s:option(ListValue, _n("protocol"), translate("Protocol"))
+o:value("socks", translate("Socks"))
+o:value("http", translate("HTTP"))
 o:value("vmess", translate("Vmess"))
 o:value("vless", translate("VLESS"))
-o:value("http", translate("HTTP"))
-o:value("socks", translate("Socks"))
 o:value("shadowsocks", translate("Shadowsocks"))
 o:value("trojan", translate("Trojan"))
 o:value("wireguard", translate("WireGuard"))
@@ -399,8 +399,6 @@ o = s:option(Flag, _n("tls"), translate("TLS"))
 o.default = 0
 o:depends({ [_n("protocol")] = "vmess" })
 o:depends({ [_n("protocol")] = "vless" })
-o:depends({ [_n("protocol")] = "http" })
-o:depends({ [_n("protocol")] = "socks" })
 o:depends({ [_n("protocol")] = "trojan" })
 o:depends({ [_n("protocol")] = "shadowsocks" })
 
@@ -450,6 +448,21 @@ if api.compare_versions(xray_version, ">=", "26.1.31") then
 	o = s:option(Value, _n("tls_CertByName"), translate("TLS Certificate Name (CertName)"), translate("TLS is used to verify the leaf certificate name."))
 	o:depends({ [_n("tls")] = true, [_n("reality")] = false })
 	o:depends({ [_n("protocol")] = "hysteria2" })
+end
+
+o = s:option(Flag, _n("tls_certificate"), translate("TLS Certificate (PEM)"))
+o.default = "0"
+o:depends({ [_n("tls")] = true, [_n("reality")] = false })
+o:depends({ [_n("protocol")] = "hysteria2" })
+
+o = s:option(TextValue, _n("tls_certificate_pem"), "　", translate("Full certificate (chain), PEM format."))
+o.default = ""
+o.rows = 5
+o.wrap = "off"
+o:depends({ [_n("tls_certificate")] = true })
+o.validate = function(self, value)
+	value = api.trim(value):gsub("\r\n", "\n"):gsub("[ \t]*\n[ \t]*", "\n"):gsub("\n+", "\n")
+	return value
 end
 
 o = s:option(Flag, _n("ech"), translate("ECH"))
@@ -518,7 +531,6 @@ o:value("httpupgrade", "HttpUpgrade")
 o:value("xhttp", "XHTTP")
 o:depends({ [_n("protocol")] = "vmess" })
 o:depends({ [_n("protocol")] = "vless" })
-o:depends({ [_n("protocol")] = "socks" })
 o:depends({ [_n("protocol")] = "shadowsocks" })
 o:depends({ [_n("protocol")] = "trojan" })
 
@@ -711,8 +723,6 @@ o:depends({ [_n("protocol")] = "vless", [_n("transport")] = "raw" })
 o:depends({ [_n("protocol")] = "vless", [_n("transport")] = "ws" })
 o:depends({ [_n("protocol")] = "vless", [_n("transport")] = "grpc" })
 o:depends({ [_n("protocol")] = "vless", [_n("transport")] = "httpupgrade" })
-o:depends({ [_n("protocol")] = "http" })
-o:depends({ [_n("protocol")] = "socks" })
 o:depends({ [_n("protocol")] = "shadowsocks" })
 o:depends({ [_n("protocol")] = "trojan" })
 
