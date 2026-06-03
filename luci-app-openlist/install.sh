@@ -42,7 +42,7 @@ DISTRIB_ARCH="${DISTRIB_ARCH:-unknown}"
 if [ -x "/usr/bin/apk" ]; then
     PKG_MANAGER="apk"
     PKG_OPT="add --allow-untrusted"
-    SDK="SNAPSHOT"
+    SDK="openwrt-25.12"
 elif command -v opkg >/dev/null 2>&1; then
     PKG_MANAGER="opkg"
     PKG_OPT="install --force-downgrade"
