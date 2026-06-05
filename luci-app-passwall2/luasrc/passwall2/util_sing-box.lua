@@ -255,6 +255,7 @@ function gen_outbound(flag, node, tag, proxy_table)
 				--max_version = "1.3",
 				fragment = fragment,
 				record_fragment = record_fragment,
+				certificate = (node.tls_certificate == "1" and node.tls_certificate_pem ~= "") and split(node.tls_certificate_pem, "\n") or nil,
 				ech = (node.ech == "1") and (function()
 					local function get_ech_domain(s) --兼容xray "域名+DNS" 格式ech
 						local domain, dns = s:match("^([^+]+)%+(.+)$")
@@ -1795,6 +1796,12 @@ function gen_config(var)
 			table.insert(route.rules, rules[index])
 		end
 	end
+
+	table.insert(route.rules, {
+		action = "route",
+		ip_is_private = true,
+		outbound = "direct"
+	})
 
 	if COMMON.default_outbound_tag then
 		route.final = COMMON.default_outbound_tag
