@@ -116,34 +116,43 @@ modem_settings()
 		add_usb_slot_cfg "4g2" "1-1.1" "4g4" "green:network3" "" "" "" "" "22"
 		uci commit qmodem
 		;;
-	misectel,m01k43|\
+	misectel,m01k43*|\
 	misectel,m02k45)
 		#usb slot
 		uci set qmodem.usb0="modem-slot"
 		uci set qmodem.usb0.slot="2-1"
-		uci set qmodem.usb0.type="usb0"
+		uci set qmodem.usb0.type="usb"
 		uci set qmodem.usb0.alias="wwan0"
-		if [ "$board" = "misectel,m01k43" ]; then
+		case "$board" in
+		misectel,m01k43*)
 			uci set qmodem.usb0.led_script="m01k43"
-		else
+			;;
+		*)
 			uci set qmodem.usb0.led_script="m02k45"
-		fi
+			;;
+		esac
 		uci set qmodem.usb0.scan_priority="pcie"
 		#pcie slot
 		uci set qmodem.pcie0="modem-slot"
-		if [ "$board" = "misectel,m01k43" ]; then
+		case "$board" in
+		misectel,m01k43*)
 			uci set qmodem.pcie0.slot="0000:01:00.0"
-		else
+			;;
+		*)
 			uci set qmodem.pcie0.slot="0002:01:00.0"
-		fi
+			;;
+		esac
 		uci set qmodem.pcie0.type="pcie"
 		uci set	qmodem.pcie0.associated_usb='2-1'
 		uci set qmodem.pcie0.alias="pcie0"
-		if [ "$board" = "misectel,m01k43" ]; then
+		case "$board" in
+		misectel,m01k43*)
 			uci set qmodem.pcie0.led_script="m01k43"
-		else
+			;;
+		*)
 			uci set qmodem.pcie0.led_script="m02k45"
-		fi
+			;;
+		esac
 		uci set qmodem.pcie0.scan_priority="pcie"
 		uci set qmodem.main.start_delay='15'
 		uci commit qmodem
