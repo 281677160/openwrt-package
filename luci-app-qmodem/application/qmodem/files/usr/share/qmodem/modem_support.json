@@ -1718,6 +1718,36 @@
                     "mbim"
                 ]
             },
+            "fm160-cn": {
+                "manufacturer": "fibocom",
+                "platform": "qualcomm",
+                "data_interface": "pcie",
+                "pdp_index": "1",
+                "modes": [
+                    "qmi",
+                    "mbim"
+                ]
+            },
+            "fm160-eau": {
+                "manufacturer": "fibocom",
+                "platform": "qualcomm",
+                "data_interface": "pcie",
+                "pdp_index": "1",
+                "modes": [
+                    "qmi",
+                    "mbim"
+                ]
+            },
+            "fm160-na": {
+                "manufacturer": "fibocom",
+                "platform": "qualcomm",
+                "data_interface": "pcie",
+                "pdp_index": "1",
+                "modes": [
+                    "qmi",
+                    "mbim"
+                ]
+            },
             "fm170-eau": {
                 "manufacturer": "fibocom",
                 "platform": "qualcomm",
