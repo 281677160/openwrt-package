@@ -216,10 +216,10 @@ return view.extend({
 			var result = this.connectionStatusData[section_id];
 			if (result && result.connection_status !== undefined) {
 				var status = result.connection_status.toString().toLowerCase();
-				if (status === 'yes' || status === 'true' || status === true) {
+				if (status === 'yes' || status === 'connected' || status === '1' || status === 'true' || status === true) {
 					color = '#00FF00'; // Green (connected)
 					title = _('Connected');
-				} else if (status === 'no' || status === 'false' || status === false) {
+				} else if (status === 'no' || status === 'disconnected' || status === '0' || status === 'false' || status === false) {
 					color = '#FF0000'; // Red (disconnected)
 					title = _('Disconnected');
 				} else {
@@ -671,10 +671,10 @@ return view.extend({
 			if (result && result.connection_status !== undefined) {
 				var status = result.connection_status;
 				status = status.toString().toLowerCase();
-				if (status === 'yes' || status === 'true' || status === true) {
+				if (status === 'yes' || status === 'connected' || status === '1' || status === 'true' || status === true) {
 					color = '#00FF00'; // Green (connected)
 					title = _('Connected');
-				} else if (status === 'no' || status === 'false' || status === false) {
+				} else if (status === 'no' || status === 'disconnected' || status === '0' || status === 'false' || status === false) {
 					color = '#FF0000'; // Red (disconnected)
 					title = _('Disconnected');
 				}

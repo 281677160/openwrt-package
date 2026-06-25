@@ -11,6 +11,61 @@ vendor_get_disabled_features(){
 }
 
 debug_subject="fibocom_ctrl"
+
+fibocom_is_uint()
+{
+    case "$1" in
+        ''|*[!0-9]*)
+            return 1
+            ;;
+        *)
+            return 0
+            ;;
+    esac
+}
+
+fibocom_hex_to_dec()
+{
+    local value=$(echo "$1" | tr -d '\r" ')
+
+    [ -z "$value" ] && return
+
+    case "$value" in
+        0x*|0X*)
+            value="${value#0x}"
+            value="${value#0X}"
+            ;;
+    esac
+
+    case "$value" in
+        *[!0-9A-Fa-f]*)
+            echo "$1"
+            return
+            ;;
+    esac
+
+    printf "%d" "0x$value" 2>/dev/null || echo "$1"
+}
+
+fibocom_normalize_nr_band()
+{
+    local band=$(echo "$1" | tr -d '\r" ')
+
+    [ -z "$band" ] && return
+    band="${band#n}"
+    band="${band#N}"
+
+    if fibocom_is_uint "$band"; then
+        if [ "$band" -ge 5000 ]; then
+            echo "$band"
+        else
+            echo "50$band"
+        fi
+    else
+        echo "$1"
+    fi
+}
+
 #获取拨号模式
 # $1:AT串口
 # $2:平台
@@ -189,7 +244,7 @@ get_network_prefer_nr()
     json_add_string 3G $network_prefer_3g
     json_add_string 4G $network_prefer_4g
     json_add_string 5G $network_prefer_5g
-    json_close_array
+    json_close_object
 }
 
 #设置网络偏好
@@ -203,7 +258,7 @@ set_network_prefer_nr()
     case "$count" in
         "1")
             if [ "$network_prefer_3g" = "true" ]; then
-                network_prefer_num="true"
+                network_prefer_num="1"
             elif [ "$network_prefer_4g" = "true" ]; then
                 network_prefer_num="2"
             elif [ "$network_prefer_5g" = "true" ]; then
@@ -211,43 +266,40 @@ set_network_prefer_nr()
             fi
         ;;
         "2")
-            if [ "$network_prefer_3g" = "true" ] && [ "$network_prefer_4g" = "true" ]; then
-                network_prefer_num="4"
-            elif [ "$network_prefer_3g" = "true" ] && [ "$network_prefer_5g" = "true" ]; then
-                network_prefer_num="16"
-            elif [ "$network_prefer_4g" = "true" ] && [ "$network_prefer_5g" = "true" ]; then
+            if [ "$network_prefer_4g" = "true" ] && [ "$network_prefer_5g" = "true" ]; then
                 network_prefer_num="17"
+            elif [ "$network_prefer_4g" = "true" ]; then
+                network_prefer_num="2"
+            elif [ "$network_prefer_5g" = "true" ]; then
+                network_prefer_num="14"
+            else
+                network_prefer_num="10"
             fi
         ;;
-        "3") network_prefer_num="20" ;;
+        "3") network_prefer_num="10" ;;
         *) network_prefer_num="10" ;;
     esac
 
     #设置模组
     case "$network_prefer_num" in
-        "1")
-            at_command="AT+GTACT=$network_prefer_num"
-        ;;
         "2")
             at_command="AT+GTACT=$network_prefer_num"
         ;;
-        "4")
-            at_command="AT+GTACT=$network_prefer_num"
-        ;;        
         "14")
             at_command="AT+GTACT=$network_prefer_num"
         ;;
         "17")
             at_command="AT+GTACT=$network_prefer_num"
         ;;        
-        "20")
-            at_command="AT+GTACT=$network_prefer_num,6,3"
-        ;;        
-        *) network_prefer_num="10" ;;
+        "10")
+            at_command="AT+GTACT=$network_prefer_num"
+        ;;
+        *) at_command="AT+GTACT=10" ;;
     esac
     res=$(at $at_port "$at_command")
     json_select_object "result"
     json_add_string "status" "$res"
+    json_add_string "command" "$at_command"
     json_close_object
 }
 
@@ -281,7 +333,7 @@ get_network_prefer_lte()
     json_add_object network_prefer
     json_add_string 3G $network_prefer_3g
     json_add_string 4G $network_prefer_4g
-    json_close_array
+    json_close_object
 }
 
 #设置网络偏好
@@ -663,7 +715,7 @@ get_lockband_nr()
             2) 
             #"LTE" "$i" 
             for j in $(echo "$i" | awk -F"," '{for(k=1; k<=NF; k++) print $k}'); do
-                trim_first_letter=$(echo "$j" | sed 's/^.//')
+                trim_first_letter=$(get_band "LTE" "$j")
                 json_select "LTE"
                 json_select "available_band"
                 add_avalible_band_entry  "$j" "LTE_$trim_first_letter"
@@ -680,7 +732,7 @@ get_lockband_nr()
             5)
             #"nr5g"
             for j in $(echo "$i" | awk -F"," '{for(k=1; k<=NF; k++) print $k}'); do
-                trim_first_letter=$(echo "$j" | sed 's/^.//')
+                trim_first_letter=$(get_band "NR" "$j")
                 json_select "NR"
                 json_select "available_band"
                 add_avalible_band_entry  "$j" "NR_$trim_first_letter"
@@ -769,7 +821,7 @@ get_lockband_lte()
         else
             json_select "LTE"
             json_select "available_band"
-            trim_first_letter=$(echo "$i" | sed 's/^.//')
+            trim_first_letter=$(get_band "LTE" "$i")
             add_avalible_band_entry  "$i" "LTE_$trim_first_letter"
             json_select ".."
             json_select ".."
@@ -892,10 +944,28 @@ set_lockband_nr()
             umts_bands="$lock_band"
             ;;
         "LTE")
-            lte_bands="$lock_band"
+            set_lockband_command="AT+GTACT=17,,,$lock_band"
+            res=$(at $at_port "$set_lockband_command")
+            json_select "result"
+            json_add_string "set_lockband" "$res"
+            json_add_string "command" "$set_lockband_command"
+            json_add_string "config" "$config"
+            json_add_string "band_class" "$band_class"
+            json_add_string "lock_band" "$lock_band"
+            json_close_object
+            return
             ;;
         "NR")
-            nr_bands="$lock_band"
+            set_lockband_command="AT+GTACT=17,,,$lock_band"
+            res=$(at $at_port "$set_lockband_command")
+            json_select "result"
+            json_add_string "set_lockband" "$res"
+            json_add_string "command" "$set_lockband_command"
+            json_add_string "config" "$config"
+            json_add_string "band_class" "$band_class"
+            json_add_string "lock_band" "$lock_band"
+            json_close_object
+            return
             ;;
     esac
 
@@ -910,7 +980,7 @@ set_lockband_nr()
 
     # 判断全选情况
     if [ "$nr_bands" = "$ALL_NR" ] && [ "$lte_bands" = "$ALL_LTE" ] && [ "$umts_bands" = "$ALL_UMTS" ]; then
-        set_lockband_command="AT+GTACT=20"
+        set_lockband_command="AT+GTACT=10"
     elif [ "$nr_bands" = "$ALL_NR" ] && [ -z "$lte_bands" ] && [ -z "$umts_bands" ]; then
         set_lockband_command="AT+GTACT=14"
     elif [ "$lte_bands" = "$ALL_LTE" ] && [ -z "$nr_bands" ] && [ -z "$umts_bands" ]; then
@@ -925,7 +995,7 @@ set_lockband_nr()
         set_lockband_command="AT+GTACT=4"
     else
         if [ -n "$bands_str" ]; then
-            set_lockband_command="AT+GTACT=,,,$bands_str"
+            set_lockband_command="AT+GTACT=17,,,$bands_str"
         else
             set_lockband_command="AT+GTACT=$prefix"
         fi
@@ -970,29 +1040,35 @@ get_neighborcell()
             continue
         fi
         case $line in
-            "2,9"*)
+            "1,9"*|"2,9"*)
                 m_debug "NR line:$line"
                 tac=$(echo "$line" | awk -F',' '{print $5}')
                 cellid=$(echo "$line" | awk -F',' '{print $6}')
                 arfcn=$(echo "$line" | awk -F',' '{print $7}')
                 pci=$(echo "$line" | awk -F',' '{print $8}')
+                band_num=$(echo "$line" | awk -F',' '{print $9}')
                 ss_sinr=$(echo "$line" | awk -F',' '{print $10}')
                 rxlev=$(echo "$line" | awk -F',' '{print $11}')
                 ss_rsrp=$(echo "$line" | awk -F',' '{print $12}')
+                tac=$(fibocom_hex_to_dec "$tac")
+                cellid=$(fibocom_hex_to_dec "$cellid")
+                arfcn=$(fibocom_hex_to_dec "$arfcn")
+                pci=$(fibocom_hex_to_dec "$pci")
+                band=$(get_band "NR" "$band_num")
                 json_select "NR"
                 json_add_object ""
                 json_add_string "tac" "$tac"
                 json_add_string "cellid" "$cellid"
                 json_add_string "arfcn" "$arfcn"
                 json_add_string "pci" "$pci"
-                json_add_string "bandwidth" "$bandwidth"
+                json_add_string "band" "$band"
                 json_add_string "ss_sinr" "$ss_sinr"
                 json_add_string "rxlev" "$rxlev"
                 json_add_string "ss_rsrp" "$ss_rsrp"
                 json_close_object
                 json_select ".."
                 ;;
-            "2,4"*)
+            "1,4"*|"2,4"*)
                 tac=$(echo "$line" | awk -F',' '{print $5}')
                 cellid=$(echo "$line" | awk -F',' '{print $6}')
                 arfcn=$(echo "$line" | awk -F',' '{print $7}')
@@ -1001,8 +1077,11 @@ get_neighborcell()
                 rxlev=$(echo "$line" | awk -F',' '{print $10}')
                 rsrp=$(echo "$line" | awk -F',' '{print $11}')
                 rsrq=$(echo "$line" | awk -F',' '{print $12}')
-                arfcn=$(echo 'ibase=16;' "$arfcn"   | bc)
-                pci=$(echo 'ibase=16;' "$pci"  | bc)
+                tac=$(fibocom_hex_to_dec "$tac")
+                cellid=$(fibocom_hex_to_dec "$cellid")
+                arfcn=$(fibocom_hex_to_dec "$arfcn")
+                pci=$(fibocom_hex_to_dec "$pci")
+                bandwidth=$(get_bandwidth "LTE" "$bandwidth")
                 json_select "LTE"
                 json_add_object ""
                 json_add_string "tac" "$tac"
@@ -1081,21 +1160,23 @@ lockcell_all(){
         res1=$(at $at_port $unlockcell)
         res=$res1
     else
-        if [ -z $pci ] && [ -n $arfcn ]; then
+        if [ -z "$pci" ] && [ -n "$arfcn" ]; then
             lockpci_nr="AT+GTCELLLOCK=1,1,1,$arfcn"
             lockpci_lte="AT+GTCELLLOCK=1,0,1,$arfcn"
             
-        elif [ -n $pci ] && [ -n $arfcn ]; then
-            lockpci_nr="AT+GTCELLLOCK=1,1,0,$arfcn,$pci,$scs,50$band"
+        elif [ -n "$pci" ] && [ -n "$arfcn" ]; then
+            nr_band=$(fibocom_normalize_nr_band "$band")
+            [ -z "$scs" ] && scs="1"
+            lockpci_nr="AT+GTCELLLOCK=1,1,0,$arfcn,$pci,$scs,$nr_band"
             lockpci_lte="AT+GTCELLLOCK=1,0,0,$arfcn,$pci"
         fi
-        if [ "$pci" -eq 0 ] && [ "$arfcn" -eq 0 ]; then
+        if [ "$pci" = "0" ] && [ "$arfcn" = "0" ]; then
             lockpci_nr="AT+GTCELLLOCK=1"
             lockpci_lte="AT+GTCELLLOCK=1"
         fi
-        if [ "$rat" -eq 1 ]; then
+        if [ "$rat" = "1" ]; then
             res=$(at $at_port $lockpci_nr)
-        elif [ "$rat" -eq 0 ]; then
+        elif [ "$rat" = "0" ]; then
             res=$(at $at_port $lockpci_lte)
         fi
     fi
@@ -1103,11 +1184,23 @@ lockcell_all(){
 
 get_band()
 {
-    local band
+    local band=$(echo "$2" | tr -d '\r" ')
     case $1 in
-		"WCDMA") band="$2" ;;
-		"LTE") band="$(($2-100))" ;;
-        "NR") band="$2" band="${band#*50}" ;;
+		"WCDMA") ;;
+		"LTE")
+            if fibocom_is_uint "$band" && [ "$band" -ge 100 ]; then
+                band=$((band - 100))
+            fi
+            ;;
+        "NR")
+            if fibocom_is_uint "$band"; then
+                if [ "$band" -ge 5000 ]; then
+                    band="${band#50}"
+                elif [ "$band" -ge 500 ]; then
+                    band=$((band - 500))
+                fi
+            fi
+            ;;
 	esac
     echo "$band"
 }
@@ -1118,20 +1211,41 @@ get_band()
 get_bandwidth()
 {
     local network_type="$1"
-    local bandwidth_num="$2"
+    local bandwidth_num=$(echo "$2" | tr -d '\r" ')
 
     local bandwidth
+    [ -z "$bandwidth_num" ] && return
     case $network_type in
 		"LTE")
             case $bandwidth_num in
+                "0") bandwidth="1.4" ;;
+                "1") bandwidth="3" ;;
+                "2") bandwidth="5" ;;
+                "3") bandwidth="10" ;;
+                "4") bandwidth="15" ;;
+                "5") bandwidth="20" ;;
                 "6") bandwidth="1.4" ;;
-                "15"|"25"|"50"|"75"|"100") bandwidth=$(( $bandwidth_num / 5 )) ;;
+                "15"|"25"|"50"|"75"|"100") bandwidth=$((bandwidth_num / 5)) ;;
+                *) bandwidth="$bandwidth_num" ;;
             esac
         ;;
         "NR")
             case $bandwidth_num in
                 "0") bandwidth="5" ;;
-                *) bandwidth=$(( $bandwidth_num / 5 )) ;;
+                "1") bandwidth="10" ;;
+                "2") bandwidth="15" ;;
+                "3") bandwidth="20" ;;
+                "4") bandwidth="25" ;;
+                "5") bandwidth="30" ;;
+                "6") bandwidth="40" ;;
+                "7") bandwidth="50" ;;
+                "8") bandwidth="60" ;;
+                "9") bandwidth="70" ;;
+                "10") bandwidth="80" ;;
+                "11") bandwidth="90" ;;
+                "12") bandwidth="100" ;;
+                "25"|"50"|"75"|"100"|"125"|"150"|"200"|"250"|"300"|"400"|"500") bandwidth=$((bandwidth_num / 5)) ;;
+                *) bandwidth="$bandwidth_num" ;;
             esac
         ;;
 	esac
@@ -1257,12 +1371,14 @@ cell_info()
                             scc_ul_ca=$(echo "$ca_res" | awk -F',' '{print $2}')
                             scc_band_num=$(echo "$ca_res" | awk -F',' '{print $3}')
                             scc_pci_new=$(echo "$ca_res" | awk -F',' '{print $4}')
+                            scc_pci_new=$(fibocom_hex_to_dec "$scc_pci_new")
                             if [ -z "$scc_pci" ]; then
                                 scc_pci="$scc_pci_new"
                             else
                                 scc_pci="$scc_pci / $scc_pci_new"
                             fi
                             scc_arfcn_new=$(echo "$ca_res" | awk -F',' '{print $5}')
+                            scc_arfcn_new=$(fibocom_hex_to_dec "$scc_arfcn_new")
                             if [ -z "$scc_arfcn" ]; then
                                 scc_arfcn="$scc_arfcn_new"
                             else
@@ -1298,16 +1414,21 @@ cell_info()
                     nr_mcc=$(echo "$response" | awk -F',' '{print $3}')
                     nr_mnc=$(echo "$response" | awk -F',' '{print $4}')
                     nr_tac=$(echo "$response" | awk -F',' '{print $5}')
-                    nr_tac=$(echo 'ibase=16;' "$nr_tac" | bc)
+                    nr_tac=$(fibocom_hex_to_dec "$nr_tac")
                     nr_cell_id=$(echo "$response" | awk -F',' '{print $6}')
-                    nr_cell_id=$(echo 'ibase=16;' "$nr_cell_id" | bc)
+                    nr_cell_id=$(fibocom_hex_to_dec "$nr_cell_id")
                     nr_arfcn=$(echo "$response" | awk -F',' '{print $7}')
+                    nr_arfcn=$(fibocom_hex_to_dec "$nr_arfcn")
                     nr_physical_cell_id=$(echo "$response" | awk -F',' '{print $8}')
+                    nr_physical_cell_id=$(fibocom_hex_to_dec "$nr_physical_cell_id")
                     nr_band_num=$(echo "$response" | awk -F',' '{print $9}')
                     nr_band=$(get_band "NR" ${nr_band_num})
+                    nr_serving_bandwidth_num=$(echo "$response" | awk -F',' '{print $10}')
                     nr_dl_bandwidth_num=$(echo "$ca_response" | grep "PCC" | sed 's/\r//g' | awk -F',' '{print $4}')
+                    [ -z "$nr_dl_bandwidth_num" ] && nr_dl_bandwidth_num="$nr_serving_bandwidth_num"
                     nr_dl_bandwidth=$(get_bandwidth "NR" ${nr_dl_bandwidth_num})
                     nr_ul_bandwidth_num=$(echo "$ca_response" | grep "PCC" | sed 's/\r//g' | awk -F',' '{print $5}')
+                    [ -z "$nr_ul_bandwidth_num" ] && nr_ul_bandwidth_num="$nr_serving_bandwidth_num"
                     nr_ul_bandwidth=$(get_bandwidth "NR" ${nr_ul_bandwidth_num})
                     nr_sinr_num=$(echo "$response" | awk -F',' '{print $11}')
                     nr_sinr=$(get_sinr "NR" ${nr_sinr_num})
@@ -1324,9 +1445,13 @@ cell_info()
                     endc_lte_mcc=$(echo "$response" | awk -F',' '{print $3}')
                     endc_lte_mnc=$(echo "$response" | awk -F',' '{print $4}')
                     endc_lte_tac=$(echo "$response" | awk -F',' '{print $5}')
+                    endc_lte_tac=$(fibocom_hex_to_dec "$endc_lte_tac")
                     endc_lte_cell_id=$(echo "$response" | awk -F',' '{print $6}')
+                    endc_lte_cell_id=$(fibocom_hex_to_dec "$endc_lte_cell_id")
                     endc_lte_earfcn=$(echo "$response" | awk -F',' '{print $7}')
+                    endc_lte_earfcn=$(fibocom_hex_to_dec "$endc_lte_earfcn")
                     endc_lte_physical_cell_id=$(echo "$response" | awk -F',' '{print $8}')
+                    endc_lte_physical_cell_id=$(fibocom_hex_to_dec "$endc_lte_physical_cell_id")
                     endc_lte_band_num=$(echo "$response" | awk -F',' '{print $9}')
                     endc_lte_band=$(get_band "LTE" ${endc_lte_band_num})
                     ul_bandwidth_num=$(echo "$response" | awk -F',' '{print $10}')
@@ -1344,9 +1469,13 @@ cell_info()
                     endc_nr_mcc=$(echo "$response" | awk -F',' '{print $3}')
                     endc_nr_mnc=$(echo "$response" | awk -F',' '{print $4}')
                     endc_nr_tac=$(echo "$response" | awk -F',' '{print $5}')
+                    endc_nr_tac=$(fibocom_hex_to_dec "$endc_nr_tac")
                     endc_nr_cell_id=$(echo "$response" | awk -F',' '{print $6}')
+                    endc_nr_cell_id=$(fibocom_hex_to_dec "$endc_nr_cell_id")
                     endc_nr_arfcn=$(echo "$response" | awk -F',' '{print $7}')
+                    endc_nr_arfcn=$(fibocom_hex_to_dec "$endc_nr_arfcn")
                     endc_nr_physical_cell_id=$(echo "$response" | awk -F',' '{print $8}')
+                    endc_nr_physical_cell_id=$(fibocom_hex_to_dec "$endc_nr_physical_cell_id")
                     endc_nr_band_num=$(echo "$response" | awk -F',' '{print $9}')
                     endc_nr_band=$(get_band "NR" ${endc_nr_band_num})
                     nr_dl_bandwidth_num=$(echo "$response" | awk -F',' '{print $10}')
@@ -1365,9 +1494,13 @@ cell_info()
                     lte_mcc=$(echo "$response" | awk -F',' '{print $3}')
                     lte_mnc=$(echo "$response" | awk -F',' '{print $4}')
                     lte_tac=$(echo "$response" | awk -F',' '{print $5}')
+                    lte_tac=$(fibocom_hex_to_dec "$lte_tac")
                     lte_cell_id=$(echo "$response" | awk -F',' '{print $6}')
+                    lte_cell_id=$(fibocom_hex_to_dec "$lte_cell_id")
                     lte_earfcn=$(echo "$response" | awk -F',' '{print $7}')
+                    lte_earfcn=$(fibocom_hex_to_dec "$lte_earfcn")
                     lte_physical_cell_id=$(echo "$response" | awk -F',' '{print $8}')
+                    lte_physical_cell_id=$(fibocom_hex_to_dec "$lte_physical_cell_id")
                     lte_band_num=$(echo "$response" | awk -F',' '{print $9}')
                     lte_band=$(get_band "LTE" ${lte_band_num})
                     ul_bandwidth_num=$(echo "$response" | awk -F',' '{print $10}')
@@ -1436,7 +1569,7 @@ cell_info()
         extra_info="LTE"
         set_4g_cell_info "$endc_lte_mcc" "$endc_lte_mnc" "$endc_lte_tac" "$endc_lte_cell_id" \
             "$endc_lte_earfcn" "$endc_lte_physical_cell_id" "$endc_lte_band" \
-            "$endc_lte_ul_bandwidth" "$endc_lte_dl_bandwidth" "$endc_lte_rsrp" "$endc_lte_rsrq" \
+            "${endc_lte_ul_bandwidth}M" "${endc_lte_dl_bandwidth}M" "$endc_lte_rsrp" "$endc_lte_rsrq" \
             "" "$endc_lte_rssnr" "$endc_lte_rxlev"
         add_plain_info_entry "CQI" "$endc_lte_cql" "Channel Quality Indicator"
         add_plain_info_entry "TX Power" "$endc_lte_tx_power" "TX Power"
@@ -1445,14 +1578,14 @@ cell_info()
         add_plain_info_entry "NR5G-NSA" "NR5G-NSA" ""
         extra_info="NR5G-NSA"
         set_5g_cell_info "$endc_nr_mcc" "$endc_nr_mnc" "$endc_nr_tac" "$endc_nr_cell_id" \
-            "$endc_nr_arfcn" "$endc_nr_physical_cell_id" "$endc_nr_band" "" "$endc_nr_dl_bandwidth" \
+            "$endc_nr_arfcn" "$endc_nr_physical_cell_id" "$endc_nr_band" "" "${endc_nr_dl_bandwidth}M" \
             "$endc_nr_rsrp" "$endc_nr_rsrq" "$endc_nr_sinr" "" "$endc_nr_rxlev"
         add_plain_info_entry "SCS" "$endc_nr_scs" "SCS"
         ;;
     "LTE Mode"*)
         extra_info="LTE"
         set_4g_cell_info "$lte_mcc" "$lte_mnc" "$lte_tac" "$lte_cell_id" "$lte_earfcn" \
-            "$lte_physical_cell_id" "$lte_band" "$lte_ul_bandwidth" "$lte_dl_bandwidth" \
+            "$lte_physical_cell_id" "$lte_band" "${lte_ul_bandwidth}M" "${lte_dl_bandwidth}M" \
             "$lte_rsrp" "$lte_rsrq" "" "$lte_rssnr" "$lte_rxlev"
         add_bar_info_entry "RSSI" "$lte_rssi" "Received Signal Strength Indicator" -120 -20 dBm
         add_plain_info_entry "CQI" "$lte_cql" "Channel Quality Indicator"
@@ -1472,6 +1605,147 @@ cell_info()
         add_plain_info_entry "Compression Mode" "$wcdma_com_mod" "Compression Mode"
         ;;
     esac
+}
+
+get_current_band()
+{
+    local response ca_response rat network_mode status line
+
+    response=$(at "$at_port" 'AT+GTCCINFO?')
+    ca_response=$(at "$at_port" 'AT+GTCAINFO?')
+    rat=$(echo "$response" | grep "service" | awk -F' ' '{print $1}' | head -n 1)
+
+    [ -z "$rat" ] && {
+        local rat_num
+        rat_num=$(at "$at_port" 'AT+COPS?' | grep "+COPS:" | awk -F',' '{print $4}' | sed 's/\r//g')
+        rat=$(get_rat "$rat_num")
+    }
+
+    case "$rat" in
+        "NR")
+            network_mode="NR5G-SA"
+            ;;
+        "LTE-NR")
+            network_mode="EN-DC"
+            ;;
+        "LTE"|"eMTC"|"NB-IoT")
+            network_mode="LTE"
+            ;;
+        "WCDMA"|"UMTS")
+            network_mode="WCDMA"
+            ;;
+        *)
+            network_mode="$rat"
+            status="not_registered"
+            ;;
+    esac
+    [ -z "$status" ] && status="ok"
+
+    json_add_object "current_band"
+    json_add_string "status" "$status"
+    json_add_string "vendor" "$_Vendor"
+    json_add_string "network_mode" "$network_mode"
+    json_add_array "cells"
+
+    while IFS= read -r line; do
+        [ -n "$line" ] || continue
+        [[ "$line" = *","* ]] || continue
+
+        case "$rat" in
+            "NR")
+                qmodem_add_current_band_cell "pcc" "NR" \
+                    "$(get_band "NR" "$(echo "$line" | awk -F',' '{print $9}')")" \
+                    "$(fibocom_hex_to_dec "$(echo "$line" | awk -F',' '{print $7}')")" \
+                    "NR-ARFCN" \
+                    "$(fibocom_hex_to_dec "$(echo "$line" | awk -F',' '{print $8}')")" \
+                    "$(get_bandwidth "NR" "$(echo "$ca_response" | grep "PCC" | awk -F',' '{print $5}' | head -n 1)")" \
+                    "$(get_bandwidth "NR" "$(echo "$ca_response" | grep "PCC" | awk -F',' '{print $4}' | head -n 1)")" \
+                    ""
+                ;;
+            "LTE-NR")
+                case "$(echo "$line" | awk -F',' '{print $2}')" in
+                    "4")
+                        qmodem_add_current_band_cell "pcc" "LTE" \
+                            "$(get_band "LTE" "$(echo "$line" | awk -F',' '{print $9}')")" \
+                            "$(fibocom_hex_to_dec "$(echo "$line" | awk -F',' '{print $7}')")" \
+                            "EARFCN" \
+                            "$(fibocom_hex_to_dec "$(echo "$line" | awk -F',' '{print $8}')")" \
+                            "$(get_bandwidth "LTE" "$(echo "$line" | awk -F',' '{print $10}')")" \
+                            "$(get_bandwidth "LTE" "$(echo "$line" | awk -F',' '{print $10}')")" \
+                            ""
+                        ;;
+                    "9")
+                        qmodem_add_current_band_cell "nsa" "NR" \
+                            "$(get_band "NR" "$(echo "$line" | awk -F',' '{print $9}')")" \
+                            "$(fibocom_hex_to_dec "$(echo "$line" | awk -F',' '{print $7}')")" \
+                            "NR-ARFCN" \
+                            "$(fibocom_hex_to_dec "$(echo "$line" | awk -F',' '{print $8}')")" \
+                            "" \
+                            "$(get_bandwidth "NR" "$(echo "$line" | awk -F',' '{print $10}')")" \
+                            ""
+                        ;;
+                esac
+                continue
+                ;;
+            "LTE"|"eMTC"|"NB-IoT")
+                qmodem_add_current_band_cell "pcc" "LTE" \
+                    "$(get_band "LTE" "$(echo "$line" | awk -F',' '{print $9}')")" \
+                    "$(fibocom_hex_to_dec "$(echo "$line" | awk -F',' '{print $7}')")" \
+                    "EARFCN" \
+                    "$(fibocom_hex_to_dec "$(echo "$line" | awk -F',' '{print $8}')")" \
+                    "$(get_bandwidth "LTE" "$(echo "$line" | awk -F',' '{print $10}')")" \
+                    "$(get_bandwidth "LTE" "$(echo "$line" | awk -F',' '{print $10}')")" \
+                    ""
+                ;;
+            "WCDMA"|"UMTS")
+                qmodem_add_current_band_cell "pcc" "WCDMA" \
+                    "$(get_band "WCDMA" "$(echo "$line" | awk -F',' '{print $9}')")" \
+                    "$(echo "$line" | awk -F',' '{print $7}')" \
+                    "UARFCN" \
+                    "$(echo "$line" | awk -F',' '{print $8}')" \
+                    "" \
+                    "" \
+                    ""
+                ;;
+        esac
+
+        break
+    done <<EOF
+$(echo "$response")
+EOF
+
+    case "$rat" in
+        "NR"|"LTE-NR")
+            while IFS= read -r line; do
+                [ -n "$line" ] || continue
+                echo "$line" | grep -q "SCC" || continue
+
+                qmodem_add_current_band_cell "scc" "NR" \
+                    "$(get_band "NR" "$(echo "$line" | awk -F',' '{print $3}')")" \
+                    "$(fibocom_hex_to_dec "$(echo "$line" | awk -F',' '{print $5}')")" \
+                    "NR-ARFCN" \
+                    "$(fibocom_hex_to_dec "$(echo "$line" | awk -F',' '{print $4}')")" \
+                    "" \
+                    "$(get_bandwidth "NR" "$(echo "$line" | awk -F',' '{print $6}')")" \
+                    ""
+            done <<EOF
+$(echo "$ca_response")
+EOF
+            ;;
+    esac
+
+    json_close_array
+    json_close_object
+}
+
+get_current_band_capabilities()
+{
+    json_add_object "current_band_capabilities"
+    json_add_boolean "supported" 1
+    json_add_string "vendor" "$_Vendor"
+    json_add_string "method" "AT+GTCCINFO?"
+    json_add_string "schema" "current_band"
+    json_close_object
 }
 
 # get sim switch capabilities
@@ -1511,4 +1785,103 @@ set_sim_slot(){
     local at_command="AT+GTDUALSIM=$sim_slot_param"
     response=$(at $at_port $at_command)
     json_add_string "result" "$response"
+}
+
+fibocom_usage_to_bytes()
+{
+    local value="$1"
+    local unit="$2"
+
+    case "$value" in
+        ''|*[!0-9.]*)
+            echo 0
+            return
+            ;;
+    esac
+
+    case "$unit" in
+        0) multiplier=1 ;;
+        1) multiplier=1024 ;;
+        2) multiplier=1048576 ;;
+        3) multiplier=1073741824 ;;
+        4) multiplier=1099511627776 ;;
+        *) multiplier=1 ;;
+    esac
+
+    awk -v value="$value" -v multiplier="$multiplier" 'BEGIN { printf "%.0f", value * multiplier }'
+}
+
+fibocom_get_netdev_usage_stats()
+{
+    local netdev rx_bytes tx_bytes updated_at
+
+    netdev=$(uci -q get "qmodem.${config_section}.network")
+    [ -z "$netdev" ] && [ -n "$modem_path" ] && netdev=$(ls "$(find "$modem_path" -name net 2>/dev/null | tail -n1)" 2>/dev/null | head -n1)
+    [ -z "$netdev" ] && return 1
+
+    rx_bytes=$(cat "/sys/class/net/${netdev}/statistics/rx_bytes" 2>/dev/null)
+    tx_bytes=$(cat "/sys/class/net/${netdev}/statistics/tx_bytes" 2>/dev/null)
+
+    case "$rx_bytes" in ''|*[!0-9]*) rx_bytes=0 ;; esac
+    case "$tx_bytes" in ''|*[!0-9]*) tx_bytes=0 ;; esac
+
+    [ "$rx_bytes" = "0" ] && [ "$tx_bytes" = "0" ] && return 1
+
+    updated_at=$(date +%s)
+    json_add_boolean "available" 1
+    json_add_int "updated_at" "$updated_at"
+    json_add_int "total_rx_bytes" "$rx_bytes"
+    json_add_int "total_tx_bytes" "$tx_bytes"
+    json_add_string "source" "netdev"
+    json_add_string "netdev" "$netdev"
+    return 0
+}
+
+get_usage_stats()
+{
+    local response usage_value usage_unit total_bytes updated_at
+
+    response=$(at "$at_port" "AT+GTUSAGEREC?")
+    usage_value=$(echo "$response" | awk -F'[:, ]+' '/\+GTUSAGEREC:/ {gsub(/\r/, "", $2); print $2; exit}')
+    usage_unit=$(echo "$response" | awk -F'[:, ]+' '/\+GTUSAGEREC:/ {gsub(/\r/, "", $3); print $3; exit}')
+    total_bytes=$(fibocom_usage_to_bytes "$usage_value" "$usage_unit")
+
+    if echo "$response" | grep -q "+GTUSAGEREC:"; then
+        updated_at=$(date +%s)
+        json_add_boolean "available" 1
+        json_add_int "updated_at" "$updated_at"
+        json_add_int "total_rx_bytes" "$total_bytes"
+        json_add_int "total_tx_bytes" 0
+        json_add_string "total_bytes" "$total_bytes"
+        json_add_string "raw_value" "$usage_value"
+        json_add_string "raw_unit" "$usage_unit"
+        json_add_string "source" "modem"
+    else
+        fibocom_get_netdev_usage_stats && return
+        json_add_boolean "available" 0
+        json_add_int "updated_at" 0
+        json_add_int "total_rx_bytes" 0
+        json_add_int "total_tx_bytes" 0
+        json_add_string "error" "$response"
+    fi
+}
+
+write_usage_stats()
+{
+    local response
+
+    response=$(at "$at_port" "AT+GTUSAGEREC")
+    echo "$response" | grep -qi "OK"
+}
+
+clear_usage_stats()
+{
+    local response
+
+    response=$(at "$at_port" "AT+GTUSAGEREC")
+    if echo "$response" | grep -qi "OK"; then
+        json_add_boolean "result" 1
+    else
+        json_add_boolean "result" 0
+    fi
 }
