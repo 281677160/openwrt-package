@@ -524,6 +524,12 @@ case "$1" in
     "get_copyright": {
         "config_section": "string"
     },
+    "get_current_band": {
+        "config_section": "string"
+    },
+    "get_current_band_capabilities": {
+        "config_section": "string"
+    },
     "get_disabled_features": {
         "config_section": "string"
     },
@@ -648,7 +654,7 @@ EOF
 
         case "$2" in
             base_info|cell_info|info|network_info|sim_info|get_copyright|\
-            get_disabled_features|get_dns|get_imei|get_lockband|get_mode|\
+            get_current_band|get_current_band_capabilities|get_disabled_features|get_dns|get_imei|get_lockband|get_mode|\
             get_neighborcell|get_network_prefer|get_reboot_caps|get_stats|save_stats|\
             get_traffic_reset_schedule|\
             get_sms|\
@@ -708,6 +714,16 @@ EOF
                     get_copyright)
                         json_init
                         _copyright
+                        json_dump
+                        ;;
+                    get_current_band)
+                        json_init
+                        get_current_band
+                        json_dump
+                        ;;
+                    get_current_band_capabilities)
+                        json_init
+                        get_current_band_capabilities
                         json_dump
                         ;;
                     get_disabled_features)

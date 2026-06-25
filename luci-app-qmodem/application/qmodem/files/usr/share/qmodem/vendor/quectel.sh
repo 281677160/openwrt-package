@@ -1715,6 +1715,133 @@ EOF
     esac
 }
 
+get_current_band()
+{
+    local response lte nr5g_nsa rat ca_response ca_scc_info
+    local network_mode status
+
+    response=$(at "$at_port" 'AT+QENG="servingcell"')
+    lte=$(echo "$response" | grep '+QENG: "LTE"')
+    nr5g_nsa=$(echo "$response" | grep '+QENG: "NR5G-NSA"')
+    status="ok"
+
+    json_add_object "current_band"
+    json_add_string "vendor" "$_Vendor"
+
+    if [ -n "$lte" ] && [ -n "$nr5g_nsa" ]; then
+        network_mode="EN-DC"
+        json_add_string "status" "$status"
+        json_add_string "network_mode" "$network_mode"
+        json_add_array "cells"
+
+        qmodem_add_current_band_cell "pcc" "LTE" \
+            "$(get_band "LTE" "$(echo "$lte" | awk -F',' '{print $8}')")" \
+            "$(echo "$lte" | awk -F',' '{print $7}')" \
+            "EARFCN" \
+            "$(echo "$lte" | awk -F',' '{print $6}')" \
+            "$(get_bandwidth "LTE" "$(echo "$lte" | awk -F',' '{print $9}')")" \
+            "$(get_bandwidth "LTE" "$(echo "$lte" | awk -F',' '{print $10}')")" \
+            ""
+
+        qmodem_add_current_band_cell "nsa" "NR" \
+            "$(get_band "NR" "$(echo "$nr5g_nsa" | awk -F',' '{print $9}')")" \
+            "$(echo "$nr5g_nsa" | awk -F',' '{print $8}')" \
+            "NR-ARFCN" \
+            "$(echo "$nr5g_nsa" | awk -F',' '{print $4}')" \
+            "" \
+            "$(get_bandwidth "NR" "$(echo "$nr5g_nsa" | awk -F',' '{print $10}')")" \
+            "$(get_scs "$(echo "$nr5g_nsa" | awk -F',' '{print $16}' | sed 's/\r//g')")"
+
+        json_close_array
+    else
+        response=$(echo "$response" | grep "+QENG:" | head -n 1)
+        rat=$(echo "$response" | awk -F',' '{print $3}' | sed 's/"//g')
+
+        case "$rat" in
+            "NR5G-SA")
+                network_mode="NR5G-SA"
+                ;;
+            "LTE"|"CAT-M"|"CAT-NB")
+                network_mode="LTE"
+                ;;
+            "WCDMA")
+                network_mode="WCDMA"
+                ;;
+            *)
+                status="not_registered"
+                network_mode="$rat"
+                ;;
+        esac
+
+        json_add_string "status" "$status"
+        json_add_string "network_mode" "$network_mode"
+        json_add_array "cells"
+
+        case "$rat" in
+            "NR5G-SA")
+                ca_response=$(at "$at_port" "AT+QCAINFO")
+                qmodem_add_current_band_cell "pcc" "NR" \
+                    "$(get_band "NR" "$(echo "$response" | awk -F',' '{print $11}')")" \
+                    "$(echo "$response" | awk -F',' '{print $10}')" \
+                    "NR-ARFCN" \
+                    "$(echo "$response" | awk -F',' '{print $8}')" \
+                    "$(get_bandwidth "NR" "$(echo "$ca_response" | grep "+QCAINFO:" | grep "PCC" | awk -F',' '{print $3}' | head -n 1)")" \
+                    "$(get_bandwidth "NR" "$(echo "$ca_response" | grep "+QCAINFO:" | grep "PCC" | awk -F',' '{print $3}' | head -n 1)")" \
+                    "$(get_scs "$(echo "$response" | awk -F',' '{print $16}')")"
+
+                ca_scc_info=$(echo "$ca_response" | grep "+QCAINFO:" | grep "SCC")
+                while IFS= read -r scc_line; do
+                    [ -z "$scc_line" ] && continue
+                    qmodem_add_current_band_cell "scc" "NR" \
+                        "$(echo "$scc_line" | awk -F',' '{print $4}' | sed 's/"//g' | awk -F'BAND ' '{print $2}')" \
+                        "$(echo "$scc_line" | awk -F',' '{print $2}')" \
+                        "NR-ARFCN" \
+                        "$(echo "$scc_line" | awk -F',' '{print $6}')" \
+                        "" \
+                        "$(get_bandwidth "NR" "$(echo "$scc_line" | awk -F',' '{print $3}')")" \
+                        ""
+                done <<EOF
+$ca_scc_info
+EOF
+                ;;
+            "LTE"|"CAT-M"|"CAT-NB")
+                qmodem_add_current_band_cell "pcc" "LTE" \
+                    "$(get_band "LTE" "$(echo "$response" | awk -F',' '{print $10}')")" \
+                    "$(echo "$response" | awk -F',' '{print $9}')" \
+                    "EARFCN" \
+                    "$(echo "$response" | awk -F',' '{print $8}')" \
+                    "$(get_bandwidth "LTE" "$(echo "$response" | awk -F',' '{print $11}')")" \
+                    "$(get_bandwidth "LTE" "$(echo "$response" | awk -F',' '{print $12}')")" \
+                    ""
+                ;;
+            "WCDMA")
+                qmodem_add_current_band_cell "pcc" "WCDMA" \
+                    "" \
+                    "$(echo "$response" | awk -F',' '{print $8}')" \
+                    "UARFCN" \
+                    "$(echo "$response" | awk -F',' '{print $9}')" \
+                    "" \
+                    "" \
+                    ""
+                ;;
+        esac
+
+        json_close_array
+    fi
+
+    json_close_object
+}
+
+get_current_band_capabilities()
+{
+    json_add_object "current_band_capabilities"
+    json_add_boolean "supported" 1
+    json_add_string "vendor" "$_Vendor"
+    json_add_string "method" "AT+QENG=\"servingcell\""
+    json_add_string "schema" "current_band"
+    json_close_object
+}
+
 # get sim switch capabilities
 sim_switch_capabilities(){
     json_add_string "supportSwitch" "1"
