@@ -10,7 +10,7 @@ msgstr ""
 msgid "$1"
 msgstr ""
 
-#: generic.sh:262
+#: generic.sh:340
 msgid "$arfcn_label"
 msgstr ""
 
@@ -89,7 +89,7 @@ msgstr ""
 msgid "AT Debug"
 msgstr ""
 
-#: vendor/fibocom.sh:432
+#: vendor/fibocom.sh:484
 #: vendor/foxconn.sh:307
 #: vendor/gosuncn.sh:485
 #: vendor/huawei.sh:279
@@ -119,7 +119,7 @@ msgstr ""
 msgid "Absolute Radio Frequency Channel Number"
 msgstr ""
 
-#: generic.sh:221
+#: generic.sh:299
 #: vendor/huawei.sh:382
 #: vendor/huawei.sh:514
 #: vendor/neoway.sh:719
@@ -301,9 +301,9 @@ msgstr ""
 msgid "Back"
 msgstr ""
 
-#: generic.sh:150
-#: generic.sh:186
-#: generic.sh:222
+#: generic.sh:228
+#: generic.sh:264
+#: generic.sh:300
 #: vendor/foxconn.sh:582
 #: vendor/foxconn.sh:629
 #: vendor/gosuncn.sh:601
@@ -332,7 +332,7 @@ msgstr ""
 msgid "Band"
 msgstr ""
 
-#: generic.sh:263
+#: generic.sh:341
 msgid "Band (CA)"
 msgstr ""
 
@@ -344,7 +344,7 @@ msgstr ""
 msgid "Bandwidth"
 msgstr ""
 
-#: vendor/fibocom.sh:428
+#: vendor/fibocom.sh:480
 #: vendor/foxconn.sh:304
 #: vendor/gosuncn.sh:468
 #: vendor/huawei.sh:275
@@ -405,9 +405,9 @@ msgstr ""
 msgid "Celcom (MY)"
 msgstr ""
 
-#: generic.sh:147
-#: generic.sh:183
-#: generic.sh:219
+#: generic.sh:225
+#: generic.sh:261
+#: generic.sh:297
 #: vendor/foxconn.sh:578
 #: vendor/foxconn.sh:634
 #: vendor/gosuncn.sh:599
@@ -433,7 +433,7 @@ msgstr ""
 msgid "Cell ID"
 msgstr ""
 
-#: vendor/fibocom.sh:1416
+#: vendor/fibocom.sh:1549
 #: vendor/foxconn.sh:551
 #: vendor/gosuncn.sh:587
 #: vendor/gosuncn.sh:666
@@ -469,8 +469,8 @@ msgstr ""
 msgid "Channel (optional)"
 msgstr ""
 
-#: vendor/fibocom.sh:1441
-#: vendor/fibocom.sh:1458
+#: vendor/fibocom.sh:1574
+#: vendor/fibocom.sh:1591
 #: vendor/foxconn.sh:591
 #: vendor/huawei.sh:536
 #: vendor/huawei.sh:567
@@ -537,7 +537,7 @@ msgstr ""
 msgid "Close"
 msgstr ""
 
-#: vendor/fibocom.sh:1472
+#: vendor/fibocom.sh:1605
 #: vendor/huawei.sh:588
 #: vendor/neoway.sh:766
 #: vendor/quectel.sh:1713
@@ -608,7 +608,7 @@ msgstr ""
 msgid "Confirm Delete All"
 msgstr ""
 
-#: generic.sh:527
+#: generic.sh:605
 msgid "Connect Status"
 msgstr ""
 
@@ -681,9 +681,9 @@ msgstr ""
 msgid "DL"
 msgstr ""
 
-#: generic.sh:152
-#: generic.sh:188
-#: generic.sh:224
+#: generic.sh:230
+#: generic.sh:266
+#: generic.sh:302
 #: vendor/foxconn.sh:584
 #: vendor/foxconn.sh:630
 #: vendor/huawei.sh:384
@@ -702,7 +702,7 @@ msgstr ""
 msgid "DL Bandwidth"
 msgstr ""
 
-#: generic.sh:265
+#: generic.sh:343
 msgid "DL Bandwidth (CA)"
 msgstr ""
 
@@ -886,7 +886,7 @@ msgstr ""
 msgid "E-Plus (DE)"
 msgstr ""
 
-#: generic.sh:185
+#: generic.sh:263
 #: vendor/foxconn.sh:580
 #: vendor/foxconn.sh:636
 #: vendor/huawei.sh:531
@@ -897,7 +897,7 @@ msgstr ""
 msgid "E-UTRA Absolute Radio Frequency Channel Number"
 msgstr ""
 
-#: generic.sh:155
+#: generic.sh:233
 #: vendor/huawei.sh:582
 #: vendor/meig.sh:627
 #: vendor/neoway.sh:760
@@ -905,7 +905,7 @@ msgstr ""
 msgid "Ec/Io"
 msgstr ""
 
-#: vendor/fibocom.sh:1467
+#: vendor/fibocom.sh:1600
 #: vendor/huawei.sh:583
 #: vendor/quectel.sh:1708
 msgid "Ec/No"
@@ -1461,8 +1461,8 @@ msgstr ""
 msgid "Information"
 msgstr ""
 
-#: vendor/fibocom.sh:507
-#: vendor/fibocom.sh:521
+#: vendor/fibocom.sh:559
+#: vendor/fibocom.sh:573
 #: vendor/foxconn.sh:276
 #: vendor/foxconn.sh:290
 #: vendor/gosuncn.sh:461
@@ -1479,9 +1479,9 @@ msgstr ""
 msgid "Integrate Circuit Card Identity"
 msgstr ""
 
-#: vendor/fibocom.sh:505
-#: vendor/fibocom.sh:511
-#: vendor/fibocom.sh:519
+#: vendor/fibocom.sh:557
+#: vendor/fibocom.sh:563
+#: vendor/fibocom.sh:571
 #: vendor/foxconn.sh:274
 #: vendor/foxconn.sh:280
 #: vendor/foxconn.sh:288
@@ -1506,8 +1506,8 @@ msgstr ""
 msgid "International Mobile Equipment Identity"
 msgstr ""
 
-#: vendor/fibocom.sh:506
-#: vendor/fibocom.sh:520
+#: vendor/fibocom.sh:558
+#: vendor/fibocom.sh:572
 #: vendor/foxconn.sh:275
 #: vendor/foxconn.sh:289
 #: vendor/gosuncn.sh:460
@@ -1525,7 +1525,7 @@ msgstr ""
 msgid "International Mobile Subscriber Identity"
 msgstr ""
 
-#: vendor/fibocom.sh:502
+#: vendor/fibocom.sh:554
 #: vendor/foxconn.sh:271
 #: vendor/gosuncn.sh:456
 #: vendor/meig.sh:283
@@ -1645,7 +1645,7 @@ msgstr ""
 msgid "Loading..."
 msgstr ""
 
-#: generic.sh:146
+#: generic.sh:224
 #: vendor/gosuncn.sh:598
 #: vendor/gosuncn.sh:677
 #: vendor/huawei.sh:575
@@ -1709,7 +1709,7 @@ msgstr ""
 msgid "Magenta (AT)"
 msgstr ""
 
-#: vendor/fibocom.sh:430
+#: vendor/fibocom.sh:482
 #: vendor/foxconn.sh:305
 #: vendor/gosuncn.sh:483
 #: vendor/huawei.sh:277
@@ -1767,9 +1767,9 @@ msgstr ""
 msgid "Metric"
 msgstr ""
 
-#: generic.sh:144
-#: generic.sh:180
-#: generic.sh:216
+#: generic.sh:222
+#: generic.sh:258
+#: generic.sh:294
 #: vendor/foxconn.sh:575
 #: vendor/foxconn.sh:631
 #: vendor/huawei.sh:376
@@ -1801,9 +1801,9 @@ msgstr ""
 msgid "Mobile Equipment (ME)"
 msgstr ""
 
-#: generic.sh:145
-#: generic.sh:181
-#: generic.sh:217
+#: generic.sh:223
+#: generic.sh:259
+#: generic.sh:295
 #: vendor/foxconn.sh:576
 #: vendor/foxconn.sh:632
 #: vendor/huawei.sh:377
@@ -1875,7 +1875,7 @@ msgstr ""
 msgid "Modem Name"
 msgstr ""
 
-#: generic.sh:543
+#: generic.sh:621
 msgid "Modem Offline"
 msgstr ""
 
@@ -1928,7 +1928,7 @@ msgstr ""
 msgid "NSA Band"
 msgstr ""
 
-#: vendor/fibocom.sh:429
+#: vendor/fibocom.sh:481
 #: vendor/gosuncn.sh:482
 #: vendor/huawei.sh:276
 #: vendor/meig.sh:235
@@ -1952,7 +1952,7 @@ msgstr ""
 msgid "Neighbor Cell List"
 msgstr ""
 
-#: vendor/fibocom.sh:566
+#: vendor/fibocom.sh:618
 #: vendor/foxconn.sh:314
 #: vendor/gosuncn.sh:506
 #: vendor/meig.sh:380
@@ -1968,7 +1968,7 @@ msgstr ""
 msgid "Network LED"
 msgstr ""
 
-#: vendor/fibocom.sh:1417
+#: vendor/fibocom.sh:1550
 #: vendor/foxconn.sh:555
 #: vendor/foxconn.sh:628
 #: vendor/gosuncn.sh:591
@@ -1995,7 +1995,7 @@ msgstr ""
 msgid "Network Preference Configuration"
 msgstr ""
 
-#: vendor/fibocom.sh:576
+#: vendor/fibocom.sh:628
 #: vendor/foxconn.sh:323
 #: vendor/gosuncn.sh:507
 #: vendor/meig.sh:381
@@ -2240,8 +2240,8 @@ msgstr ""
 msgid "Phone Number"
 msgstr ""
 
-#: generic.sh:184
-#: generic.sh:220
+#: generic.sh:262
+#: generic.sh:298
 #: vendor/foxconn.sh:579
 #: vendor/foxconn.sh:635
 #: vendor/gosuncn.sh:609
@@ -2265,11 +2265,11 @@ msgstr ""
 msgid "Physical Cell ID"
 msgstr ""
 
-#: generic.sh:261
+#: generic.sh:339
 msgid "Physical Cell ID (CA)"
 msgstr ""
 
-#: vendor/fibocom.sh:1468
+#: vendor/fibocom.sh:1601
 #: vendor/huawei.sh:584
 #: vendor/neoway.sh:763
 #: vendor/quectel.sh:1709
@@ -2337,7 +2337,7 @@ msgstr ""
 msgid "Pre Dial Delay"
 msgstr ""
 
-#: generic.sh:149
+#: generic.sh:227
 #: vendor/gosuncn.sh:600
 #: vendor/gosuncn.sh:679
 #: vendor/huawei.sh:578
@@ -2415,8 +2415,8 @@ msgstr ""
 msgid "RX Power (dBm)"
 msgstr ""
 
-#: generic.sh:192
-#: generic.sh:228
+#: generic.sh:270
+#: generic.sh:306
 #: vendor/foxconn.sh:590
 #: vendor/huawei.sh:544
 #: vendor/huawei.sh:566
@@ -2450,11 +2450,11 @@ msgstr ""
 msgid "Rebooting..."
 msgstr ""
 
-#: generic.sh:103
+#: generic.sh:100
 msgid "Receive Rate"
 msgstr ""
 
-#: generic.sh:153
+#: generic.sh:231
 #: vendor/huawei.sh:387
 #: vendor/huawei.sh:581
 #: vendor/meig.sh:626
@@ -2463,9 +2463,9 @@ msgstr ""
 msgid "Received Signal Code Power"
 msgstr ""
 
-#: generic.sh:156
-#: generic.sh:193
-#: generic.sh:229
+#: generic.sh:234
+#: generic.sh:271
+#: generic.sh:307
 #: vendor/foxconn.sh:589
 #: vendor/huawei.sh:390
 #: vendor/huawei.sh:400
@@ -2478,7 +2478,7 @@ msgstr ""
 msgid "Received Signal Level"
 msgstr ""
 
-#: vendor/fibocom.sh:1457
+#: vendor/fibocom.sh:1590
 #: vendor/foxconn.sh:587
 #: vendor/gosuncn.sh:593
 #: vendor/gosuncn.sh:602
@@ -2501,8 +2501,8 @@ msgstr ""
 msgid "Redial command sent successfully"
 msgstr ""
 
-#: generic.sh:189
-#: generic.sh:225
+#: generic.sh:267
+#: generic.sh:303
 #: vendor/foxconn.sh:640
 #: vendor/huawei.sh:397
 #: vendor/huawei.sh:408
@@ -2524,9 +2524,9 @@ msgstr ""
 msgid "Reference Signal Received Power"
 msgstr ""
 
-#: generic.sh:154
-#: generic.sh:190
-#: generic.sh:226
+#: generic.sh:232
+#: generic.sh:268
+#: generic.sh:304
 #: vendor/foxconn.sh:586
 #: vendor/foxconn.sh:639
 #: vendor/huawei.sh:398
@@ -2576,7 +2576,7 @@ msgstr ""
 msgid "Result"
 msgstr ""
 
-#: vendor/fibocom.sh:431
+#: vendor/fibocom.sh:483
 #: vendor/foxconn.sh:306
 #: vendor/gosuncn.sh:484
 #: vendor/huawei.sh:278
@@ -2594,7 +2594,7 @@ msgstr ""
 msgid "Rostelecom (RU)"
 msgstr ""
 
-#: generic.sh:157
+#: generic.sh:235
 #: vendor/huawei.sh:579
 #: vendor/neoway.sh:755
 msgid "Routing Area Code"
@@ -2613,8 +2613,8 @@ msgstr ""
 msgid "SA Band"
 msgstr ""
 
-#: vendor/fibocom.sh:1425
-#: vendor/fibocom.sh:1450
+#: vendor/fibocom.sh:1558
+#: vendor/fibocom.sh:1583
 #: vendor/huawei.sh:521
 #: vendor/meig.sh:574
 #: vendor/meig.sh:601
@@ -2637,11 +2637,11 @@ msgstr ""
 msgid "SIM Card SMS Management"
 msgstr ""
 
-#: generic.sh:542
+#: generic.sh:620
 msgid "SIM Error,Error code:"
 msgstr ""
 
-#: vendor/fibocom.sh:498
+#: vendor/fibocom.sh:550
 #: vendor/foxconn.sh:227
 #: vendor/gosuncn.sh:421
 #: vendor/huawei.sh:226
@@ -2658,7 +2658,7 @@ msgstr ""
 msgid "SIM LED"
 msgstr ""
 
-#: vendor/fibocom.sh:504
+#: vendor/fibocom.sh:556
 #: vendor/foxconn.sh:273
 #: vendor/gosuncn.sh:458
 #: vendor/huawei.sh:258
@@ -2669,8 +2669,8 @@ msgstr ""
 msgid "SIM Number"
 msgstr ""
 
-#: vendor/fibocom.sh:503
-#: vendor/fibocom.sh:518
+#: vendor/fibocom.sh:555
+#: vendor/fibocom.sh:570
 #: vendor/foxconn.sh:272
 #: vendor/foxconn.sh:287
 #: vendor/gosuncn.sh:457
@@ -2689,10 +2689,10 @@ msgstr ""
 msgid "SIM Slot"
 msgstr ""
 
-#: vendor/fibocom.sh:501
-#: vendor/fibocom.sh:510
-#: vendor/fibocom.sh:514
-#: vendor/fibocom.sh:517
+#: vendor/fibocom.sh:553
+#: vendor/fibocom.sh:562
+#: vendor/fibocom.sh:566
+#: vendor/fibocom.sh:569
 #: vendor/foxconn.sh:270
 #: vendor/foxconn.sh:279
 #: vendor/foxconn.sh:283
@@ -2919,9 +2919,9 @@ msgstr ""
 msgid "ServerChan API token from https://sctapi.ftqq.com"
 msgstr ""
 
-#: vendor/fibocom.sh:1426
-#: vendor/fibocom.sh:1443
-#: vendor/fibocom.sh:1460
+#: vendor/fibocom.sh:1559
+#: vendor/fibocom.sh:1576
+#: vendor/fibocom.sh:1593
 #: vendor/foxconn.sh:593
 #: vendor/huawei.sh:522
 #: vendor/huawei.sh:538
@@ -2948,8 +2948,8 @@ msgstr ""
 msgid "Setting..."
 msgstr ""
 
-#: generic.sh:191
-#: generic.sh:227
+#: generic.sh:269
+#: generic.sh:305
 #: vendor/meig.sh:573
 #: vendor/meig.sh:589
 #: vendor/meig.sh:600
@@ -2985,7 +2985,7 @@ msgstr ""
 msgid "Skytone (CN)"
 msgstr ""
 
-#: vendor/fibocom.sh:1470
+#: vendor/fibocom.sh:1603
 #: vendor/huawei.sh:586
 #: vendor/neoway.sh:765
 #: vendor/quectel.sh:1711
@@ -3023,13 +3023,13 @@ msgstr ""
 msgid "Soft reboot initiated successfully. The modem is restarting..."
 msgstr ""
 
-#: vendor/fibocom.sh:1471
+#: vendor/fibocom.sh:1604
 #: vendor/huawei.sh:587
 #: vendor/quectel.sh:1712
 msgid "Speech Code"
 msgstr ""
 
-#: vendor/fibocom.sh:1469
+#: vendor/fibocom.sh:1602
 #: vendor/huawei.sh:585
 #: vendor/neoway.sh:764
 #: vendor/quectel.sh:1710
@@ -3097,8 +3097,8 @@ msgstr ""
 msgid "T-mobile (RU)"
 msgstr ""
 
-#: vendor/fibocom.sh:1442
-#: vendor/fibocom.sh:1459
+#: vendor/fibocom.sh:1575
+#: vendor/fibocom.sh:1592
 #: vendor/foxconn.sh:592
 #: vendor/foxconn.sh:642
 #: vendor/huawei.sh:537
@@ -3133,7 +3133,7 @@ msgstr ""
 msgid "Telekom (DE)"
 msgstr ""
 
-#: vendor/fibocom.sh:408
+#: vendor/fibocom.sh:460
 #: vendor/foxconn.sh:470
 #: vendor/gosuncn.sh:273
 #: vendor/meig.sh:220
@@ -3173,8 +3173,8 @@ msgstr ""
 msgid "Total Messages"
 msgstr ""
 
-#: generic.sh:182
-#: generic.sh:218
+#: generic.sh:260
+#: generic.sh:296
 #: vendor/gosuncn.sh:607
 #: vendor/gosuncn.sh:686
 #: vendor/neoway.sh:732
@@ -3200,7 +3200,7 @@ msgstr ""
 msgid "Tracking area code of cell served by neighbor Enb"
 msgstr ""
 
-#: generic.sh:100
+#: generic.sh:103
 msgid "Transmit Rate"
 msgstr ""
 
@@ -3229,9 +3229,9 @@ msgstr ""
 msgid "UL"
 msgstr ""
 
-#: generic.sh:151
-#: generic.sh:187
-#: generic.sh:223
+#: generic.sh:229
+#: generic.sh:265
+#: generic.sh:301
 #: vendor/foxconn.sh:583
 #: vendor/huawei.sh:534
 #: vendor/huawei.sh:559
@@ -3243,11 +3243,11 @@ msgstr ""
 msgid "UL Bandwidth"
 msgstr ""
 
-#: generic.sh:264
+#: generic.sh:342
 msgid "UL Bandwidth (CA)"
 msgstr ""
 
-#: vendor/fibocom.sh:1430
+#: vendor/fibocom.sh:1563
 msgid "UL CA"
 msgstr ""
 
@@ -3272,7 +3272,7 @@ msgstr ""
 msgid "USB scan failed"
 msgstr ""
 
-#: generic.sh:148
+#: generic.sh:226
 #: vendor/huawei.sh:577
 #: vendor/neoway.sh:753
 msgid "UTRA Absolute Radio Frequency Channel Number"
@@ -3346,7 +3346,7 @@ msgstr ""
 msgid "Vodafone (DE)"
 msgstr ""
 
-#: vendor/fibocom.sh:372
+#: vendor/fibocom.sh:424
 #: vendor/foxconn.sh:463
 #: vendor/meig.sh:187
 #: vendor/quectel.sh:313

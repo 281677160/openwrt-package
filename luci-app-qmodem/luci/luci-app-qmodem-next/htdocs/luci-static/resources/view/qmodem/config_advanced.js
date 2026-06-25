@@ -757,7 +757,7 @@ return view.extend({
 			'type': 'text',
 			'class': 'cbi-input-text',
 			'id': 'band_input_' + modem.id,
-			'placeholder': _('NR Band')
+			'placeholder': _('NR Band') + ' (N41/41/5041)'
 		});
 		bandField.appendChild(bandInput);
 		bandRow.appendChild(bandField);
