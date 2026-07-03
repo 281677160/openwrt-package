@@ -40,7 +40,7 @@ MAKE_OPTS:= \
 	CROSS_COMPILE="$(TARGET_CROSS)" \
 	CXXFLAGS="$(TARGET_CXXFLAGS)" \
 	M="$(PKG_BUILD_DIR)" \
-	EXTRA_CFLAGS="$(EXTRA_CFLAGS)" \
+	ccflags-y="$(EXTRA_CFLAGS)" \
 	$(EXTRA_KCONFIG)
 
 define Build/Prepare
