@@ -66,6 +66,275 @@ fibocom_normalize_nr_band()
     fi
 }
 
+fibocom_normalize_band_list()
+{
+    echo "$1" | tr ':' ',' | tr ' ' ',' | awk -F',' '
+        {
+            for (i = 1; i <= NF; i++) {
+                gsub(/^[ \t\r"]+|[ \t\r"]+$/, "", $i)
+                if ($i != "" && $i != "null")
+                    print $i
+            }
+        }' | sort -n | uniq | tr '\n' ',' | sed 's/,$//'
+}
+
+fibocom_gtact_band_code()
+{
+    local rat="$1"
+    local band=$(echo "$2" | tr -d '\r" nNB ')
+
+    [ -z "$band" ] && return
+
+    case "$rat" in
+        "LTE")
+            if fibocom_is_uint "$band" && [ "$band" -lt 100 ]; then
+                band=$((band + 100))
+            fi
+            ;;
+        "NR")
+            if fibocom_is_uint "$band" && [ "$band" -lt 5000 ]; then
+                for nr_code in $(echo "$ALL_NR_CODES" | tr ',' ' '); do
+                    if [ "$(fibocom_gtact_band_display "NR" "$nr_code")" = "$band" ]; then
+                        echo "$nr_code"
+                        return
+                    fi
+                done
+                if [ "$band" -lt 10 ]; then
+                    band=$((band + 500))
+                else
+                    band=$((band + 5000))
+                fi
+            fi
+            ;;
+    esac
+
+    echo "$band"
+}
+
+fibocom_gtact_band_display()
+{
+    local rat="$1"
+    local band=$(echo "$2" | tr -d '\r" ')
+
+    [ -z "$band" ] && return
+
+    case "$rat" in
+        "LTE")
+            if fibocom_is_uint "$band" && [ "$band" -ge 100 ]; then
+                band=$((band - 100))
+            fi
+            ;;
+        "NR")
+            if fibocom_is_uint "$band"; then
+                if [ "$band" -ge 5000 ]; then
+                    band=$((band - 5000))
+                elif [ "$band" -ge 500 ]; then
+                    band=$((band - 500))
+                fi
+            fi
+            ;;
+    esac
+
+    echo "$band"
+}
+
+fibocom_gtact_encode_list()
+{
+    local rat="$1"
+    local list="$2"
+    local out="" code
+
+    for band in $(echo "$list" | tr ',' ' '); do
+        code=$(fibocom_gtact_band_code "$rat" "$band")
+        [ -n "$code" ] && out="${out},${code}"
+    done
+
+    fibocom_normalize_band_list "${out#,}"
+}
+
+fibocom_gtact_add_available_band()
+{
+    local rat="$1"
+    local raw_band="$2"
+    local band
+
+    [ -z "$raw_band" ] && return
+
+    band=$(fibocom_gtact_band_display "$rat" "$raw_band")
+    [ -z "$band" ] && return
+
+    json_select "$rat"
+    json_select "available_band"
+    case "$rat" in
+        "UMTS")
+            add_avalible_band_entry "$band" "UMTS_$band"
+            ;;
+        "LTE")
+            add_avalible_band_entry "$band" "LTE_B$band"
+            ;;
+        "NR")
+            add_avalible_band_entry "$band" "NR_N$band"
+            ;;
+    esac
+    json_select ".."
+    json_select ".."
+}
+
+fibocom_gtact_add_lock_band()
+{
+    local raw_band=$(echo "$1" | tr -d '\r" ')
+    local rat band
+
+    [ -z "$raw_band" ] && return
+    fibocom_is_uint "$raw_band" || return
+
+    if [ "$raw_band" -lt 100 ]; then
+        rat="UMTS"
+    elif [ "$raw_band" -lt 500 ]; then
+        rat="LTE"
+    else
+        rat="NR"
+    fi
+
+    band=$(fibocom_gtact_band_display "$rat" "$raw_band")
+    [ -z "$band" ] && return
+
+    json_select "$rat"
+    json_select "lock_band"
+    json_add_string "" "$band"
+    json_select ".."
+    json_select ".."
+}
+
+fibocom_gtact_parse_current_bands()
+{
+    local band_params=$(echo "$1" | grep "+GTACT:" | head -n1 | sed 's/+GTACT:[ ]*//' | tr -d '\r')
+    local first second third rest has_explicit_bands=0
+
+    first=$(echo "$band_params" | cut -d',' -f1 | tr -d ' ')
+    second=$(echo "$band_params" | cut -d',' -f2 | tr -d ' ')
+    third=$(echo "$band_params" | cut -d',' -f3 | tr -d ' ')
+    GTACT_PARAM2="$second"
+    GTACT_PARAM3="$third"
+    rest=$(echo "$band_params" | cut -d',' -f4- | tr -d '\r')
+    [ -z "$rest" ] || [ "$rest" = "$band_params" ] && rest=""
+
+    for b in $(echo "$rest" | tr ',' ' '); do
+        b=$(echo "$b" | tr -d '\r" ')
+        if fibocom_is_uint "$b"; then
+            has_explicit_bands=1
+            break
+        fi
+    done
+
+    if [ "$has_explicit_bands" = "0" ]; then
+        case "$first" in
+            "1") umts_bands="$ALL_UMTS_CODES"; lte_bands=""; nr_bands="" ;;
+            "2") umts_bands=""; lte_bands="$ALL_LTE_CODES"; nr_bands="" ;;
+            "4") umts_bands="$ALL_UMTS_CODES"; lte_bands="$ALL_LTE_CODES"; nr_bands="" ;;
+            "14") umts_bands=""; lte_bands=""; nr_bands="$ALL_NR_CODES" ;;
+            "16") umts_bands="$ALL_UMTS_CODES"; lte_bands=""; nr_bands="$ALL_NR_CODES" ;;
+            "17") umts_bands=""; lte_bands="$ALL_LTE_CODES"; nr_bands="$ALL_NR_CODES" ;;
+            "10"|"20") umts_bands="$ALL_UMTS_CODES"; lte_bands="$ALL_LTE_CODES"; nr_bands="$ALL_NR_CODES" ;;
+        esac
+    fi
+
+    for b in $(echo "$rest" | tr ',' ' '); do
+        b=$(echo "$b" | tr -d '\r" ')
+        [ -z "$b" ] && continue
+        fibocom_is_uint "$b" || continue
+
+        if [ "$b" -lt 100 ]; then
+            umts_bands="${umts_bands},$b"
+        elif [ "$b" -lt 500 ]; then
+            lte_bands="${lte_bands},$b"
+        else
+            nr_bands="${nr_bands},$b"
+        fi
+    done
+
+    umts_bands=$(fibocom_normalize_band_list "$umts_bands")
+    lte_bands=$(fibocom_normalize_band_list "$lte_bands")
+    nr_bands=$(fibocom_normalize_band_list "$nr_bands")
+}
+
+fibocom_gtact_extract_available_group()
+{
+    local response="$1"
+    local group="$2"
+
+    echo "$response" | grep "+GTACT:" | head -n1 | awk -v group="$group" -F'[()]' '
+        {
+            count = 0
+            for (i = 2; i <= NF; i += 2) {
+                count++
+                if (count == group) {
+                    print $i
+                    exit
+                }
+            }
+        }' | tr -d ' '
+}
+
+fibocom_gtact_load_available_bands()
+{
+    local response="$1"
+
+    ALL_UMTS_CODES=$(fibocom_normalize_band_list "$(fibocom_gtact_extract_available_group "$response" 5)")
+    ALL_LTE_CODES=$(fibocom_normalize_band_list "$(fibocom_gtact_extract_available_group "$response" 6)")
+    ALL_NR_CODES=$(fibocom_normalize_band_list "$(fibocom_gtact_extract_available_group "$response" 9)")
+
+    [ -z "$ALL_UMTS_CODES" ] && ALL_UMTS_CODES="1,2,4,5,6,8,19"
+    [ -z "$ALL_LTE_CODES" ] && ALL_LTE_CODES="101,103,105,107,108,120,128,132,138,140,141,142,143,148,166"
+    [ -z "$ALL_NR_CODES" ] && ALL_NR_CODES="5001,5003,5005,5007,5008,5020,5028,5038,5040,5041,5048,5066,5077,5078,5079"
+}
+
+fibocom_gtact_network_prefer_from_bands()
+{
+    local has_umts=0 has_lte=0 has_nr=0
+
+    [ -n "$umts_bands" ] && has_umts=1
+    [ -n "$lte_bands" ] && has_lte=1
+    [ -n "$nr_bands" ] && has_nr=1
+
+    if [ "$has_umts" = "1" ] && [ "$has_lte" = "1" ] && [ "$has_nr" = "1" ]; then
+        echo "20"
+    elif [ "$has_umts" = "1" ] && [ "$has_lte" = "1" ]; then
+        echo "4"
+    elif [ "$has_umts" = "1" ] && [ "$has_nr" = "1" ]; then
+        echo "16"
+    elif [ "$has_lte" = "1" ] && [ "$has_nr" = "1" ]; then
+        echo "17"
+    elif [ "$has_nr" = "1" ]; then
+        echo "14"
+    elif [ "$has_lte" = "1" ]; then
+        echo "2"
+    elif [ "$has_umts" = "1" ]; then
+        echo "1"
+    else
+        echo "20"
+    fi
+}
+
+fibocom_gtact_command()
+{
+    local network_prefer_num="$1"
+    local bands_str="$2"
+    local rat_count=0
+
+    [ -n "$umts_bands" ] && rat_count=$((rat_count + 1))
+    [ -n "$lte_bands" ] && rat_count=$((rat_count + 1))
+    [ -n "$nr_bands" ] && rat_count=$((rat_count + 1))
+
+    if [ -z "$bands_str" ]; then
+        echo "AT+GTACT=${network_prefer_num}"
+    elif [ "$rat_count" -gt 1 ]; then
+        echo "AT+GTACT=${network_prefer_num},${GTACT_PARAM2:-6},${GTACT_PARAM3:-3},$bands_str"
+    else
+        echo "AT+GTACT=${network_prefer_num},,,$bands_str"
+    fi
+}
+
 #获取拨号模式
 # $1:AT串口
 # $2:平台
@@ -190,7 +459,7 @@ set_mode()
     #设置模组
     at_command="AT+GTUSBMODE=${mode_num}"
     res=$(at "${at_port}" "${at_command}")
-    json_select "result"
+    json_add_object "result"
     json_add_string "set_mode" "$res"
     json_add_string "mode" "$mode_config"
     json_close_object
@@ -251,6 +520,8 @@ get_network_prefer_nr()
 # $1:网络偏好配置
 set_network_prefer_nr()
 {
+    local bands_str
+
     network_prefer_3g=$(echo $1 |jq -r 'contains(["3G"])')
     network_prefer_4g=$(echo $1 |jq -r 'contains(["4G"])')
     network_prefer_5g=$(echo $1 |jq -r 'contains(["5G"])')
@@ -268,36 +539,43 @@ set_network_prefer_nr()
         "2")
             if [ "$network_prefer_4g" = "true" ] && [ "$network_prefer_5g" = "true" ]; then
                 network_prefer_num="17"
+            elif [ "$network_prefer_3g" = "true" ] && [ "$network_prefer_5g" = "true" ]; then
+                network_prefer_num="16"
+            elif [ "$network_prefer_3g" = "true" ] && [ "$network_prefer_4g" = "true" ]; then
+                network_prefer_num="4"
             elif [ "$network_prefer_4g" = "true" ]; then
                 network_prefer_num="2"
             elif [ "$network_prefer_5g" = "true" ]; then
                 network_prefer_num="14"
             else
-                network_prefer_num="10"
+                network_prefer_num="20"
             fi
         ;;
-        "3") network_prefer_num="10" ;;
-        *) network_prefer_num="10" ;;
+        "3") network_prefer_num="20" ;;
+        *) network_prefer_num="20" ;;
     esac
 
-    #设置模组
-    case "$network_prefer_num" in
-        "2")
-            at_command="AT+GTACT=$network_prefer_num"
-        ;;
-        "14")
-            at_command="AT+GTACT=$network_prefer_num"
-        ;;
-        "17")
-            at_command="AT+GTACT=$network_prefer_num"
-        ;;        
-        "10")
-            at_command="AT+GTACT=$network_prefer_num"
-        ;;
-        *) at_command="AT+GTACT=10" ;;
-    esac
+    get_lockband_config_res=$(at $at_port "AT+GTACT?" | grep "+GTACT:" | head -n1)
+    get_available_band_res=$(at $at_port "AT+GTACT=?" | grep "+GTACT:" | head -n1)
+    fibocom_gtact_load_available_bands "$get_available_band_res"
+    umts_bands=""
+    lte_bands=""
+    nr_bands=""
+    fibocom_gtact_parse_current_bands "$get_lockband_config_res"
+
+    [ "$network_prefer_3g" = "true" ] || umts_bands=""
+    [ "$network_prefer_4g" = "true" ] || lte_bands=""
+    [ "$network_prefer_5g" = "true" ] || nr_bands=""
+
+    [ "$network_prefer_3g" = "true" ] && [ -z "$umts_bands" ] && umts_bands="$ALL_UMTS_CODES"
+    [ "$network_prefer_4g" = "true" ] && [ -z "$lte_bands" ] && lte_bands="$ALL_LTE_CODES"
+    [ "$network_prefer_5g" = "true" ] && [ -z "$nr_bands" ] && nr_bands="$ALL_NR_CODES"
+
+    bands_str=$(fibocom_normalize_band_list "$umts_bands,$lte_bands,$nr_bands")
+    at_command=$(fibocom_gtact_command "${network_prefer_num:-20}" "$bands_str")
+
     res=$(at $at_port "$at_command")
-    json_select_object "result"
+    json_add_object "result"
     json_add_string "status" "$res"
     json_add_string "command" "$at_command"
     json_close_object
@@ -362,7 +640,7 @@ set_network_prefer_lte()
     #设置模组
     at_command="AT+GTACT=$network_prefer_num"
     res=$(at $at_port "$at_command")
-    json_select_object "result"
+    json_add_object "result"
     json_add_string "status" "$res"
     json_add_string raw "$1"
     json_add_string "network_prefer_num" "$network_prefer_num"
@@ -678,17 +956,18 @@ get_lockband_nr()
     get_available_band_command="AT+GTACT=?"
     get_lockband_config_res=$(at $at_port $get_lockband_config_command)
     get_available_band_res=$(at $at_port $get_available_band_command)
+    fibocom_gtact_load_available_bands "$get_available_band_res"
     json_add_object "UMTS"
     json_add_array "available_band"
     json_close_array
     json_add_array "lock_band"
-    json_close_object
+    json_close_array
     json_close_object
     json_add_object "LTE"
     json_add_array "available_band"
     json_close_array
     json_add_array "lock_band"
-    json_close_object
+    json_close_array
     json_close_object
     json_add_object "NR"
     json_add_array "available_band"
@@ -696,82 +975,31 @@ get_lockband_nr()
     json_add_array "lock_band"
     json_close_array
     json_close_object
-    index=0
-    for i in $(echo "$get_available_band_res"| sed 's/\r//g' | awk -F"[()]" '{for(j=8; j<NF;j+=2) if ($j) print $j; else print 0;}' ); do
-        case $index in
-            0) 
-            #"gsm"
-            ;;
-            1) 
-            #"umts_band" 
-            for j in $(echo "$i" | awk -F"," '{for(k=1; k<=NF; k++) print $k}'); do
-                json_select "UMTS"
-                json_select "available_band"
-                add_avalible_band_entry  "$j" "UMTS_$j"
-                json_select ".."
-                json_select ".."
-            done
-            ;;
-            2) 
-            #"LTE" "$i" 
-            for j in $(echo "$i" | awk -F"," '{for(k=1; k<=NF; k++) print $k}'); do
-                trim_first_letter=$(get_band "LTE" "$j")
-                json_select "LTE"
-                json_select "available_band"
-                add_avalible_band_entry  "$j" "LTE_$trim_first_letter"
-                json_select ".."
-                json_select ".."
-            done
-            ;;
-            3)  
-            #"cdma_band"
-            ;;
-            4) 
-            #"evno"
-            ;;
-            5)
-            #"nr5g"
-            for j in $(echo "$i" | awk -F"," '{for(k=1; k<=NF; k++) print $k}'); do
-                trim_first_letter=$(get_band "NR" "$j")
-                json_select "NR"
-                json_select "available_band"
-                add_avalible_band_entry  "$j" "NR_$trim_first_letter"
-                json_select ".."
-                json_select ".."
-            done
-            ;;
-        esac
-        index=$((index+1))
+
+    for i in $(echo "$ALL_UMTS_CODES" | tr ',' ' '); do
+        fibocom_gtact_add_available_band "UMTS" "$i"
     done
-    
-    for i in $(echo "$get_lockband_config_res" | sed 's/\r//g' | awk -F"," '{for(k=4; k<=NF; k++) print $k}' ); do
-        # i 0,100 UMTS
-        # i 100,5000 LTE
-        # i 5000,10000 NR
-        if [ -z "$i" ]; then
-            continue
-        fi
-        if [ $i -lt 100 ]; then
-            json_select "UMTS"
-            json_select "lock_band"
-            json_add_string "" "$i"
-            json_select ".."
-            json_select ".."
-        elif [ $i -lt 500 ]; then
-            json_select "LTE"
-            json_select "lock_band"
-            json_add_string "" "$i"
-            json_select ".."
-            json_select ".."
-        else
-            json_select "NR"
-            json_select "lock_band"
-            json_add_string "" "$i"
-            json_select ".."
-            json_select ".."
-        fi
+    for i in $(echo "$ALL_LTE_CODES" | tr ',' ' '); do
+        fibocom_gtact_add_available_band "LTE" "$i"
     done
-    json_close_array
+    for i in $(echo "$ALL_NR_CODES" | tr ',' ' '); do
+        fibocom_gtact_add_available_band "NR" "$i"
+    done
+
+    umts_bands=""
+    lte_bands=""
+    nr_bands=""
+    fibocom_gtact_parse_current_bands "$get_lockband_config_res"
+
+    for i in $(echo "$umts_bands" | tr ',' ' '); do
+        fibocom_gtact_add_lock_band "$i"
+    done
+    for i in $(echo "$lte_bands" | tr ',' ' '); do
+        fibocom_gtact_add_lock_band "$i"
+    done
+    for i in $(echo "$nr_bands" | tr ',' ' '); do
+        fibocom_gtact_add_lock_band "$i"
+    done
 }
 
 #锁频信息
@@ -881,7 +1109,8 @@ set_lockband()
             set_lockband_nr
             ;;
     esac
-    json_select "result"
+    json_add_object "result"
+    [ -n "$set_lockband_command" ] && json_add_string "command" "$set_lockband_command"
     json_add_string "set_lockband" "$res"
     json_add_string "config" "$config"
     json_add_string "band_class" "$band_class"
@@ -897,7 +1126,7 @@ set_lockband_nr_mediatek()
     get_lockband_config_res=$(at $at_port $get_lockband_config_command)
     network_prefer_config=$(echo $get_lockband_config_res |cut -d : -f 2| awk -F"," '{print $1}' |tr -d ' ')
     local lock_band="$network_prefer_config,6,3,$lock_band"
-    local set_lockband_command="AT+GTACT=$lock_band"
+    set_lockband_command="AT+GTACT=$lock_band"
     res=$(at $at_port $set_lockband_command)
 }
 
@@ -905,109 +1134,38 @@ set_lockband_nr()
 {
     m_debug "Fibocom set lockband info nr"
 
-    # 获取当前band配置
+    local network_prefer_num bands_str
+
     get_lockband_config_command="AT+GTACT?"
     get_lockband_config_res=$(at $at_port $get_lockband_config_command | grep "+GTACT:" | head -n1)
-    band_params=$(echo "$get_lockband_config_res" | sed 's/+GTACT:[ ]*//' | tr -d '\r')
-    prefix=$(echo "$band_params" | cut -d',' -f1-3)
-    bands=$(echo "$band_params" | cut -d',' -f4- | tr -d '\r')
-
-    # 获取全选band
     get_available_band_res=$(at $at_port "AT+GTACT=?" | grep "+GTACT:" | head -n1)
-    available_band_params=$(echo "$get_available_band_res" | sed 's/+GTACT:[ ]*//' | tr -d '\r')
-    ALL_UMTS=$(echo "$available_band_params" | awk -F'[()]' '{print $10}' | tr -d ' ')
-    ALL_LTE=$(echo "$available_band_params" | awk -F'[()]' '{print $12}' | tr -d ' ')
-    ALL_NR=$(echo "$available_band_params" | awk -F'[()]' '{print $18}' | tr -d ' ')
+    fibocom_gtact_load_available_bands "$get_available_band_res"
 
     band_class=$(echo "$config" | jq -r '.band_class')
 
     umts_bands=""
     lte_bands=""
     nr_bands=""
-    for b in $(echo "$bands" | tr ',' ' '); do
-        [ -z "$b" ] && continue
-        if [ "$b" -ge 1 ] && [ "$b" -lt 100 ]; then
-            umts_bands="$umts_bands,$b"
-        elif [ "$b" -ge 100 ] && [ "$b" -lt 500 ]; then
-            lte_bands="$lte_bands,$b"
-        elif { [ "$b" -ge 500 ] && [ "$b" -lt 600 ]; } || [ "$b" -ge 5000 ]; then
-            nr_bands="$nr_bands,$b"
-        fi
-    done
-    umts_bands="${umts_bands#,}"
-    lte_bands="${lte_bands#,}"
-    nr_bands="${nr_bands#,}"
+    fibocom_gtact_parse_current_bands "$get_lockband_config_res"
 
-    # 替换对应 band_class
     case "$band_class" in
         "UMTS")
-            umts_bands="$lock_band"
+            umts_bands=$(fibocom_gtact_encode_list "UMTS" "$lock_band")
             ;;
         "LTE")
-            set_lockband_command="AT+GTACT=17,,,$lock_band"
-            res=$(at $at_port "$set_lockband_command")
-            json_select "result"
-            json_add_string "set_lockband" "$res"
-            json_add_string "command" "$set_lockband_command"
-            json_add_string "config" "$config"
-            json_add_string "band_class" "$band_class"
-            json_add_string "lock_band" "$lock_band"
-            json_close_object
-            return
+            lte_bands=$(fibocom_gtact_encode_list "LTE" "$lock_band")
             ;;
         "NR")
-            set_lockband_command="AT+GTACT=17,,,$lock_band"
-            res=$(at $at_port "$set_lockband_command")
-            json_select "result"
-            json_add_string "set_lockband" "$res"
-            json_add_string "command" "$set_lockband_command"
-            json_add_string "config" "$config"
-            json_add_string "band_class" "$band_class"
-            json_add_string "lock_band" "$lock_band"
-            json_close_object
-            return
+            nr_bands=$(fibocom_gtact_encode_list "NR" "$lock_band")
             ;;
     esac
 
-    # 拼接所有band
-    bands_str=""
-    [ -n "$umts_bands" ] && bands_str="$umts_bands"
-    [ -n "$lte_bands" ] && [ -n "$bands_str" ] && bands_str="$bands_str,$lte_bands"
-    [ -n "$lte_bands" ] && [ -z "$bands_str" ] && bands_str="$lte_bands"
-    [ -n "$nr_bands" ] && [ -n "$bands_str" ] && bands_str="$bands_str,$nr_bands"
-    [ -n "$nr_bands" ] && [ -z "$bands_str" ] && bands_str="$nr_bands"
-    [ -z "$bands_str" ] && prefix=$(echo "$prefix" | sed 's/,$//')
+    bands_str=$(fibocom_normalize_band_list "$umts_bands,$lte_bands,$nr_bands")
+    network_prefer_num=$(fibocom_gtact_network_prefer_from_bands)
 
-    # 判断全选情况
-    if [ "$nr_bands" = "$ALL_NR" ] && [ "$lte_bands" = "$ALL_LTE" ] && [ "$umts_bands" = "$ALL_UMTS" ]; then
-        set_lockband_command="AT+GTACT=10"
-    elif [ "$nr_bands" = "$ALL_NR" ] && [ -z "$lte_bands" ] && [ -z "$umts_bands" ]; then
-        set_lockband_command="AT+GTACT=14"
-    elif [ "$lte_bands" = "$ALL_LTE" ] && [ -z "$nr_bands" ] && [ -z "$umts_bands" ]; then
-        set_lockband_command="AT+GTACT=2"
-    elif [ "$umts_bands" = "$ALL_UMTS" ] && [ -z "$lte_bands" ] && [ -z "$nr_bands" ]; then
-        set_lockband_command="AT+GTACT=1"
-    elif [ "$nr_bands" = "$ALL_NR" ] && [ "$lte_bands" = "$ALL_LTE" ] && [ -z "$umts_bands" ]; then
-        set_lockband_command="AT+GTACT=17"
-    elif [ "$nr_bands" = "$ALL_NR" ] && [ "$umts_bands" = "$ALL_UMTS" ] && [ -z "$lte_bands" ]; then
-        set_lockband_command="AT+GTACT=16"
-    elif [ "$lte_bands" = "$ALL_LTE" ] && [ "$umts_bands" = "$ALL_UMTS" ] && [ -z "$nr_bands" ]; then
-        set_lockband_command="AT+GTACT=4"
-    else
-        if [ -n "$bands_str" ]; then
-            set_lockband_command="AT+GTACT=17,,,$bands_str"
-        else
-            set_lockband_command="AT+GTACT=$prefix"
-        fi
-    fi
+    set_lockband_command=$(fibocom_gtact_command "$network_prefer_num" "$bands_str")
 
     res=$(at $at_port "$set_lockband_command")
-    json_select "result"
-    json_add_string "set_lockband" "$res"
-    json_add_string "config" "$config"
-    json_add_string "band_class" "$band_class"
-    json_add_string "lock_band" "$lock_band"
-    json_close_object
 }
 
 set_lockband_lte()
@@ -1017,7 +1175,7 @@ set_lockband_lte()
     get_lockband_config_res=$(at $at_port $get_lockband_config_command)
     network_prefer_config=$(echo $get_lockband_config_res |cut -d : -f 2| awk -F"," '{ print $1}' |tr -d ' ')
     local lock_band="$network_prefer_config,,,$lock_band"
-    local set_lockband_command="AT+GTACT=$lock_band"
+    set_lockband_command="AT+GTACT=$lock_band"
     res=$(at $at_port $set_lockband_command)
 }
 
@@ -1133,6 +1291,7 @@ get_neighborcell()
         json_add_string "NR BAND" "$nr_band"
     fi
     json_close_object
+    qmodem_lockcell_boot_hook_add_json "$config_section"
     json_close_object
 }
 
@@ -1143,6 +1302,7 @@ set_neighborcell(){
     arfcn=$(echo $json_param | jq -r '.arfcn')
     band=$(echo $json_param | jq -r '.band')
     scs=$(echo $json_param | jq -r '.scs')
+    en_boot_hook=$(echo $json_param | jq -r '.en_boot_hook // empty')
     lockcell_all
     json_select "result"
     json_add_string "setlockcell" "$res"
@@ -1151,6 +1311,11 @@ set_neighborcell(){
     json_add_string "arfcn" "$arfcn"
     json_add_string "band" "$band"
     json_add_string "scs" "$scs"
+    if qmodem_bool_enabled "$(uci -q get "qmodem.${config_section}.lockcell_boot_hook_enabled")"; then
+        json_add_boolean "boot_hook_enabled" 1
+    else
+        json_add_boolean "boot_hook_enabled" 0
+    fi
     json_close_object
 }
 
@@ -1159,6 +1324,7 @@ lockcell_all(){
         local unlockcell="AT+GTCELLLOCK=0"
         res1=$(at $at_port $unlockcell)
         res=$res1
+        qmodem_lockcell_boot_hook_clear "$config_section"
     else
         if [ -z "$pci" ] && [ -n "$arfcn" ]; then
             lockpci_nr="AT+GTCELLLOCK=1,1,1,$arfcn"
@@ -1175,10 +1341,12 @@ lockcell_all(){
             lockpci_lte="AT+GTCELLLOCK=1"
         fi
         if [ "$rat" = "1" ]; then
-            res=$(at $at_port $lockpci_nr)
+            lockcell_boot_cmd="$lockpci_nr"
         elif [ "$rat" = "0" ]; then
-            res=$(at $at_port $lockpci_lte)
+            lockcell_boot_cmd="$lockpci_lte"
         fi
+        res=$(at $at_port "$lockcell_boot_cmd")
+        qmodem_lockcell_boot_hook_sync "$config_section" "$en_boot_hook" "$lockcell_boot_cmd"
     fi
 }
 
