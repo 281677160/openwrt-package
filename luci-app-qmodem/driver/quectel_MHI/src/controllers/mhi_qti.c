@@ -109,14 +109,6 @@ static int pci_irq_vector(struct pci_dev *dev, unsigned int nr)
 #endif
 #endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0)
-#define MHI_PCI_REQUEST_REGION(pdev, bar, name) pci_request_regions((pdev), (name))
-#define MHI_PCI_RELEASE_REGION(pdev, bar) pci_release_regions((pdev))
-#else
-#define MHI_PCI_REQUEST_REGION(pdev, bar, name) pci_request_region((pdev), (bar), (name))
-#define MHI_PCI_RELEASE_REGION(pdev, bar) pci_release_region((pdev), (bar))
-#endif
-
 struct firmware_info {
 	unsigned int dev_id;
 	const char *fw_image;
@@ -134,7 +126,7 @@ static const struct firmware_info firmware_table[] = {
 static int debug_mode;
 module_param_named(debug_mode, debug_mode, int, 0644);
 
-int mhi_debugfs_trigger_m0(void *data, u64 val)
+static int mhi_debugfs_trigger_m0(void *data, u64 val)
 {
 	struct mhi_controller *mhi_cntrl = data;
 	struct mhi_dev *mhi_dev = mhi_controller_get_devdata(mhi_cntrl);
@@ -148,7 +140,7 @@ int mhi_debugfs_trigger_m0(void *data, u64 val)
 DEFINE_SIMPLE_ATTRIBUTE(debugfs_trigger_m0_fops, NULL,
 			mhi_debugfs_trigger_m0, "%llu\n");
 
-int mhi_debugfs_trigger_m3(void *data, u64 val)
+static int mhi_debugfs_trigger_m3(void *data, u64 val)
 {
 	struct mhi_controller *mhi_cntrl = data;
 	struct mhi_dev *mhi_dev = mhi_controller_get_devdata(mhi_cntrl);
@@ -176,7 +168,7 @@ void mhi_deinit_pci_dev(struct mhi_controller *mhi_cntrl)
 	iounmap(mhi_cntrl->regs);
 	mhi_cntrl->regs = NULL;
 	pci_clear_master(pci_dev);
-	MHI_PCI_RELEASE_REGION(pci_dev, mhi_dev->resn);
+	pci_release_region(pci_dev, mhi_dev->resn);
 	pci_disable_device(pci_dev);
 }
 
@@ -201,9 +193,9 @@ static int mhi_init_pci_dev(struct mhi_controller *mhi_cntrl)
 		goto error_enable_device;
 	}
 
-	ret = MHI_PCI_REQUEST_REGION(pci_dev, mhi_dev->resn, "mhi");
+	ret = pci_request_region(pci_dev, mhi_dev->resn, "mhi");
 	if (ret) {
-		MHI_ERR("Error requesting PCI regions, ret:%d\n", ret);
+		MHI_ERR("Error pci_request_region, ret:%d\n", ret);
 		goto error_request_region;
 	}
 
@@ -336,7 +328,7 @@ error_request_region:
 	pci_disable_device(pci_dev);
 
 error_enable_device:
-	MHI_PCI_RELEASE_REGION(pci_dev, mhi_dev->resn);
+	pci_release_region(pci_dev, mhi_dev->resn);
 
 	return ret;
 }
@@ -438,7 +430,6 @@ rpm_resume_exit:
 	return ret;
 }
 
-#ifdef CONFIG_PM_SLEEP
 static int mhi_system_resume(struct device *dev)
 {
 	int ret = 0;
@@ -455,7 +446,7 @@ static int mhi_system_resume(struct device *dev)
 	return ret;
 }
 
-int mhi_system_suspend(struct device *dev)
+static int mhi_system_suspend(struct device *dev)
 {
 	struct mhi_controller *mhi_cntrl = dev_get_drvdata(dev);
 	int ret;
@@ -482,7 +473,6 @@ int mhi_system_suspend(struct device *dev)
 	MHI_LOG("Exit\n");
 	return 0;
 }
-#endif
 #endif
 
 /* checks if link is down */
@@ -920,17 +910,9 @@ int mhi_pci_probe(struct pci_dev *pci_dev,
 	pr_info("%s pci_dev->name = %s, domain=%d, bus=%d, slot=%d, vendor=%04X, device=%04X\n",
 		__func__, dev_name(&pci_dev->dev), domain, bus, slot, pci_dev->vendor, pci_dev->device);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0)
-#if !defined(CONFIG_PCI_MSI) && !defined(CONFIG_GENERIC_MSI_IRQ)
-	dev_err(&pci_dev->dev,
-		"PCI MSI is not enabled in this kernel configuration\n");
-	return -EOPNOTSUPP;
-#endif
-#else
 #if !defined(CONFIG_PCI_MSI)
-	/* MT7621 RTL8198D EcoNet-EN7565 */
+        /* MT7621 RTL8198D EcoNet-EN7565 */
 	#error "pcie msi is not support by this soc! and i donot support INTx (SW1SDX55-2688)"
-#endif
 #endif
 
 	if (!mhi_pci_is_alive(pci_dev)) {
@@ -1086,7 +1068,7 @@ static struct pci_device_id mhi_pcie_device_id[] = {
 	{PCI_DEVICE(MHI_PCIE_VENDOR_ID, 0x0308)}, //SDX62
 	{PCI_DEVICE(MHI_PCIE_VENDOR_ID, 0x011a)}, //SDX35
 	{PCI_DEVICE(MHI_PCIE_VENDOR_ID, 0x0309)}, //SDX7X
-	{PCI_DEVICE(PCI_VENDOR_ID_FOXCONN, 0xe0f5)}, //FOXCONN SDX6X
+	{PCI_DEVICE(0x105b, 0xe0f5)}, //FOXCONN SDX6X
 	{PCI_DEVICE(0x1eac, 0x1001)}, //EM120
 	{PCI_DEVICE(0x1eac, 0x1002)}, //EM160
 	{PCI_DEVICE(0x1eac, 0x1004)}, //RM520
@@ -1226,16 +1208,16 @@ void mhi_arch_pcie_deinit(struct mhi_controller *mhi_cntrl)
 {
 	mhi_arch_set_bus_request(mhi_cntrl, 0);
 }
-
-int mhi_arch_platform_init(struct mhi_dev *mhi_dev)
+/*
+static int mhi_arch_platform_init(struct mhi_dev *mhi_dev)
 {
 	return 0;
 }
 
-void mhi_arch_platform_deinit(struct mhi_dev *mhi_dev)
+static void mhi_arch_platform_deinit(struct mhi_dev *mhi_dev)
 {
 }
-
+*/
 int mhi_arch_link_off(struct mhi_controller *mhi_cntrl,
 				    bool graceful)
 {

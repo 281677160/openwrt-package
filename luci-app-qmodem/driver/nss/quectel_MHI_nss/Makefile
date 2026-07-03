@@ -34,7 +34,7 @@ EXTRA_CFLAGS += -DCONFIG_QCA_NSS_DRV
 endif
 
 define Build/Compile
-	+$(KERNEL_MAKE) EXTRA_CFLAGS="$(EXTRA_CFLAGS)" M="$(PKG_BUILD_DIR)" \
+	+$(KERNEL_MAKE) ccflags-y="$(EXTRA_CFLAGS)" M="$(PKG_BUILD_DIR)" \
 		modules
 endef
 
