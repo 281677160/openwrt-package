@@ -888,6 +888,7 @@ get_neighborcell(){
             get_neighborcell_qualcomm
         ;;
     esac
+    qmodem_lockcell_boot_hook_add_json "$config_section"
     json_close_object
 }
 
@@ -904,6 +905,7 @@ set_neighborcell(){
     arfcn=$(echo $json_param | jq -r '.arfcn')
     band=$(echo $json_param | jq -r '.band')
     scs=$(echo $json_param | jq -r '.scs')
+    en_boot_hook=$(echo $json_param | jq -r '.en_boot_hook // empty')
     case $platform in
         "qualcomm")
             lockcell_qualcomm
@@ -916,6 +918,11 @@ set_neighborcell(){
     json_add_string "arfcn" "$arfcn"
     json_add_string "band" "$band"
     json_add_string "scs" "$scs"
+    if qmodem_bool_enabled "$(uci -q get "qmodem.${config_section}.lockcell_boot_hook_enabled")"; then
+        json_add_boolean "boot_hook_enabled" 1
+    else
+        json_add_boolean "boot_hook_enabled" 0
+    fi
     json_close_object
 }
 
@@ -926,14 +933,17 @@ lockcell_qualcomm(){
         res1=$(at $at_port $unlocknr)
         res2=$(at $at_port $unlock4g)
         res=$res1,$res2
+        qmodem_lockcell_boot_hook_clear "$config_section"
     else
         lock4g="AT+CCELLCFG=1,$pci,$arfcn;+CNMP=38"
         locknr="AT+C5GCELLCFG=\"pci\",$pci,$arfcn,$scs,$band;+CNMP=71"
         if [ $rat = "1" ]; then
-            res=$(at $at_port $locknr)
+            lockcell_boot_cmd="$locknr"
         else
-            res=$(at $at_port $lock4g)
+            lockcell_boot_cmd="$lock4g"
         fi
+        res=$(at $at_port "$lockcell_boot_cmd")
+        qmodem_lockcell_boot_hook_sync "$config_section" "$en_boot_hook" "$lockcell_boot_cmd"
     fi
    
 }
