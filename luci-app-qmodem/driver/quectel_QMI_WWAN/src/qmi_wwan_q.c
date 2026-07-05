@@ -831,19 +831,6 @@ static void rmnet_vnd_update_tx_stats(struct net_device *net,
 #endif
 }
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(6,1,0))
-static inline unsigned int u64_stats_fetch_begin_irq(const struct u64_stats_sync *syncp)
-{
-	return u64_stats_fetch_begin(syncp);
-}
-
-static inline bool u64_stats_fetch_retry_irq(const struct u64_stats_sync *syncp,
-					     unsigned int start)
-{
-	return u64_stats_fetch_retry(syncp, start);
-}
-#endif
-
 #if defined(MHI_NETDEV_STATUS64)
 static struct rtnl_link_stats64 *_rmnet_vnd_get_stats64(struct net_device *net, struct rtnl_link_stats64 *stats)
 {
@@ -885,12 +872,12 @@ static struct rtnl_link_stats64 *_rmnet_vnd_get_stats64(struct net_device *net, 
 		stats64 = per_cpu_ptr(dev->stats64, cpu);
 
 		do {
-			start = u64_stats_fetch_begin_irq(&stats64->syncp);
+			start = u64_stats_fetch_begin(&stats64->syncp);
 			rx_packets = stats64->rx_packets;
 			rx_bytes = stats64->rx_bytes;
 			tx_packets = stats64->tx_packets;
 			tx_bytes = stats64->tx_bytes;
-		} while (u64_stats_fetch_retry_irq(&stats64->syncp, start));
+		} while (u64_stats_fetch_retry(&stats64->syncp, start));
 
         stats->rx_packets += u64_stats_read(&rx_packets);
 		stats->rx_bytes += u64_stats_read(&rx_bytes);
