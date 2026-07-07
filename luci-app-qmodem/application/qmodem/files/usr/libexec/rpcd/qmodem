@@ -1020,6 +1020,8 @@ EOF
                 slot=$(echo "$input" | jsonfilter -e '@.slot')
                 json_init
                 set_sim_slot "$slot"
+                /etc/init.d/qmodem_network redial "$config_section" >/dev/null 2>&1
+                json_add_string "redial" "$?"
                 json_dump
                 ;;
             
