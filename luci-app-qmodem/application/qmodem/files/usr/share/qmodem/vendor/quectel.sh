@@ -414,6 +414,7 @@ sim_info()
     #ICCID（集成电路卡识别码）
     at_command="AT+ICCID"
 	iccid=$(at $at_port $at_command | grep -o "+ICCID:[ ]*[-0-9A-F]\+" | cut -d " " -f 2 )
+    [ -n "$iccid" ] || iccid=$(at $at_port "AT+CCID" | grep -o "+CCID:[ ]*[-0-9A-F]\+" | cut -d " " -f 2)
     class="SIM Information"
     case "$sim_status" in
         "ready")
