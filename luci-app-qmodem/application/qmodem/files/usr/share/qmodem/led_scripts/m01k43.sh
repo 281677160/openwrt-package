@@ -120,7 +120,14 @@ internet_led() {
 
 get_mode() {
 	rat_code=$(at $AT_PORT "AT+COPS?" | grep +COPS: | awk -F, '{print $4}' | tr -d '"')
-	[ "$rat_code" -le "7" ] && echo "0" || echo "1"
+	case "$rat_code" in
+		""|*[!0-9]*)
+			echo "${last_is_nr:-0}"
+			;;
+		*)
+			[ "$rat_code" -le "7" ] && echo "0" || echo "1"
+			;;
+	esac
 }
 
 get_rsrp() {
@@ -153,6 +160,7 @@ main() {
 	fi
 
 	local is_nr=$(get_mode)
+	last_is_nr="$is_nr"
 	local rsrp=$(get_rsrp)
 	local signal="0"
 

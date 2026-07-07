@@ -132,13 +132,13 @@ msgstr ""
 
 #: vendor/meig.sh:383
 #: vendor/neoway.sh:289
-#: vendor/quectel.sh:509
+#: vendor/quectel.sh:510
 msgid "Access Maximum Bit Rate for Downlink"
 msgstr ""
 
 #: vendor/meig.sh:382
 #: vendor/neoway.sh:288
-#: vendor/quectel.sh:508
+#: vendor/quectel.sh:509
 msgid "Access Maximum Bit Rate for Uplink"
 msgstr ""
 
@@ -446,7 +446,7 @@ msgstr ""
 #: vendor/huawei.sh:504
 #: vendor/meig.sh:559
 #: vendor/neoway.sh:710
-#: vendor/quectel.sh:1673
+#: vendor/quectel.sh:1674
 #: vendor/simcom.sh:1179
 #: vendor/telit.sh:759
 #: view/qmodem/config_advanced.js:947
@@ -480,20 +480,20 @@ msgstr ""
 #: vendor/huawei.sh:536
 #: vendor/huawei.sh:567
 #: vendor/neoway.sh:741
-#: vendor/quectel.sh:1698
-#: vendor/quectel.sh:1716
+#: vendor/quectel.sh:1699
+#: vendor/quectel.sh:1717
 #: vendor/simcom.sh:1192
 #: vendor/simcom.sh:1222
 #: vendor/simcom.sh:1252
 msgid "Channel Quality Indicator"
 msgstr ""
 
-#: vendor/quectel.sh:507
+#: vendor/quectel.sh:508
 #: vendor/telit.sh:260
 msgid "Channel Quality Indicator for Downlink"
 msgstr ""
 
-#: vendor/quectel.sh:506
+#: vendor/quectel.sh:507
 msgid "Channel Quality Indicator for Uplink"
 msgstr ""
 
@@ -545,7 +545,7 @@ msgstr ""
 #: vendor/fibocom.sh:1773
 #: vendor/huawei.sh:588
 #: vendor/neoway.sh:766
-#: vendor/quectel.sh:1728
+#: vendor/quectel.sh:1729
 msgid "Compression Mode"
 msgstr ""
 
@@ -881,9 +881,9 @@ msgstr ""
 #: vendor/meig.sh:565
 #: vendor/meig.sh:580
 #: vendor/meig.sh:607
-#: vendor/quectel.sh:1677
-#: vendor/quectel.sh:1691
-#: vendor/quectel.sh:1710
+#: vendor/quectel.sh:1678
+#: vendor/quectel.sh:1692
+#: vendor/quectel.sh:1711
 #: vendor/simcom.sh:1185
 #: vendor/simcom.sh:1207
 #: vendor/simcom.sh:1240
@@ -916,7 +916,7 @@ msgstr ""
 
 #: vendor/fibocom.sh:1768
 #: vendor/huawei.sh:583
-#: vendor/quectel.sh:1723
+#: vendor/quectel.sh:1724
 msgid "Ec/No"
 msgstr ""
 
@@ -1480,8 +1480,8 @@ msgstr ""
 #: vendor/meig.sh:302
 #: vendor/neoway.sh:218
 #: vendor/neoway.sh:232
-#: vendor/quectel.sh:426
-#: vendor/quectel.sh:440
+#: vendor/quectel.sh:427
+#: vendor/quectel.sh:441
 #: vendor/simcom.sh:331
 #: vendor/simcom.sh:345
 #: vendor/telit.sh:223
@@ -1504,9 +1504,9 @@ msgstr ""
 #: vendor/neoway.sh:216
 #: vendor/neoway.sh:222
 #: vendor/neoway.sh:230
-#: vendor/quectel.sh:424
-#: vendor/quectel.sh:430
-#: vendor/quectel.sh:438
+#: vendor/quectel.sh:425
+#: vendor/quectel.sh:431
+#: vendor/quectel.sh:439
 #: vendor/simcom.sh:329
 #: vendor/simcom.sh:335
 #: vendor/simcom.sh:343
@@ -1526,8 +1526,8 @@ msgstr ""
 #: vendor/meig.sh:301
 #: vendor/neoway.sh:217
 #: vendor/neoway.sh:231
-#: vendor/quectel.sh:425
-#: vendor/quectel.sh:439
+#: vendor/quectel.sh:426
+#: vendor/quectel.sh:440
 #: vendor/simcom.sh:330
 #: vendor/simcom.sh:344
 #: vendor/telit.sh:222
@@ -1540,7 +1540,7 @@ msgstr ""
 #: vendor/gosuncn.sh:456
 #: vendor/meig.sh:283
 #: vendor/neoway.sh:213
-#: vendor/quectel.sh:421
+#: vendor/quectel.sh:422
 #: vendor/simcom.sh:326
 #: vendor/telit.sh:219
 msgid "Internet Service Provider"
@@ -1967,7 +1967,7 @@ msgstr ""
 #: vendor/gosuncn.sh:506
 #: vendor/meig.sh:380
 #: vendor/neoway.sh:287
-#: vendor/quectel.sh:504
+#: vendor/quectel.sh:505
 #: vendor/sierra.sh:222
 #: vendor/simcom.sh:364
 #: vendor/telit.sh:258
@@ -1991,7 +1991,7 @@ msgstr ""
 #: vendor/huawei.sh:505
 #: vendor/meig.sh:560
 #: vendor/neoway.sh:711
-#: vendor/quectel.sh:1674
+#: vendor/quectel.sh:1675
 #: vendor/simcom.sh:1180
 #: vendor/telit.sh:760
 msgid "Network Mode"
@@ -2010,7 +2010,7 @@ msgstr ""
 #: vendor/gosuncn.sh:507
 #: vendor/meig.sh:381
 #: vendor/neoway.sh:771
-#: vendor/quectel.sh:505
+#: vendor/quectel.sh:506
 #: vendor/simcom.sh:365
 #: vendor/telit.sh:259
 msgid "Network Type"
@@ -2282,7 +2282,7 @@ msgstr ""
 #: vendor/fibocom.sh:1769
 #: vendor/huawei.sh:584
 #: vendor/neoway.sh:763
-#: vendor/quectel.sh:1724
+#: vendor/quectel.sh:1725
 msgid "Physical Channel"
 msgstr ""
 
@@ -2502,8 +2502,8 @@ msgstr ""
 #: vendor/gosuncn.sh:690
 #: vendor/huawei.sh:563
 #: vendor/neoway.sh:738
-#: vendor/quectel.sh:1697
-#: vendor/quectel.sh:1715
+#: vendor/quectel.sh:1698
+#: vendor/quectel.sh:1716
 #: vendor/simcom.sh:1197
 #: vendor/simcom.sh:1218
 #: vendor/simcom.sh:1250
@@ -2632,8 +2632,8 @@ msgstr ""
 #: vendor/huawei.sh:521
 #: vendor/meig.sh:574
 #: vendor/meig.sh:601
-#: vendor/quectel.sh:1681
-#: vendor/quectel.sh:1707
+#: vendor/quectel.sh:1682
+#: vendor/quectel.sh:1708
 #: vendor/simcom.sh:1200
 #: vendor/simcom.sh:1235
 #: view/qmodem/config_advanced.js:771
@@ -2661,7 +2661,7 @@ msgstr ""
 #: vendor/huawei.sh:226
 #: vendor/meig.sh:279
 #: vendor/neoway.sh:209
-#: vendor/quectel.sh:417
+#: vendor/quectel.sh:418
 #: vendor/sierra.sh:183
 #: vendor/simcom.sh:322
 #: vendor/telit.sh:215
@@ -2678,7 +2678,7 @@ msgstr ""
 #: vendor/huawei.sh:258
 #: vendor/meig.sh:285
 #: vendor/neoway.sh:215
-#: vendor/quectel.sh:423
+#: vendor/quectel.sh:424
 #: vendor/simcom.sh:328
 msgid "SIM Number"
 msgstr ""
@@ -2693,8 +2693,8 @@ msgstr ""
 #: vendor/meig.sh:299
 #: vendor/neoway.sh:214
 #: vendor/neoway.sh:229
-#: vendor/quectel.sh:422
-#: vendor/quectel.sh:437
+#: vendor/quectel.sh:423
+#: vendor/quectel.sh:438
 #: vendor/sierra.sh:196
 #: vendor/simcom.sh:327
 #: vendor/simcom.sh:342
@@ -2722,10 +2722,10 @@ msgstr ""
 #: vendor/neoway.sh:221
 #: vendor/neoway.sh:225
 #: vendor/neoway.sh:228
-#: vendor/quectel.sh:420
-#: vendor/quectel.sh:429
-#: vendor/quectel.sh:433
-#: vendor/quectel.sh:436
+#: vendor/quectel.sh:421
+#: vendor/quectel.sh:430
+#: vendor/quectel.sh:434
+#: vendor/quectel.sh:437
 #: vendor/sierra.sh:195
 #: vendor/simcom.sh:325
 #: vendor/simcom.sh:334
@@ -2941,9 +2941,9 @@ msgstr ""
 #: vendor/huawei.sh:538
 #: vendor/huawei.sh:569
 #: vendor/neoway.sh:744
-#: vendor/quectel.sh:1682
-#: vendor/quectel.sh:1700
-#: vendor/quectel.sh:1718
+#: vendor/quectel.sh:1683
+#: vendor/quectel.sh:1701
+#: vendor/quectel.sh:1719
 #: vendor/simcom.sh:1201
 #: vendor/simcom.sh:1224
 #: vendor/simcom.sh:1254
@@ -3002,7 +3002,7 @@ msgstr ""
 #: vendor/fibocom.sh:1771
 #: vendor/huawei.sh:586
 #: vendor/neoway.sh:765
-#: vendor/quectel.sh:1726
+#: vendor/quectel.sh:1727
 msgid "Slot"
 msgstr ""
 
@@ -3039,14 +3039,14 @@ msgstr ""
 
 #: vendor/fibocom.sh:1772
 #: vendor/huawei.sh:587
-#: vendor/quectel.sh:1727
+#: vendor/quectel.sh:1728
 msgid "Speech Code"
 msgstr ""
 
 #: vendor/fibocom.sh:1770
 #: vendor/huawei.sh:585
 #: vendor/neoway.sh:764
-#: vendor/quectel.sh:1725
+#: vendor/quectel.sh:1726
 msgid "Spreading Factor"
 msgstr ""
 
@@ -3119,8 +3119,8 @@ msgstr ""
 #: vendor/huawei.sh:568
 #: vendor/meig.sh:590
 #: vendor/meig.sh:617
-#: vendor/quectel.sh:1699
-#: vendor/quectel.sh:1717
+#: vendor/quectel.sh:1700
+#: vendor/quectel.sh:1718
 #: vendor/simcom.sh:1193
 #: vendor/simcom.sh:1223
 #: vendor/simcom.sh:1253
