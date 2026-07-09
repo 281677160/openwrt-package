@@ -36,6 +36,7 @@ PKG_BUILD_FLAGS:=no-mips16
 GO_PKG:=github.com/sagernet/sing-box
 GO_PKG_BUILD_PKG:=$(GO_PKG)/cmd/sing-box
 GO_PKG_LDFLAGS_X:=$(GO_PKG)/constant.Version=$(PKG_VERSION)
+GO_PKG_LDFLAGS_X+=github.com/anytls/sing-anytls/util.Verison=mihomo/1.19.27
 
 include $(INCLUDE_DIR)/package.mk
 include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
