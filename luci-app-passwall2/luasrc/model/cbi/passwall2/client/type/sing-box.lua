@@ -154,7 +154,9 @@ if load_urltest_options then -- [[ URLTest Start ]]
 	o:depends({ [_n("node_add_mode")] = "batch" })
 	local descrStr = "Example: <code>^A && B && !C && D$</code><br>"
 	descrStr = descrStr .. "This means the node remark must start with A (^), include B, exclude C (!), and end with D ($).<br>"
-	descrStr = descrStr .. "Conditions are joined by <code>&&</code>, and their order does not affect the result."
+	descrStr = descrStr .. "Conditions are joined by <code>&&</code> (AND), and their order does not affect the result.<br>"
+	descrStr = descrStr .. "Multiple groups can be separated by <code>||</code> (OR), matching succeeds if any group matches.<br>"
+	descrStr = descrStr .. "Example: <code>A && B || C && D</code> means (A AND B) OR (C AND D)."
 	o.description = translate(descrStr)
 
 	o = s:option(Value, _n("urltest_url"), translate("Probe URL"))
@@ -165,7 +167,8 @@ if load_urltest_options then -- [[ URLTest Start ]]
 	o:value("https://www.youtube.com/generate_204", "YouTube")
 	o:value("https://connect.rom.miui.com/generate_204", "MIUI (CN)")
 	o:value("https://connectivitycheck.platform.hicloud.com/generate_204", "HiCloud (CN)")
-	o.default = "https://www.gstatic.com/generate_204"
+	o:value("https://wifi.vivo.com.cn/generate_204", "VIVO (CN)")
+	o.default = o.keylist[3]
 	o.description = translate("The URL used to detect the connection status.")
 
 	o = s:option(Value, _n("urltest_interval"), translate("Test interval"))
@@ -411,6 +414,12 @@ if singbox_tags:find("with_quic") then
 
 	o = s:option(Value, _n("hysteria2_realm_url"), translate("Realm URL"), translate("Example:") .. "realm://public@realm.hy2.io/your-realm-name")
 	o:depends({ [_n("hysteria2_realms")] = "1" })
+	o.validate = function(self, value)
+		value = api.trim(value)
+		local realm = api.parse_realm_uri(value)
+		if realm then return value end
+		return nil, translate("Invalid Realm URL.")
+	end
 
 	o = s:option(DynamicList, _n("hysteria2_realm_stun"), translate("Realm STUN"))
 	o.default = { "stun.sip.us:3478", "stun.nextcloud.com:3478", "global.stun.twilio.com:3478" }
@@ -428,6 +437,18 @@ if singbox_tags:find("with_quic") then
 
 	o = s:option(Value, _n("hysteria2_obfs_password"), translate("Obfs Password"))
 	o:depends({ [_n("hysteria2_obfs_type")] = "salamander" })
+	o:depends({ [_n("hysteria2_obfs_type")] = "gecko" })
+
+	o = s:option(Value, _n("hysteria2_obfs_MinPacketSize"), translate("Gecko Packet Size (min)"))
+	o.datatype = "uinteger"
+	o.placeholder = "512"
+	o.default = "512"
+	o:depends({ [_n("hysteria2_obfs_type")] = "gecko" })
+
+	o = s:option(Value, _n("hysteria2_obfs_MaxPacketSize"), translate("Gecko Packet Size (max)"))
+	o.datatype = "uinteger"
+	o.placeholder = "1200"
+	o.default = "1200"
 	o:depends({ [_n("hysteria2_obfs_type")] = "gecko" })
 
 	o = s:option(Value, _n("hysteria2_up_mbps"), translate("Max upload Mbps"))
@@ -679,12 +700,12 @@ o = s:option(Flag, _n("http_h2_health_check"), translate("Health check"))
 o:depends({ [_n("tls")] = true, [_n("transport")] = "http" })
 
 o = s:option(Value, _n("http_h2_read_idle_timeout"), translate("Idle timeout"))
-o.default = "10"
-o:depends({ [_n("tls")] = true, [_n("transport")] = "http", [_n("http_h2_health_check")] = true })
+o.default = "15"
+o:depends({ [_n("http_h2_health_check")] = true })
 
 o = s:option(Value, _n("http_h2_health_check_timeout"), translate("Health check timeout"))
 o.default = "15"
-o:depends({ [_n("tls")] = true, [_n("transport")] = "http", [_n("http_h2_health_check")] = true })
+o:depends({ [_n("http_h2_health_check")] = true })
 
 -- [[ WebSocket ]]--
 o = s:option(Value, _n("ws_host"), translate("WebSocket Host"))
@@ -720,11 +741,11 @@ o = s:option(Flag, _n("grpc_health_check"), translate("Health check"))
 o:depends({ [_n("transport")] = "grpc" })
 
 o = s:option(Value, _n("grpc_idle_timeout"), translate("Idle timeout"))
-o.default = "10"
+o.default = "15"
 o:depends({ [_n("grpc_health_check")] = true })
 
 o = s:option(Value, _n("grpc_health_check_timeout"), translate("Health check timeout"))
-o.default = "20"
+o.default = "15"
 o:depends({ [_n("grpc_health_check")] = true })
 
 o = s:option(Flag, _n("grpc_permit_without_stream"), translate("Permit without stream"))

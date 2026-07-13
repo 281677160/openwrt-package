@@ -348,6 +348,18 @@ function strToTable(str)
 	return loadstring("return " .. str)()
 end
 
+function is_timehhmm(timeStr)
+	local hour, minute = string.match(timeStr, "^(%d?%d):(%d%d)$")
+	if hour and minute then
+		hour = tonumber(hour)
+		minute = tonumber(minute)
+		if hour >= 0 and hour <= 23 and minute >= 0 and minute <= 59 then
+			return true
+		end
+	end
+	return false
+end
+
 function is_normal_node(e)
 	if e and e.type and e.protocol and (e.protocol == "_balancing" or e.protocol == "_shunt" or e.protocol == "_iface" or e.protocol == "_urltest") then
 		return false
@@ -1522,11 +1534,22 @@ end
 function match_node_rule(name, rule)
 	if not name then return false end
 	if not rule or rule == "" then return true end
+	-- split rule by || into OR groups
+	local function split_or(expr)
+		local t = {}
+		for part in (expr .. "||"):gmatch("(.-)%|%|") do
+			part = trim(part)
+			if part ~= "" then
+				table.insert(t, part)
+			end
+		end
+		return t
+	end
 	-- split rule by &&
 	local function split_and(expr)
 		local t = {}
-		for part in expr:gmatch("[^&]+") do
-			part = part:gsub("^%s+", ""):gsub("%s+$", "")
+		for part in (expr .. "&&"):gmatch("(.-)%&%&") do
+			part = trim(part)
 			if part ~= "" then
 				table.insert(t, part)
 			end
@@ -1557,13 +1580,22 @@ function match_node_rule(name, rule)
 		-- contains
 		return str:find(cond, 1, true) ~= nil
 	end
-	-- AND logic
-	for _, cond in ipairs(split_and(rule)) do
-		if not match_cond(name, cond) then
-			return false
+	-- check if all conditions in AND group match
+	local function match_and_group(str, group_expr)
+		for _, cond in ipairs(split_and(group_expr)) do
+			if not match_cond(str, cond) then
+				return false
+			end
+		end
+		return true
+	end
+	-- OR logic: return true if any group matches
+	for _, group in ipairs(split_or(rule)) do
+		if match_and_group(name, group) then
+			return true
 		end
 	end
-	return true
+	return false
 end
 
 function get_core(field, candidates)
