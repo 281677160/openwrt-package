@@ -152,9 +152,10 @@ if load_balancing_options then -- [[ Load balancing Start ]]
 	o:depends({ [_n("node_add_mode")] = "batch" })
 	local descrStr = "Example: <code>^A && B && !C && D$</code><br>"
 	descrStr = descrStr .. "This means the node remark must start with A (^), include B, exclude C (!), and end with D ($).<br>"
-	descrStr = descrStr .. "Conditions are joined by <code>&&</code>, and their order does not affect the result."
-	o.description = translate(descrStr) .. string.format("<br><font color='red'>%s</font>",
-			translate("Keep the match scope small. Too many nodes can impact router performance."))
+	descrStr = descrStr .. "Conditions are joined by <code>&&</code> (AND), and their order does not affect the result.<br>"
+	descrStr = descrStr .. "Multiple groups can be separated by <code>||</code> (OR), matching succeeds if any group matches.<br>"
+	descrStr = descrStr .. "Example: <code>A && B || C && D</code> means (A AND B) OR (C AND D)."
+	o.description = translate(descrStr)
 
 	o = s:option(ListValue, _n("balancingStrategy"), translate("Balancing Strategy"))
 	o:depends({ [_n("protocol")] = "_balancing" })
@@ -514,6 +515,7 @@ o:value("ios")
 o:value("android")
 o:value("random")
 o:value("randomized")
+o:value("unsafe")
 o.default = "chrome"
 o:depends({ [_n("tls")] = true, [_n("utls")] = true })
 o:depends({ [_n("tls")] = true, [_n("reality")] = true })
