@@ -204,3 +204,9 @@ msgstr "当前固件"
 
 msgid "Not detected"
 msgstr "未检测到"
+
+msgid "Use RNDIS Mode"
+msgstr "使用 RNDIS 模式"
+
+msgid "Switch from ECM to RNDIS mode (-r)"
+msgstr "从 ECM 切换到 RNDIS 模式（-r 参数）"
