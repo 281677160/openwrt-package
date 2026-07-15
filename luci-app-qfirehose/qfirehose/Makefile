@@ -1,13 +1,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=qfirehose
-PKG_VERSION:=1.4.17
+PKG_VERSION:=1.7.1
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/nippynetworks/qfirehose.git
-PKG_SOURCE_VERSION:=fbbb4feeea19c265a1ed01d5eedf72e33974bac5
-PKG_MIRROR_HASH:=ec9b0b6655077b81966bf41c8cf4e631366c307579d408757dac9605694ccb72
+PKG_SOURCE_URL:=https://github.com/ntbowen/qfirehose.git
+PKG_SOURCE_VERSION:=99b8f4bb51f29f13ae6aeb5910d26550a9964e38
+PKG_MIRROR_HASH:=f6ee778ec91208fe1f4c2bbe62c4824486f1e6df32789946ed14a2b57bec8e38
 
 PKG_MAINTAINER:=Oskari Rauta <oskari.rauta@gmail.com>
 PKG_LICENSE:=
@@ -20,7 +20,7 @@ define Package/qfirehose
   CATEGORY:=Utilities
   TITLE:=Quectel Firehose Recovery application
   DEPENDS:=+unzip +p7zip
-  URL:=https://github.com/nippynetworks/qfirehose
+  URL:=https://github.com/ntbowen/qfirehose
 endef
 
 define Package/qfirehose/description
@@ -44,15 +44,11 @@ define Package/qfirehose/description
      Changing value on end of AT command 0 to 1, selects USB3 instead. Refer to documents of your modem.
 endef
 
-define Build/Configure
-	$(RM) $(PKG_BUILD_DIR)/QFirehose
-endef
-
 MAKE_ARGS += linux
 
 define Package/qfirehose/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/QFirehose $(1)/usr/bin/qfirehose
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/out/QFirehose $(1)/usr/bin/qfirehose
 endef
 
 $(eval $(call BuildPackage,qfirehose))

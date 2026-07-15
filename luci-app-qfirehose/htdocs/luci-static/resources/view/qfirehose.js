@@ -87,6 +87,9 @@ return view.extend({
         if (this.getFormValue('signed_firmware') === '1')
             args.push('-v');
 
+        if (this.getFormValue('rndis_mode') === '1')
+            args.push('-r');
+
         if (this.getFormValue('capture_usbmon') === '1')
             args.push('-u', '/tmp/qfirehose_log/usbmon.log');
 
@@ -318,7 +321,8 @@ return view.extend({
             device_type: uci.get('qfirehose', 'config', 'device_type') || 'nand',
             skip_md5: uci.get('qfirehose', 'config', 'skip_md5') || '0',
             erase_all: uci.get('qfirehose', 'config', 'erase_all') || '0',
-            signed_firmware: uci.get('qfirehose', 'config', 'signed_firmware') || '0'
+            signed_firmware: uci.get('qfirehose', 'config', 'signed_firmware') || '0',
+            rndis_mode: uci.get('qfirehose', 'config', 'rndis_mode') || '0'
         };
 
         var statusEl = E('span', {
@@ -440,6 +444,7 @@ return view.extend({
             E('div', { 'class': 'cbi-section-node' }, [
                 this.createCheckbox('skip_md5', _('Skip MD5 Check'), _('Skip MD5 checksum verification'), false),
                 this.createCheckbox('signed_firmware', _('Signed Firmware'), _('For AG215S-GLR signed firmware packages'), false),
+                this.createCheckbox('rndis_mode', _('Use RNDIS Mode'), _('Switch from ECM to RNDIS mode (-r)'), false),
                 this.createCheckbox('capture_usbmon', _('Capture USBMon Log'), _('Capture USB monitor log for debugging (-u)'), false)
             ]),
             E('hr', { 'style': 'border:none;border-top:1px dashed #dc3545;margin:12px 0;opacity:0.5;' }),
@@ -693,6 +698,11 @@ return view.extend({
         if (savedCfg.signed_firmware === '1')
             setTimeout(function() {
                 var el = document.getElementById('qf-signed_firmware');
+                if (el) el.checked = true;
+            }, 0);
+        if (savedCfg.rndis_mode === '1')
+            setTimeout(function() {
+                var el = document.getElementById('qf-rndis_mode');
                 if (el) el.checked = true;
             }, 0);
 
