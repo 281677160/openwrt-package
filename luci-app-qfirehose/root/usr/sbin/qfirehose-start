@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # QFirehose 启动脚本
-# 上游 v1.4.17 已内置 zip/7z 解压功能，可直接传入压缩包路径
+# 上游 v1.7.1 已内置 zip/7z 解压功能，可直接传入压缩包路径
 #
 # 日志实时性说明：
 #   qfirehose 的 dbg_time() 宏在每次 fprintf(stdout) 后都调用了 fflush(stdout)，
