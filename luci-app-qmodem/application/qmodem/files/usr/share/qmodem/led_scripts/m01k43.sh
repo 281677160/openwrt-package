@@ -119,19 +119,31 @@ internet_led() {
 }
 
 get_mode() {
-	rat_code=$(at $AT_PORT "AT+COPS?" | grep +COPS: | awk -F, '{print $4}' | tr -d '"')
+	local cell_info="$1"
+	local network_mode rat_code
+
+	network_mode=$(printf '%s\n' "$cell_info" | jq -r '.modem_info[]? | select(.key == "network_mode") | .value' | head -n 1)
+	case "$network_mode" in
+		*"EN-DC"*|*"NR5G"*|*"NR"*|*"5G"*)
+			echo "1"
+			return
+			;;
+		*"LTE"*|*"4G"*)
+			echo "0"
+			return
+			;;
+	esac
+
+	rat_code=$(at "$AT_PORT" "AT+COPS?" | grep +COPS: | awk -F, '{print $4}' | tr -d '"')
 	case "$rat_code" in
-		""|*[!0-9]*)
-			echo "${last_is_nr:-0}"
-			;;
-		*)
-			[ "$rat_code" -le "7" ] && echo "0" || echo "1"
-			;;
+		""|*[!0-9]*) echo "${last_is_nr:-0}" ;;
+		*) [ "$rat_code" -le "7" ] && echo "0" || echo "1" ;;
 	esac
 }
 
 get_rsrp() {
-	rsrp=$(/usr/share/qmodem/modem_ctrl.sh cell_info "$MODEM_CFG" | jq -r '.modem_info[] | select(.key=="RSRP") | .value')
+	local cell_info="$1"
+	rsrp=$(printf '%s\n' "$cell_info" | jq -r '.modem_info[]? | select(.key == "RSRP") | .value' | head -n 1)
 	# if rsrp is empty, return 0
 	[ -z "$rsrp" ] && rsrp="0"
 	# if rsrp out of range, return 0
@@ -159,9 +171,11 @@ main() {
 		return
 	fi
 
-	local is_nr=$(get_mode)
+	local cell_info is_nr rsrp
+	cell_info=$(/usr/share/qmodem/modem_ctrl.sh cell_info "$MODEM_CFG")
+	is_nr=$(get_mode "$cell_info")
 	last_is_nr="$is_nr"
-	local rsrp=$(get_rsrp)
+	rsrp=$(get_rsrp "$cell_info")
 	local signal="0"
 
 	# Three signal levels by RSRP.

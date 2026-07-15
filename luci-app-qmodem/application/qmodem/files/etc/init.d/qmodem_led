@@ -3,6 +3,7 @@ START=99
 STOP=13
 USE_PROCD=1
 service="$(basename ${basescript:-$initscript})"
+LED_CONFIG_STATE="/var/run/qmodem_led.config"
 
 extra_command "start_instance" "<modem_cfg> start led script for one modem"
 extra_command "stop_instance" "<modem_cfg> stop led script for one modem"
@@ -16,17 +17,64 @@ service_triggers()
 
 start_service(){
     load_led_services
+    save_led_config
 }
 
 stop_service(){
     procd_kill "$service"
     config_load qmodem
     config_foreach _turn_off_leds modem-device
+    rm -f "$LED_CONFIG_STATE"
 }
 
 reload_service(){
-    stop_service
-    start_service
+    local current_config saved_config
+
+    current_config="$(get_led_config)"
+    saved_config="$(cat "$LED_CONFIG_STATE" 2>/dev/null)"
+    [ "$current_config" = "$saved_config" ] && led_services_running && return 0
+
+    rc_procd start_service
+}
+
+led_services_running()
+{
+    all_led_services_running=1
+    config_load qmodem
+    config_foreach _check_led_service modem-device
+    [ "$all_led_services_running" = "1" ]
+}
+
+_check_led_service()
+{
+    local led_script
+
+    config_get led_script "$1" led_script
+    [ -n "$led_script" ] || return 0
+    [ -x "/usr/share/qmodem/led_scripts/${led_script}.sh" ] || return 0
+    service_running "$service" "led_$1" || all_led_services_running=0
+}
+
+get_led_config()
+{
+    config_load qmodem
+    config_foreach _print_led_config modem-device
+}
+
+_print_led_config()
+{
+    local led_script
+
+    config_get led_script "$1" led_script
+    printf '%s=%s\n' "$1" "$led_script"
+}
+
+save_led_config()
+{
+    local state_tmp="${LED_CONFIG_STATE}.$$"
+
+    get_led_config > "$state_tmp"
+    mv "$state_tmp" "$LED_CONFIG_STATE"
 }
 
 load_led_services()
