@@ -3,6 +3,8 @@ local appname = "passwall"
 local has_xray = api.finded_com("xray")
 local has_singbox = api.finded_com("sing-box")
 
+api.set_default_cbi()
+
 m = Map(appname)
 api.set_apply_on_parse(m)
 
@@ -112,13 +114,7 @@ o:value(0, translate("Every Sunday"))
 o = s:option(Value, "update_time_mode", translate("Update Time"))
 for t = 0, 23 do o:value(t .. ":00") end
 o.default = "0:00"
-o.validate = function(self, value)
-	local b = api.is_timehhmm(value)
-	if b then
-		return value
-	end
-	return nil
-end
+o.datatype = "timehhmm"
 o:depends("update_week_mode", "0")
 o:depends("update_week_mode", "1")
 o:depends("update_week_mode", "2")
@@ -146,8 +142,10 @@ end
 
 s:append(Template(appname .. "/rule/rule_version"))
 
+local cfgname = "shunt_rules"
+
 if has_xray or has_singbox then
-	s = m:section(TypedSection, "shunt_rules", "Sing-Box/Xray " .. translate("Shunt Rule"), "<a style='color: red'>" .. translate("Please note attention to the priority, the higher the order, the higher the priority.") .. "</a>")
+	s = m:section(TypedSection, cfgname, "Sing-Box/Xray " .. translate("Shunt Rule"), "<a style='color: red'>" .. translate("Please note attention to the priority, the higher the order, the higher the priority.") .. "</a>")
 	s.template = "cbi/tblsection"
 	s.anonymous = false
 	s.addremove = true
@@ -169,4 +167,9 @@ if has_xray or has_singbox then
 	o = s:option(DummyValue, "remarks", translate("Remarks"))
 end
 
-return m
+local sortable = Template(appname .. "/cbi/sortable")
+sortable.api = api
+sortable.target_cfgname = cfgname
+m:append(sortable)
+
+return api.return_map(m)
