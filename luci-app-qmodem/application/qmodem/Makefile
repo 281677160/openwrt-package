@@ -56,6 +56,10 @@ define Package/$(PKG_NAME)/description
 	QModem scripts
 endef
 
+define Package/$(PKG_NAME)/conffiles
+/etc/config/qmodem_led
+endef
+
 define Build/Prepare
 endef
 
