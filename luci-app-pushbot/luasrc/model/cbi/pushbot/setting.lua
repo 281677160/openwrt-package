@@ -6,12 +6,7 @@ local net = require "luci.model.network".init()
 local sys = require "luci.sys"
 local ifaces = sys.net:devices()
 
-m=Map("pushbot",translate("PushBot"),
-translate("「全能推送」，英文名「PushBot」，是一款从服务器推送报警信息和日志到各平台的工具。<br>支持钉钉推送，企业微信推送，PushPlus推送。<br>本插件由tty228/luci-app-serverchan创建，然后七年修改为全能推送自用。<br /><br />如果你在使用中遇到问题，请到这里提交：")
-.. [[<a href="https://github.com/zzsj0928/luci-app-pushbot" target="_blank">]]
-.. translate("github 项目地址")
-.. [[</a>]]
-)
+m=Map("pushbot", "", "")
 
 m:section(SimpleSection).template  = "pushbot/pushbot_status"
 
@@ -20,6 +15,9 @@ s:tab("basic", translate("基本设置"))
 s:tab("content", translate("推送内容"))
 s:tab("crontab", translate("定时推送"))
 s:tab("disturb", translate("免打扰"))
+s:tab("advanced", translate("高级设置"))
+s:tab("client", translate("在线设备"))
+s:tab("log", translate("日志"))
 s.addremove = false
 s.anonymous = true
 
@@ -51,19 +49,15 @@ a:value("/usr/bin/pushbot/api/diy.json",translate("自定义推送"))
 
 a=s:taboption("basic", Value,"dd_webhook",translate('Webhook'), translate("钉钉机器人 Webhook").."，只输入access_token=后面的即可<br>调用代码获取<a href='https://developers.dingtalk.com/document/robots/custom-robot-access' target='_blank'>点击这里</a><br><br>")
 a.rmempty = true
-a:depends("jsonpath","/usr/bin/pushbot/api/dingding.json")
 
 a=s:taboption("basic", Value, "we_webhook", translate("Webhook"),translate("企业微信机器人 Webhook").."，只输入key=后面的即可<br>调用代码获取<a href='https://work.weixin.qq.com/api/doc/90000/90136/91770' target='_blank'>点击这里</a><br><br>")
 a.rmempty = true
-a:depends("jsonpath","/usr/bin/pushbot/api/ent_wechat.json")
 
 a=s:taboption("basic", Value,"pp_token",translate('PushPlus Token'), translate("PushPlus Token").."<br>调用代码获取<a href='http://pushplus.plus/doc/' target='_blank'>点击这里</a><br><br>")
 a.rmempty = true
-a:depends("jsonpath","/usr/bin/pushbot/api/pushplus.json")
 
 a=s:taboption("basic", ListValue,"pp_channel",translate('PushPlus Channel'))
 a.rmempty = true
-a:depends("jsonpath","/usr/bin/pushbot/api/pushplus.json")
 a:value("wechat",translate("wechat：PushPlus微信公众号"))
 a:value("cp",translate("cp：企业微信应用"))
 a:value("webhook",translate("webhook：第三方webhook"))
@@ -73,67 +67,52 @@ a.description = translate("第三方webhook：企业微信、钉钉、飞书、s
 
 a=s:taboption("basic", Value,"pp_webhook",translate('PushPlus Custom Webhook'), translate("PushPlus 自定义Webhook").."<br>第三方webhook或企业微信调用<br>具体自定义Webhook设定参见：<a href='http://pushplus.plus/doc/extend/webhook.html' target='_blank'>点击这里</a><br><br>")
 a.rmempty = true
-a:depends("pp_channel","cp")
-a:depends("pp_channel","webhook")
 
 a=s:taboption("basic", Flag,"pp_topic_enable",translate("PushPlus 一对多推送"))
 a.default=0
 a.rmempty = true
-a:depends("pp_channel","wechat")
 
 a=s:taboption("basic", Value,"pp_topic",translate('PushPlus Topic'), translate("PushPlus 群组编码").."<br>一对多推送时指定的群组编码<br>具体群组编码Topic设定参见：<a href='http://www.pushplus.plus/push2.html' target='_blank'>点击这里</a><br><br>")
 a.rmempty = true
-a:depends("pp_topic_enable","1")
 
 a=s:taboption("basic", Value,"pushdeer_key",translate('PushDeer Key'), translate("PushDeer Key").."<br>调用代码获取<a href='http://www.pushdeer.com/' target='_blank'>点击这里</a><br><br>")
 a.rmempty = true
-a:depends("jsonpath","/usr/bin/pushbot/api/pushdeer.json")
 
 a=s:taboption("basic", Flag,"pushdeer_srv_enable",translate("自建 PushDeer 服务器"))
 a.default=0
 a.rmempty = true
-a:depends("jsonpath","/usr/bin/pushbot/api/pushdeer.json")
 
 a=s:taboption("basic", Value,"pushdeer_srv",translate('PushDeer Server'), translate("PushDeer 自建服务器地址").."<br>如https://your.domain:port<br>具体自建服务器设定参见：<a href='http://www.pushdeer.com/selfhosted.html' target='_blank'>点击这里</a><br><br>")
 a.rmempty = true
-a:depends("pushdeer_srv_enable","1")
 
 a=s:taboption("basic", Value,"fs_webhook",translate('WebHook'), translate("飞书 WebHook").."<br>调用代码获取<a href='https://www.feishu.cn/hc/zh-CN/articles/360024984973' target='_blank'>点击这里</a><br><br>")
 a.rmempty = true
-a:depends("jsonpath","/usr/bin/pushbot/api/feishu.json")
 
 a=s:taboption("basic", Value,"bark_token",translate('Bark Token'), translate("Bark Token").."<br>调用代码获取<a href='https://github.com/Finb/Bark' target='_blank'>点击这里</a><br><br>")
 a.rmempty = true
-a:depends("jsonpath","/usr/bin/pushbot/api/bark.json")
 
 a=s:taboption("basic", Flag,"bark_srv_enable",translate("自建 Bark 服务器"))
 a.default=0
 a.rmempty = true
-a:depends("jsonpath","/usr/bin/pushbot/api/bark.json")
 
 a=s:taboption("basic", Value,"bark_srv",translate('Bark Server'), translate("Bark 自建服务器地址").."<br>如https://your.domain:port<br>具体自建服务器设定参见：<a href='https://github.com/Finb/Bark' target='_blank'>点击这里</a><br><br>")
 a.rmempty = true
-a:depends("bark_srv_enable","1")
 
 a=s:taboption("basic", Value,"bark_sound",translate('Bark Sound'), translate("Bark 通知声音").."<br>如silence.caf<br>具体设定参见：<a href='https://github.com/Finb/Bark/tree/master/Sounds' target='_blank'>点击这里</a><br><br>")
 a.rmempty = true
 a.default = "silence.caf"
-a:depends("jsonpath","/usr/bin/pushbot/api/bark.json")
 
 a=s:taboption("basic", Flag,"bark_icon_enable",translate(" Bark 通知图标"))
 a.default=0
 a.rmempty = true
-a:depends("jsonpath","/usr/bin/pushbot/api/bark.json")
 
 a=s:taboption("basic", Value,"bark_icon",translate('Bark Icon'), translate("Bark 通知图标").."(仅 iOS15 或以上支持)<br>如http://day.app/assets/images/avatar.jpg<br>具体设定参见：<a href='https://github.com/Finb/Bark#%E5%85%B6%E4%BB%96%E5%8F%82%E6%95%B0' target='_blank'>点击这里</a><br><br>")
 a.rmempty = true
 a.default = "http://day.app/assets/images/avatar.jpg"
-a:depends("bark_icon_enable","1")
 
 a=s:taboption("basic", Value,"bark_level",translate('Bark Level'), translate("Bark 时效性通知").."<br>可选参数值：<br/>active：不设置时的默认值，系统会立即亮屏显示通知。<br/>timeSensitive：时效性通知，可在专注状态下显示通知。<br/>passive：仅将通知添加到通知列表，不会亮屏提醒。")
 a.rmempty = true
 a.default = "active"
-a:depends("jsonpath","/usr/bin/pushbot/api/bark.json")
 
 a=s:taboption("basic", TextValue, "diy_json", translate("自定义推送"))
 a.optional = false
@@ -145,13 +124,10 @@ end
 a.write = function(self, section, value)
     fs.writefile("/usr/bin/pushbot/api/diy.json", value:gsub("\r\n", "\n"))
 end
-a:depends("jsonpath","/usr/bin/pushbot/api/diy.json")
 
 a=s:taboption("basic", Button,"__add",translate("发送测试"))
 a.inputtitle=translate("发送")
-a.inputstyle = "apply"
 function a.write(self, section)
-	luci.sys.call("cbi.apply")
 	luci.sys.call("/usr/bin/pushbot/pushbot test &")
 end
 
@@ -476,6 +452,17 @@ a:value("",translate("关闭"))
 a:value("1",translate("模式一：脚本挂起"))
 a:value("2",translate("模式二：静默模式"))
 a.description = translate("模式一停止一切检测，包括无人值守。")
+
+local _sheep_write = a.write
+a.write = function(self, section, value)
+	_sheep_write(self, section, value)
+	if not value or value == "" then
+		local u = self.map.uci
+		u:delete(self.config, section, "starttime")
+		u:delete(self.config, section, "endtime")
+	end
+end
+
 a=s:taboption("disturb", ListValue,"starttime",translate("免打扰开始时间"))
 a.rmempty = true
 
@@ -504,15 +491,21 @@ a:value("block",translate("仅通知列表内设备"))
 a:value("interface",translate("仅通知此接口设备"))
 a.rmempty = true
 
+local _mac_write = a.write
+a.write = function(self, section, value)
+	_mac_write(self, section, value)
+	local u = self.map.uci
+	if value ~= "allow" then u:delete(self.config, section, "pushbot_whitelist") end
+	if value ~= "block" then u:delete(self.config, section, "pushbot_blacklist") end
+	if value ~= "interface" then u:delete(self.config, section, "pushbot_interface") end
+end
 
 a = s:taboption("disturb", DynamicList, "pushbot_whitelist", translate("忽略列表"))
-nt.mac_hints(function(mac, name) a :value(mac, "%s (%s)" %{ mac, name }) end)
 a.rmempty = true
 a:depends({macmechanism="allow"})
 a.description = translate("AA:AA:AA:AA:AA:AA\\|BB:BB:BB:BB:BB:B 可以将多个 MAC 视为同一用户<br/>任一设备在线后不再推送，设备全部离线时才会推送，避免双 wifi 频繁推送")
 
 a = s:taboption("disturb", DynamicList, "pushbot_blacklist", translate("关注列表"))
-nt.mac_hints(function(mac, name) a:value(mac, "%s (%s)" %{ mac, name }) end)
 a.rmempty = true
 a:depends({macmechanism="block"})
 a.description = translate("AA:AA:AA:AA:AA:AA\\|BB:BB:BB:BB:BB:B 可以将多个 MAC 视为同一用户<br/>任一设备在线后不再推送，设备全部离线时才会推送，避免双 wifi 频繁推送")
@@ -539,14 +532,153 @@ a:value("MAC_online",translate("列表内任意设备在线时免打扰"))
 a:value("MAC_offline",translate("列表内设备都离线后免打扰"))
 a.rmempty = true
 
+local _mac2_write = a.write
+a.write = function(self, section, value)
+	_mac2_write(self, section, value)
+	local u = self.map.uci
+	if value ~= "MAC_online" then u:delete(self.config, section, "MAC_online_list") end
+	if value ~= "MAC_offline" then u:delete(self.config, section, "MAC_offline_list") end
+end
+
 a = s:taboption("disturb", DynamicList, "MAC_online_list", translate("在线免打扰列表"))
-nt.mac_hints(function(mac, name) a:value(mac, "%s (%s)" %{ mac, name }) end)
 a.rmempty = true
 a:depends({macmechanism2="MAC_online"})
 
 a = s:taboption("disturb", DynamicList, "MAC_offline_list", translate("任意离线免打扰列表"))
-nt.mac_hints(function(mac, name) a:value(mac, "%s (%s)" %{ mac, name }) end)
 a.rmempty = true
 a:depends({macmechanism2="MAC_offline"})
+
+-- 高级设置
+
+b=s:taboption("advanced", Value,"up_timeout",translate('设备上线检测超时（s）'))
+b.default = "2"
+b.optional=false
+b.datatype="uinteger"
+
+b=s:taboption("advanced", Value,"down_timeout",translate('设备离线检测超时（s）'))
+b.default = "20"
+b.optional=false
+b.datatype="uinteger"
+
+b=s:taboption("advanced", Value,"timeout_retry_count",translate('离线检测次数'))
+b.default = "2"
+b.optional=false
+b.datatype="uinteger"
+b.description = translate("若无二级路由设备，信号强度良好，可以减少以上数值<br/>因夜间 wifi 休眠较为玄学，遇到设备频繁推送断开，烦请自行调整参数<br/>..╮(╯_╰）╭..")
+
+b=s:taboption("advanced", Value,"thread_num",translate('最大并发进程数'))
+b.default = "3"
+b.datatype="uinteger"
+
+b=s:taboption("advanced", Value, "soc_code", "自定义温度读取命令")
+b.rmempty = true 
+b:value("",translate("默认"))
+b:value("pve",translate("PVE 虚拟机"))
+b.description = translate("请尽量避免使用特殊符号，如双引号、$、!等，执行结果需为数字，用于温度对比")
+
+b=s:taboption("advanced", Value,"pve_host",translate("宿主机地址"))
+b.rmempty=true
+b.default="10.0.0.2"
+b.description = translate("请确认已经设置好密钥登陆，否则会引起脚本无法正常运行等错误！<br/>PVE 安装 sensors 命令自行百度<br/>密钥登陆例：<br/>opkg update #更新列表<br/>opkg install openssh-client openssh-keygen #安装openssh客户端<br/>ssh-keygen -t rsa # 生成密钥文件（自行设定密码等信息）<br/>ssh root@10.0.0.2 \"tee -a ~/.ssh/id_rsa.pub\" < ~/.ssh/id_rsa.pub # 传送公钥到 PVE<br/>ssh -i ~/.ssh/id_rsa root@10.0.0.2 sensors # 测试温度命令")
+b:depends({soc_code="pve"})
+
+b=s:taboption("advanced", Value,"pve_port",translate("SSH端口"))
+b.rmempty=true
+b.default="22"
+b.description = translate("默认为22，如有自定义，请填写自定义SSH端口")
+b:depends({soc_code="pve"})
+
+b=s:taboption("advanced", Button,"soc",translate("测试温度命令"))
+b.inputtitle = translate("输出信息")
+b.write = function()
+	luci.sys.call("/usr/bin/pushbot/pushbot soc")
+	luci.http.redirect(luci.dispatcher.build_url("admin","services","pushbot","setting"))
+end
+
+if nixio.fs.access("/tmp/pushbot/soc_tmp") then
+	e=s:taboption("advanced", TextValue,"soc_tmp")
+	e.rows=2
+	e.readonly=true
+	e.cfgvalue = function()
+		return luci.sys.exec("cat /tmp/pushbot/soc_tmp && rm -f /tmp/pushbot/soc_tmp")
+	end
+end
+
+b=s:taboption("advanced", Flag,"err_enable",translate("无人值守任务"))
+b.default=0
+b.rmempty=true
+b.description = translate("请确认脚本可以正常运行，否则可能造成频繁重启等错误！")
+
+b=s:taboption("advanced", Flag,"err_sheep_enable",translate("仅在免打扰时段重拨"))
+b.default=0
+b.rmempty=true
+b.description = translate("避免白天重拨 ddns 域名等待解析，此功能不影响断网检测<br/>因夜间跑流量问题，该功能可能不稳定")
+b:depends({err_enable="1"})
+
+b=s:taboption("advanced", DynamicList, "err_device_aliases", translate("关注列表"))
+b.rmempty = true 
+b.description = translate("只会在列表中设备都不在线时才会执行<br/>免打扰时段一小时后，关注设备五分钟低流量（约100kb/m）将视为离线")
+nt.mac_hints(function(mac, name) b :value(mac, "%s (%s)" %{ mac, name }) end)
+b:depends({err_enable="1"})
+
+b=s:taboption("advanced", ListValue,"network_err_event",translate("网络断开时"))
+b.default=""
+b:depends({err_enable="1"})
+b:value("",translate("无操作"))
+b:value("1",translate("重启路由器"))
+b:value("2",translate("重新拨号"))
+b:value("3",translate("修改相关设置项，尝试自动修复网络"))
+b.description = translate("选项 1 选项 2 不会修改设置，并最多尝试 2 次。<br/>选项 3 会将设置项备份于 /usr/bin/pushbot/configbak 目录，并在失败后还原。<br/>【！！无法保证兼容性！！】不熟悉系统设置项，不会救砖请勿使用")
+
+b=s:taboption("advanced", ListValue,"system_time_event",translate("定时重启"))
+b.default=""
+b:depends({err_enable="1"})
+b:value("",translate("无操作"))
+b:value("1",translate("重启路由器"))
+b:value("2",translate("重新拨号"))
+
+b=s:taboption("advanced", Value, "autoreboot_time", "系统运行时间大于")
+b.rmempty = true 
+b.default = "24"
+b.datatype="uinteger"
+b:depends({system_time_event="1"})
+b.description = translate("单位为小时")
+
+b=s:taboption("advanced", Value, "network_restart_time", "网络在线时间大于")
+b.rmempty = true 
+b.default = "24"
+b.datatype="uinteger"
+b:depends({system_time_event="2"})
+b.description = translate("单位为小时")
+
+b=s:taboption("advanced", Flag,"public_ip_event",translate("重拨尝试获取公网 ip"))
+b.default=0
+b.rmempty=true
+b:depends({err_enable="1"})
+b.description = translate("重拨时不会推送 ip 变动通知，并会导致你的域名无法及时更新 ip 地址<br/>请确认你可以通过重拨获取公网 ip，否则这不仅徒劳无功还会引起频繁断网<br/>移动等大内网你就别挣扎了！！")
+
+b=s:taboption("advanced", Value, "public_ip_retry_count", "当天最大重试次数")
+b.rmempty = true 
+b.default = "10"
+b.datatype="uinteger"
+b:depends({public_ip_event="1"})
+
+-- 在线设备
+local client_val = s:taboption("client", DummyValue, "_client", translate("在线设备输出"))
+client_val.rawhtml = true
+client_val.value = function(self, section)
+	local out = sys.exec("/usr/bin/pushbot/pushbot client")
+	return '<pre style="white-space:pre-wrap;font-family:Menlo,Consolas,monospace;max-height:400px;overflow-y:auto;margin:4px 0">'
+		.. luci.util.pcdata(out) .. '</pre>'
+end
+
+-- 日志
+local log_val = s:taboption("log", DummyValue, "_log", translate("日志输出"))
+log_val.rawhtml = true
+log_val.value = function(self, section)
+	local log = fs.readfile("/tmp/pushbot/pushbot.log") or ""
+	return '<textarea class="cbi-input-textarea" style="width:100%;max-height:400px" rows="24" wrap="off" readonly>'
+		.. luci.util.pcdata(log) .. '</textarea>'
+end
 
 return m

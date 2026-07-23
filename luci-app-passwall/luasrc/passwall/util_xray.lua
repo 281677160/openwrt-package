@@ -154,8 +154,7 @@ function gen_outbound(flag, node, tag, proxy_table)
 						MaxConcurrentTry = 4
 					} or nil
 				},
-				network = (api.compare_versions(xray_version, "<", "26.7.11")) and node.transport or nil, -- Todo: Remove
-				method = (api.compare_versions(xray_version, ">=", "26.7.11")) and node.transport or nil, -- Todo: Remove version check
+				[(api.compare_versions(xray_version, "<", "26.7.11")) and "network" or "method"] = node.transport, -- Todo: Remove version check and "network"
 				security = node.stream_security,
 				tlsSettings = (node.stream_security == "tls") and {
 					serverName = node.tls_serverName,
@@ -646,8 +645,7 @@ function gen_config_server(node)
 				protocol = node.protocol,
 				settings = settings,
 				streamSettings = {
-					network = (api.compare_versions(xray_version, "<", "26.7.11")) and node.transport or nil, -- Todo: Remove
-					method = (api.compare_versions(xray_version, ">=", "26.7.11")) and node.transport or nil, -- Todo: Remove version check
+					[(api.compare_versions(xray_version, "<", "26.7.11")) and "network" or "method"] = node.transport, -- Todo: Remove version check and "network"
 					security = "none",
 					tlsSettings = ("1" == node.tls) and {
 						disableSystemRoot = false,
@@ -1068,6 +1066,10 @@ function gen_config(var)
 					if outboundTag then
 						valid_nodes[#valid_nodes + 1] = outboundTag
 					end
+				end
+				-- Check if balancing node duplicates fallback node
+				if _node.fallback_node == blc_node_id then
+					_node.fallback_node = nil
 				end
 			end
 			if #valid_nodes == 0 then return nil end
