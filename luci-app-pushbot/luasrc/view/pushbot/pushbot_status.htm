@@ -1,22 +1,2456 @@
 <script type="text/javascript">//<![CDATA[
 XHR.poll(3, '<%=url([[admin]], [[services]], [[pushbot]], [[status]])%>', null,
 	function(x, data) {
-		var tb = document.getElementById('pushbot_status');
-		if (data && tb) {
-			if (data.running) {
-				var links = '<em><b><font color=green>pushbot <%:RUNNING%></font></b></em>';
-				tb.innerHTML = links;
+		var badge = document.getElementById('pushbot_status_badge');
+		var text = document.getElementById('pushbot_status_text');
+		if (badge && text) {
+			if (data && data.running) {
+				badge.classList.remove('is-stopped');
+				badge.classList.add('is-running');
+				text.textContent = '<%:RUNNING%>';
 			} else {
-				tb.innerHTML = '<em><b><font color=red>pushbot <%:NOT RUNNING%></font></b></em>';
+				badge.classList.remove('is-running');
+				badge.classList.add('is-stopped');
+				text.textContent = '<%:NOT RUNNING%>';
 			}
 		}
 	}
 );
-//]]>
+//]]></script>
+
+<%
+local uci = require("luci.model.uci").cursor()
+local function get_list_vals(cfg, sec, opt)
+	local t = {}
+	local ok, raw = pcall(function() return uci:get_list(cfg, sec, opt) end)
+	if ok and type(raw) == "table" then
+		for _, v in ipairs(raw) do if v and v ~= "" then t[#t+1] = v end end
+	else
+		raw = uci:get(cfg, sec, opt)
+		if raw and raw ~= "" then for v in raw:gmatch("%S+") do t[#t+1] = v end end
+	end
+	return t
+end
+local alias_inject = get_list_vals("pushbot", "pushbot", "device_aliases")
+local wl_inject = get_list_vals("pushbot", "pushbot", "pushbot_whitelist")
+local bl_inject = get_list_vals("pushbot", "pushbot", "pushbot_blacklist")
+local ol_inject = get_list_vals("pushbot", "pushbot", "MAC_online_list")
+local ofl_inject = get_list_vals("pushbot", "pushbot", "MAC_offline_list")
+%>
+<script type="text/javascript">var PUSHBOT_DEVICE_ALIASES=[<% for i,v in ipairs(alias_inject) do if i>1 then %>,<% end %>"<%=pcdata(v)%>"<% end %>];</script>
+<script type="text/javascript">var PUSHBOT_WL=[<% for i,v in ipairs(wl_inject) do if i>1 then %>,<% end %>"<%=pcdata(v)%>"<% end %>];</script>
+<script type="text/javascript">var PUSHBOT_BL=[<% for i,v in ipairs(bl_inject) do if i>1 then %>,<% end %>"<%=pcdata(v)%>"<% end %>];</script>
+<script type="text/javascript">var PUSHBOT_OL=[<% for i,v in ipairs(ol_inject) do if i>1 then %>,<% end %>"<%=pcdata(v)%>"<% end %>];</script>
+<script type="text/javascript">var PUSHBOT_OFL=[<% for i,v in ipairs(ofl_inject) do if i>1 then %>,<% end %>"<%=pcdata(v)%>"<% end %>];</script>
+<%
+local nt = require("luci.sys").net
+local mac_hints = {}
+nt.mac_hints(function(mac, name)
+	if mac and mac ~= "" then mac_hints[#mac_hints+1] = {mac = mac, name = (name or "")} end
+end)
+%>
+<script type="text/javascript">var PUSHBOT_MAC_HINTS=[<% for i,h in ipairs(mac_hints) do if i>1 then %>,<% end %>{m:"<%=pcdata(h.mac)%>",n:"<%=pcdata(h.name)%>"}<% end %>];</script>
+<script type="text/javascript">//<![CDATA[
+(function() {
+	/* hidden container preserves form elements for UCI submission — must be inside <form> */
+	var hiddenBox = document.createElement('div');
+	hiddenBox.id = 'pushbot_hidden_fields';
+	hiddenBox.style.display = 'none';
+	var luciForm = document.querySelector('form');
+	(luciForm || document.body).appendChild(hiddenBox);
+
+	function stashFormElements(row) {
+		var els = row.querySelectorAll('input, select, textarea');
+		for (var si = 0; si < els.length; si++) {
+			hiddenBox.appendChild(els[si]);
+		}
+		row.remove();
+	}
+
+	function findRowByFieldName(fieldName) {
+		/* 1) search .cbi-value rows by widget name or label text */
+		var rows = Array.prototype.slice.call(document.querySelectorAll('.cbi-value'));
+		for (var i = 0; i < rows.length; i++) {
+			var row = rows[i];
+			if (!row) continue;
+			var widget = row.querySelector('input, select, textarea');
+			if (widget && widget.name) {
+				var name = widget.name.split('.').pop();
+				if (name === fieldName) return row;
+			}
+			var title = row.querySelector('.cbi-value-title');
+			var titleText = title ? title.textContent : '';
+			if (titleText && titleText.indexOf(fieldName) >= 0) return row;
+		}
+		/* 2) fallback: find widget by name attribute anywhere in document */
+		var el = document.querySelector('[name$=".' + fieldName + '"], [name="' + fieldName + '"]');
+		if (el) {
+			var r = el.closest('.cbi-value') || el.parentNode;
+			return r;
+		}
+		return null;
+	}
+
+	function cloneWidget(origWidget, origDesc, onChange) {
+		var wrapper = document.createElement('div');
+		wrapper.className = 'pushbot-inline-field';
+		var title = document.createElement('div');
+		title.className = 'pushbot-inline-title';
+		var titleEl = origWidget.closest('.cbi-value');
+		if (titleEl) {
+			var t = titleEl.querySelector('.cbi-value-title');
+			title.textContent = t ? t.textContent : '';
+		}
+		wrapper.appendChild(title);
+		var body = document.createElement('div');
+		body.className = 'pushbot-inline-body';
+		var clone = origWidget.cloneNode(true);
+		if (clone.id) clone.id = clone.id + '_card';
+		body.appendChild(clone);
+		if (origDesc) {
+			var d = document.createElement('div');
+			d.className = 'pushbot-inline-description';
+			d.innerHTML = origDesc.innerHTML;
+			body.appendChild(d);
+		}
+		wrapper.appendChild(body);
+
+		clone.addEventListener('change', function(e) {
+			e.stopPropagation();
+			if (clone.type === 'checkbox') origWidget.checked = clone.checked;
+			else origWidget.value = clone.value;
+			origWidget.dispatchEvent(new Event('change', { bubbles: true }));
+			if (onChange) onChange();
+		});
+		origWidget.addEventListener('change', function() {
+			if (clone.type === 'checkbox') clone.checked = origWidget.checked;
+			else clone.value = origWidget.value;
+		});
+		return wrapper;
+	}
+
+	function initPushModeCard() {
+		if (document.getElementById('pushbot_pushmode_card')) return;
+
+		var modeRow = findRowByFieldName('jsonpath');
+		var modeSelect = modeRow ? modeRow.querySelector('select') : null;
+		var deviceRow = findRowByFieldName('device_name');
+		var intervalRow = findRowByFieldName('sleeptime');
+		var testRow = findRowByFieldName('发送测试');
+		if (!modeRow || !modeSelect || !deviceRow || !intervalRow || !testRow) return;
+
+		/* ── build card ── */
+		var card = document.createElement('div');
+		card.id = 'pushbot_pushmode_card';
+		card.className = 'pushbot-mode-card pushbot-pushmode-card';
+
+		card.innerHTML = [
+			'<div class="pushbot-card-top" style="margin-bottom:6px">',
+				'<span class="pushbot-card-title" style="font-size:16px;font-weight:800">推送模式</span>',
+			'</div>',
+			/* row1: device_name + sleeptime */
+			'<div class="pushbot-pushmode-row" id="pm_row1">',
+				'<div class="pushbot-pushmode-column" id="pm_col_device"></div>',
+				'<div class="pushbot-pushmode-column" id="pm_col_interval"></div>',
+			'</div>',
+			/* row2: mode buttons */
+			'<div class="pushbot-pushmode-row" id="pm_row2">',
+				'<div class="pushbot-choice-list pushbot-pushmode-list" id="pm_mode_list"></div>',
+			'</div>',
+			/* row3: current settings + test button */
+			'<div class="pushbot-pushmode-row" id="pm_row3">',
+				'<div class="pushbot-pushmode-column" id="pm_col_settings">',
+					'<div class="pushbot-inline-title">当前设置</div>',
+					'<div class="pushbot-pushmode-settings" id="pm_settings_body"></div>',
+				'</div>',
+				'<div class="pushbot-pushmode-column pushbot-pushmode-action-column" id="pm_col_test"></div>',
+			'</div>'
+		].join('');
+
+		/* ── insert card after running-control card ── */
+		var runCard = document.getElementById('pushbot_mode_card');
+		if (runCard && runCard.parentNode) {
+			runCard.parentNode.insertBefore(card, runCard.nextSibling);
+		} else {
+			var hc = document.querySelector('.pushbot-header-card');
+			if (hc && hc.parentNode) { hc.parentNode.insertBefore(card, hc.nextSibling); }
+			else { modeRow.parentNode.insertBefore(card, modeRow); }
+		}
+
+		/* ── device name ── */
+		var devInp = deviceRow.querySelector('input');
+		var devDesc = deviceRow.querySelector('.cbi-value-description');
+		if (devInp) {
+			var devWrapper = cloneWidget(devInp, devDesc);
+			document.getElementById('pm_col_device').appendChild(devWrapper);
+		}
+		deviceRow.remove();
+
+		/* ── sleeptime ── */
+		var intInp = intervalRow.querySelector('input');
+		var intDesc = intervalRow.querySelector('.cbi-value-description');
+		if (intInp) {
+			var intWrapper = cloneWidget(intInp, intDesc);
+			document.getElementById('pm_col_interval').appendChild(intWrapper);
+		}
+		intervalRow.remove();
+
+		/* ── mode select buttons ── */
+		var modeList = document.getElementById('pm_mode_list');
+		var modeSvgs = {
+			'钉钉': '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style="width:24px;height:24px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 8.16c-.34.88-2.17 2.36-2.17 2.36l-.03.02h.03s.86 1.14 1.22 1.68c.36.54.04.68-.5.36l-1.7-1.14-.84-.56c-.02 0-.18.14-.18.14s-1.3 1.86-1.66 2.28c-.36.42-.72.24-.62-.22.1-.46.92-2.18.92-2.18l-2.32-3.46c-.24-.36.08-.54.48-.34L12 12l2.3-1.52c.4-.26.78.02.34.68z"/></svg>',
+			'企业微信': '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style="width:24px;height:24px"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM8.5 6.5h7c.83 0 1.5.67 1.5 1.5v2c0 .83-.67 1.5-1.5 1.5h-7A1.5 1.5 0 0 1 7 10V8c0-.83.67-1.5 1.5-1.5zm0 6h4c.83 0 1.5.67 1.5 1.5v2c0 .83-.67 1.5-1.5 1.5h-4A1.5 1.5 0 0 1 7 16v-2c0-.83.67-1.5 1.5-1.5z"/></svg>',
+			'飞书': '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style="width:24px;height:24px"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1.5 6h3c.83 0 1.5.67 1.5 1.5v1c0 .83-.67 1.5-1.5 1.5h-3A1.5 1.5 0 0 1 9 10.5v-1c0-.83.67-1.5 1.5-1.5zm0 4h5c.83 0 1.5.67 1.5 1.5v1c0 .83-.67 1.5-1.5 1.5h-5A1.5 1.5 0 0 1 9 13v-1c0-.83.67-1.5 1.5-1.5z"/></svg>',
+			'Bark': '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style="width:24px;height:24px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>',
+			'PushPlus': '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style="width:24px;height:24px"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 5h-2v5l4 2.4 1-1.6-3-1.8V7z"/></svg>',
+			'PushDeer': '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style="width:24px;height:24px"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 16a6 6 0 1 1 0-12 6 6 0 0 1 0 12z"/></svg>',
+			'自定义推送': '<svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style="width:24px;height:24px"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1 14H9v-2h2v2zm0-4H9V8h2v4z"/></svg>'
+		};
+		var modeOpts = [
+			{ v: '/usr/bin/pushbot/api/dingding.json', l: '钉钉' },
+			{ v: '/usr/bin/pushbot/api/ent_wechat.json', l: '企业微信' },
+			{ v: '/usr/bin/pushbot/api/feishu.json', l: '飞书' },
+			{ v: '/usr/bin/pushbot/api/bark.json', l: 'Bark' },
+			{ v: '/usr/bin/pushbot/api/pushplus.json', l: 'PushPlus' },
+			{ v: '/usr/bin/pushbot/api/pushdeer.json', l: 'PushDeer' },
+			{ v: '/usr/bin/pushbot/api/diy.json', l: '自定义推送' }
+		];
+		var btns = [];
+		modeOpts.forEach(function(o) {
+			var b = document.createElement('button');
+			b.type = 'button';
+			b.className = 'pushbot-choice-button';
+			var svg = modeSvgs[o.l] || '';
+			b.innerHTML = svg + '<span>' + o.l + '</span>';
+			b.setAttribute('data-v', o.v);
+			b.addEventListener('click', function(e) {
+				e.preventDefault();
+				modeSelect.value = o.v;
+				syncBtns();
+				renderSettings();
+			});
+			btns.push(b);
+			modeList.appendChild(b);
+		});
+		function syncBtns() {
+			btns.forEach(function(b) {
+				var on = b.getAttribute('data-v') === modeSelect.value;
+				b.className = 'pushbot-choice-button ' + (on ? 'is-on' : 'is-off');
+			});
+		}
+		modeSelect.addEventListener('change', function() { syncBtns(); renderSettings(); });
+		stashFormElements(modeRow);
+
+		/* ── mode-field map ── */
+		var fieldMap = {
+			'/usr/bin/pushbot/api/dingding.json'  : ['dd_webhook'],
+			'/usr/bin/pushbot/api/ent_wechat.json': ['we_webhook'],
+			'/usr/bin/pushbot/api/feishu.json'    : ['fs_webhook'],
+			'/usr/bin/pushbot/api/bark.json'      : ['bark_token', 'bark_srv_enable', 'bark_srv', 'bark_sound', 'bark_icon_enable', 'bark_icon', 'bark_level'],
+			'/usr/bin/pushbot/api/pushplus.json'  : ['pp_token', 'pp_channel', 'pp_webhook', 'pp_topic_enable', 'pp_topic'],
+			'/usr/bin/pushbot/api/pushdeer.json'  : ['pushdeer_key', 'pushdeer_srv_enable', 'pushdeer_srv'],
+			'/usr/bin/pushbot/api/diy.json'       : ['diy_json']
+		};
+
+		/* hide ALL mode-field rows in original tab */
+		var allFieldNames = [];
+		for (var k in fieldMap) {
+			fieldMap[k].forEach(function(fn) { allFieldNames.push(fn); });
+		}
+		(function hideModeRows() {
+			var rows = document.querySelectorAll('.cbi-value');
+			for (var ri = 0; ri < rows.length; ri++) {
+				var row = rows[ri];
+				var w = row.querySelector('input, select, textarea');
+				if (w && w.name) {
+					var n = w.name.split('.').pop();
+					if (allFieldNames.indexOf(n) >= 0) {
+						row.style.display = 'none';
+					}
+				}
+			}
+		})();
+
+		/* ── switch toggles: which fields act as switches, and their dependents ── */
+		var switchDeps = {
+			'bark_srv_enable': ['bark_srv'],
+			'bark_icon_enable': ['bark_icon'],
+			'pp_topic_enable': ['pp_topic'],
+			'pushdeer_srv_enable': ['pushdeer_srv']
+		};
+
+		/* ── select-based deps: { selectField: { depField: [showValues] } } ── */
+		var selectDeps = {
+			'pp_channel': { 'pp_webhook': ['cp', 'webhook'] }
+		};
+
+		/* helper: get original widget + row + description for a field */
+		function getOrig(fn) {
+			var row = findRowByFieldName(fn);
+			var w = row ? row.querySelector('input, select, textarea') : document.querySelector('[name$=".' + fn + '"]');
+			var d = row ? row.querySelector('.cbi-value-description') : null;
+			return { w: w, row: row, desc: d };
+		}
+
+		function makeFallbackField(fn) {
+			var hidden = document.createElement('input');
+			hidden.type = 'hidden';
+			hidden.name = 'cbid.pushbot.pushbot.' + fn;
+			hidden.value = '';
+			hiddenBox.appendChild(hidden);
+
+			var wrapper = document.createElement('div');
+			wrapper.className = 'pushbot-inline-field';
+			var title = document.createElement('div');
+			title.className = 'pushbot-inline-title';
+			title.textContent = fn;
+			wrapper.appendChild(title);
+			var body = document.createElement('div');
+			body.className = 'pushbot-inline-body';
+			var inp = document.createElement('input');
+			inp.type = 'text';
+			inp.placeholder = fn;
+			inp.style.cssText = 'width:100%;padding:7px 10px;border-radius:8px;border:1px solid rgba(148,163,184,0.3);font-size:13px;box-sizing:border-box;background:rgba(255,255,255,0.7);color:inherit';
+			inp.addEventListener('change', function() { hidden.value = this.value; });
+			body.appendChild(inp);
+			wrapper.appendChild(body);
+			return wrapper;
+		}
+
+		/* ── render a choice-style toggle button for a switch field ── */
+		function makeChoiceToggle(origWidget, labelText, onToggle) {
+			var btn = document.createElement('button');
+			btn.type = 'button';
+			var on = !!(origWidget.checked);
+			btn.className = 'pushbot-choice-button ' + (on ? 'is-on' : 'is-off');
+			btn.innerHTML = '<span>' + labelText + '</span>';
+			btn.addEventListener('click', function(e) {
+				e.preventDefault();
+				var newOn = !origWidget.checked;
+				origWidget.checked = newOn;
+				btn.className = 'pushbot-choice-button ' + (newOn ? 'is-on' : 'is-off');
+				origWidget.dispatchEvent(new Event('change', { bubbles: true }));
+				if (onToggle) onToggle(newOn);
+			});
+			return btn;
+		}
+
+		function renderSettings() {
+			var body = document.getElementById('pm_settings_body');
+			body.innerHTML = '';
+			var fields = fieldMap[modeSelect.value] || [];
+			if (!fields.length) {
+				body.innerHTML = '<div class="pushbot-inline-description" style="margin-top:6px">当前模式无需附加配置项。</div>';
+				return;
+			}
+
+			/* collect switch-dependent field names for the current mode */
+			var depSet = {};
+			fields.forEach(function(fn) {
+				if (switchDeps[fn]) {
+					switchDeps[fn].forEach(function(df) { depSet[df] = true; });
+				}
+			});
+
+			/* helper: check if a field is a select-dependent */
+			function isSelectDep(fn) {
+				for (var sf in selectDeps) {
+					if (selectDeps[sf].hasOwnProperty(fn)) return true;
+				}
+				return false;
+			}
+
+			fields.forEach(function(fn) {
+				/* skip dependent fields — they are rendered by their parent switch */
+				if (depSet[fn]) return;
+
+				if (switchDeps[fn]) {
+					/* ── switch field: choice-style toggle + conditional children ── */
+					var orig = getOrig(fn);
+					if (!orig.w) { body.appendChild(makeFallbackField(fn)); return; }
+
+					/* get label from original CBI row */
+					var label = fn;
+					var te = orig.w.closest('.cbi-value');
+					if (te) { var t = te.querySelector('.cbi-value-title'); if (t && t.textContent) label = t.textContent; }
+
+					var childWraps = [];
+					var btn = makeChoiceToggle(orig.w, label, function(newOn) {
+						childWraps.forEach(function(cw) { cw.style.display = newOn ? '' : 'none'; });
+					});
+					btn.style.marginBottom = '8px';
+					body.appendChild(btn);
+					if (orig.row) orig.row.style.display = 'none';
+
+					/* render dependent fields indented under the toggle */
+					switchDeps[fn].forEach(function(df) {
+						var depOrig = getOrig(df);
+						if (!depOrig.w) { body.appendChild(makeFallbackField(df)); return; }
+						var dw = document.createElement('div');
+						dw.style.cssText = 'margin:4px 0 4px 20px;padding-left:12px;border-left:2px solid rgba(148,163,184,0.2)';
+						dw.style.display = orig.w.checked ? '' : 'none';
+						var clone = cloneWidget(depOrig.w, depOrig.desc);
+						var ci = clone.querySelector('input, select, textarea');
+						if (ci) ci.name = '';
+						dw.appendChild(clone);
+						body.appendChild(dw);
+						if (depOrig.row) depOrig.row.style.display = 'none';
+						childWraps.push(dw);
+					});
+				} else if (selectDeps[fn]) {
+					/* ── select-controlled field: render as choice buttons ── */
+					var orig = getOrig(fn);
+					if (!orig.w || !orig.w.options) { body.appendChild(makeFallbackField(fn)); return; }
+
+					/* read options from original select */
+					var selOpts = [];
+					for (var oi = 0; oi < orig.w.options.length; oi++) {
+						if (orig.w.options[oi].value !== '')
+							selOpts.push({ v: orig.w.options[oi].value, l: orig.w.options[oi].text });
+					}
+					if (!selOpts.length) { body.appendChild(makeFallbackField(fn)); return; }
+
+					var selWrap = document.createElement('div');
+					selWrap.className = 'pushbot-inline-field';
+
+					var title = document.createElement('div');
+					title.className = 'pushbot-inline-title';
+					var te = orig.w.closest('.cbi-value');
+					if (te) { var t = te.querySelector('.cbi-value-title'); title.textContent = t ? t.textContent : ''; }
+					selWrap.appendChild(title);
+
+					var btnRow = document.createElement('div');
+					btnRow.className = 'pushbot-choice-list';
+
+					var btns = [];
+					selOpts.forEach(function(opt) {
+						var b = document.createElement('button');
+						b.type = 'button';
+						b.className = 'pushbot-choice-button';
+						b.textContent = opt.l;
+						b.setAttribute('data-v', opt.v);
+						b.addEventListener('click', function(e) {
+							e.preventDefault();
+							orig.w.value = opt.v;
+							btns.forEach(function(b2) { syncBtn(b2); });
+							orig.w.dispatchEvent(new Event('change', { bubbles: true }));
+						});
+						btns.push(b);
+						btnRow.appendChild(b);
+					});
+					function syncBtn(b) {
+						var on = b.getAttribute('data-v') === orig.w.value;
+						b.className = 'pushbot-choice-button ' + (on ? 'is-on' : 'is-off');
+					}
+					btns.forEach(function(b) { syncBtn(b); });
+					selWrap.appendChild(btnRow);
+
+					if (orig.desc) {
+						var d = document.createElement('div');
+						d.className = 'pushbot-inline-description';
+						d.innerHTML = orig.desc.innerHTML;
+						selWrap.appendChild(d);
+					}
+					body.appendChild(selWrap);
+					if (orig.row) orig.row.style.display = 'none';
+				} else {
+					/* ── regular field (possibly select-controlled) ── */
+					var orig = getOrig(fn);
+					if (!orig.w) { body.appendChild(makeFallbackField(fn)); return; }
+
+					var wrapper = cloneWidget(orig.w, orig.desc);
+					var ci = wrapper.querySelector('input, select, textarea');
+					if (ci) ci.name = '';
+
+					/* if this field IS a select-dependent, wrap for show/hide */
+					if (isSelectDep(fn)) {
+						var sdWrap = document.createElement('div');
+						sdWrap.setAttribute('data-dep', fn);
+						sdWrap.appendChild(wrapper);
+						body.appendChild(sdWrap);
+					}
+					else {
+						body.appendChild(wrapper);
+					}
+
+					if (orig.row) orig.row.style.display = 'none';
+				}
+			});
+
+			/* ── wire up select-based dependencies (use original select change event) ── */
+			for (var selFn in selectDeps) {
+				var selOrig = getOrig(selFn);
+				if (!selOrig.w) continue;
+				var sd = selectDeps[selFn];
+				for (var depFn in sd) {
+					var showVals = sd[depFn];
+					var depWrap = body.querySelector('[data-dep="' + depFn + '"]');
+					if (!depWrap) continue;
+					(function(sel, wrap, vals) {
+						function sync() { wrap.style.display = vals.indexOf(sel.value) >= 0 ? '' : 'none'; }
+						sel.addEventListener('change', sync);
+						sync();
+					})(selOrig.w, depWrap, showVals);
+				}
+			}
+		}
+
+		/* ── test button (standalone, XHR — no form submit) ── */
+		var testBtn = testRow.querySelector('.cbi-button');
+		if (testBtn) {
+			var tc = document.createElement('button');
+			tc.type = 'button';
+			tc.textContent = '发送测试';
+			tc.className = 'pushbot-sendtest-btn';
+			tc.addEventListener('click', function(e) {
+				e.preventDefault();
+				tc.disabled = true;
+				tc.textContent = '发送中...';
+				XHR.get('<%=url([[admin]], [[services]], [[pushbot]], [[send_test]])%>', null,
+					function() {
+						tc.disabled = false;
+						tc.textContent = '发送测试';
+					}
+				);
+			});
+			var testContainer = document.getElementById('pm_col_test');
+			testContainer.appendChild(tc);
+		}
+		testRow.remove();
+
+		/* ── init ── */
+		syncBtns();
+		renderSettings();
+	}
+
+	function initTerminalCard() {
+		if (document.getElementById('pushbot_terminal_card')) return;
+		if (!document.getElementById('pushbot_pushmode_card')) {
+			setTimeout(initTerminalCard, 200);
+			return;
+		}
+
+		/* find oui_data row — try name match then title fallback */
+		var ouiRow = findRowByFieldName('oui_data');
+		if (!ouiRow) {
+			var all = document.querySelectorAll('.cbi-value');
+			for (var xi = 0; xi < all.length; xi++) {
+				var t = all[xi].querySelector('.cbi-value-title');
+				if (t && t.textContent.indexOf('MAC设备') >= 0) { ouiRow = all[xi]; break; }
+			}
+		}
+		var ouiSelect = ouiRow ? ouiRow.querySelector('select') : null;
+		if (!ouiRow || !ouiSelect) { setTimeout(initTerminalCard, 300); return; }
+
+		/* find device_aliases row */
+		var aliasRow = findRowByFieldName('device_aliases');
+		if (!aliasRow) {
+			var all2 = document.querySelectorAll('.cbi-value');
+			for (var xi2 = 0; xi2 < all2.length; xi2++) {
+				var t2 = all2[xi2].querySelector('.cbi-value-title');
+				if (t2 && t2.textContent.indexOf('设备别名') >= 0) { aliasRow = all2[xi2]; break; }
+			}
+		}
+		var aliasInput = aliasRow ? aliasRow.querySelector('input') : null;
+
+		var card = document.createElement('div');
+		card.id = 'pushbot_terminal_card';
+		card.className = 'pushbot-mode-card';
+		card.style.margin = '0 0 16px 0';
+
+		/* collect oui options */
+		var ouiOpts = [];
+		for (var oi = 0; oi < ouiSelect.options.length; oi++) {
+			var opt = ouiSelect.options[oi];
+			ouiOpts.push({ v: opt.value, l: opt.text });
+		}
+		var ouiLabels = { '': '关闭', '1': '简化版', '2': '完整版', '3': '网络查询' };
+
+		/* device aliases */
+		var aliasDesc = aliasRow ? aliasRow.querySelector('.cbi-value-description') : null;
+
+		/* stash originals — move form elements to hidden container, remove rows */
+		stashFormElements(ouiRow);
+		/* for alias: keep original row hidden so DynamicList stays intact */
+		if (aliasRow) {
+			aliasRow.style.display = 'none';
+		}
+
+		var header = document.createElement('div');
+		header.className = 'pushbot-card-top';
+		header.innerHTML = '<span class="pushbot-card-title" style="font-size:16px;font-weight:800">终端信息</span>';
+		card.appendChild(header);
+
+		/* ── MAC 数据库 ── */
+		var dbTitle = document.createElement('div');
+		dbTitle.className = 'pushbot-inline-title';
+		dbTitle.style.cssText = 'margin:8px 0 6px 2px;text-transform:none;font-size:13px';
+		dbTitle.textContent = 'MAC设备信息数据库';
+		card.appendChild(dbTitle);
+
+		var ouiList = document.createElement('div');
+		ouiList.className = 'pushbot-choice-list';
+		var ouiBtns = [];
+		ouiOpts.forEach(function(o) {
+			var b = document.createElement('button');
+			b.type = 'button';
+			b.className = 'pushbot-choice-button';
+			b.textContent = ouiLabels[o.v] || o.l;
+			b.setAttribute('data-oui', o.v);
+			b.addEventListener('click', function(e) {
+				e.preventDefault();
+				ouiSelect.value = o.v;
+				syncOui();
+			});
+			ouiBtns.push(b);
+			ouiList.appendChild(b);
+		});
+		card.appendChild(ouiList);
+		function syncOui() {
+			ouiBtns.forEach(function(b) {
+				var on = b.getAttribute('data-oui') === ouiSelect.value;
+				b.className = 'pushbot-choice-button ' + (on ? 'is-on' : 'is-off');
+			});
+		}
+		ouiSelect.addEventListener('change', syncOui);
+		syncOui();
+
+		/* ── device aliases ── */
+		var aliasTitle = document.createElement('div');
+		aliasTitle.className = 'pushbot-inline-title';
+		aliasTitle.style.cssText = 'margin:14px 0 6px 2px;text-transform:none;font-size:13px';
+		aliasTitle.textContent = '设备别名';
+		card.appendChild(aliasTitle);
+
+		var aliasBox = document.createElement('div');
+		aliasBox.className = 'pushbot-inline-field';
+		aliasBox.style.cssText = 'padding:10px 12px;margin:0';
+
+		var aliasRow2 = document.createElement('div');
+		aliasRow2.style.cssText = 'display:flex;gap:8px;align-items:center';
+		var aliasInp = document.createElement('input');
+		aliasInp.type = 'text';
+		aliasInp.placeholder = 'XX:XX:XX:XX:XX:XX-我的手机';
+		aliasInp.style.cssText = 'flex:1;padding:7px 10px;border-radius:8px;border:1px solid rgba(148,163,184,0.3);font-size:13px;background:rgba(255,255,255,0.7);color:inherit';
+		aliasInp.className = 'pushbot-alias-input';
+
+		var addBtn = document.createElement('button');
+		addBtn.type = 'button';
+		addBtn.textContent = '添加';
+		addBtn.className = 'pushbot-choice-button is-on';
+		addBtn.style.cssText = 'padding:7px 14px;font-size:12px';
+
+		aliasRow2.appendChild(aliasInp);
+		aliasRow2.appendChild(addBtn);
+		aliasBox.appendChild(aliasRow2);
+
+		var tagContainer = document.createElement('div');
+		tagContainer.className = 'pushbot-alias-tags';
+		tagContainer.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-top:8px';
+
+		/* hidden container for DynamicList: one hidden input per value */
+		var aliasHiddenBox = document.createElement('div');
+		aliasHiddenBox.style.display = 'none';
+
+		function rebuildHiddenAliases(vals) {
+			aliasHiddenBox.innerHTML = '';
+			vals.forEach(function(v) {
+				if (!v) return;
+				var inp = document.createElement('input');
+				inp.type = 'hidden';
+				inp.name = 'cbid.pushbot.pushbot.device_aliases';
+				inp.value = v;
+				aliasHiddenBox.appendChild(inp);
+			});
+		}
+
+		function addTag(text) {
+			if (!text || text.indexOf('-') < 0) return;
+			var tag = document.createElement('span');
+			tag.className = 'pushbot-alias-tag';
+			tag.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;font-size:12px;background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.25);color:inherit';
+			tag.textContent = text;
+			var del = document.createElement('button');
+			del.type = 'button';
+			del.innerHTML = '✕';
+			del.style.cssText = 'border:none;background:none;cursor:pointer;font-size:12px;color:#94a3b8;padding:0 2px';
+			del.title = '移除';
+			del.addEventListener('click', function(e) {
+				e.preventDefault();
+				tag.remove();
+				syncAliases();
+			});
+			tag.appendChild(del);
+			tagContainer.appendChild(tag);
+			syncAliases();
+		}
+
+		function syncAliases() {
+			var tags = tagContainer.querySelectorAll('.pushbot-alias-tag');
+			var vals = [];
+			tags.forEach(function(t) {
+				var txt = t.textContent.replace('✕', '').trim();
+				if (txt) vals.push(txt);
+			});
+			rebuildHiddenAliases(vals);
+		}
+
+		/* load existing aliases from all original DynamicList inputs */
+		var existingVals = [];
+		if (aliasRow) {
+			var allOrigInputs = aliasRow.querySelectorAll('input[name$=".device_aliases"]');
+			allOrigInputs.forEach(function(inp) {
+				if (inp.value) existingVals.push(inp.value);
+			});
+		}
+		/* fallback: use server-injected values if DOM read returned nothing */
+		if (existingVals.length === 0 && typeof PUSHBOT_DEVICE_ALIASES !== 'undefined' && PUSHBOT_DEVICE_ALIASES.length > 0) {
+			existingVals = PUSHBOT_DEVICE_ALIASES;
+		}
+		existingVals.forEach(function(v) { if (v) addTag(v); });
+
+		/* remove original DynamicList row entirely — only our hidden inputs will submit */
+		if (aliasRow) {
+			aliasRow.remove();
+			aliasRow = null;
+		}
+
+		addBtn.addEventListener('click', function(e) {
+			e.preventDefault();
+			var val = aliasInp.value.trim();
+			if (val) { addTag(val); aliasInp.value = ''; }
+		});
+		aliasInp.addEventListener('keydown', function(e) {
+			if (e.key === 'Enter') {
+				e.preventDefault();
+				var val = aliasInp.value.trim();
+				if (val) { addTag(val); aliasInp.value = ''; }
+			}
+		});
+
+		aliasBox.appendChild(tagContainer);
+		aliasBox.appendChild(aliasHiddenBox);
+		card.appendChild(aliasBox);
+
+		if (aliasDesc) {
+			var d2 = document.createElement('div');
+			d2.className = 'pushbot-inline-description';
+			d2.style.cssText = 'margin:6px 0 0 2px';
+			d2.innerHTML = aliasDesc.innerHTML;
+			card.appendChild(d2);
+		}
+
+		/* insert after push mode card */
+		var pushCard = document.getElementById('pushbot_pushmode_card');
+		if (pushCard && pushCard.parentNode) {
+			pushCard.parentNode.insertBefore(card, pushCard.nextSibling);
+		} else {
+			document.querySelector('.pushbot-mode-card') && document.querySelector('.pushbot-mode-card').parentNode.appendChild(card);
+		}
+	}
+
+	var cardId = 'pushbot_mode_card';
+	var iconMap = {
+		device: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm2 3v10h12V7H6zm2 2h8v2H8V9zm0 4h5v2H8v-2z"/></svg>',
+		nowtime: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm1 4h-2v7l5.5 3.2 1-1.7-4.5-2.6V6z"/></svg>',
+		content: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1zm2 3v2h10V7H7zm0 4v2h6v-2H7zm0 4v2h8v-2H7z"/></svg>'
+	};
+
+	function initCard() {
+		if (document.getElementById(cardId)) {
+			return;
+		}
+
+		var rows = Array.prototype.slice.call(document.querySelectorAll('.cbi-value'));
+		var enableRow = null;
+		var liteRow = null;
+
+		rows.forEach(function(row) {
+			var title = row.querySelector('.cbi-value-title');
+			var text = title ? title.textContent : '';
+			if (!enableRow && /启用/.test(text)) {
+				enableRow = row;
+			}
+			if (!liteRow && /精简模式/.test(text)) {
+				liteRow = row;
+			}
+		});
+
+		if (!enableRow || !liteRow) {
+			return;
+		}
+
+		var enableInput = enableRow.querySelector('input[type="checkbox"]');
+		var liteInputs = Array.prototype.slice.call(liteRow.querySelectorAll('input[type="checkbox"]'));
+		if (!enableInput || !liteInputs.length) {
+			return;
+		}
+
+		stashFormElements(enableRow);
+		stashFormElements(liteRow);
+
+		/* ── extra flags: 下载到内存, 重置流量, 开启日志 ── */
+		var extraFlagNames = ['oui_dir', 'reset_regularly', 'debuglevel'];
+		var extraFlagRows = [];
+		var extraFlagInputs = [];
+		extraFlagNames.forEach(function(name) {
+			var r = findRowByFieldName(name);
+			if (r) {
+				var inp = r.querySelector('input[type="checkbox"]');
+				if (inp) {
+					extraFlagRows.push(r);
+					extraFlagInputs.push(inp);
+					stashFormElements(r);
+				}
+			}
+		});
+
+		var card = document.createElement('div');
+		card.id = cardId;
+		card.className = 'pushbot-mode-card';
+		card.innerHTML = [
+			'<div class="pushbot-card-top">',
+				'<span class="pushbot-card-title">运行控制</span>',
+				'<button type="button" class="pushbot-toggle-button is-off">',
+					'<span class="pushbot-toggle-status">已禁用</span>',
+				'</button>',
+			'</div>',
+			'<div class="pushbot-choice-list" style="margin:6px 0 8px 2px">',
+				'<button type="button" class="pushbot-choice-button is-off" data-flag="oui_dir">',
+					'<span class="pushbot-choice-icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style="width:16px;height:16px"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg></span>',
+					'<span class="pushbot-choice-label">下载到内存</span>',
+				'</button>',
+				'<button type="button" class="pushbot-choice-button is-off" data-flag="reset_regularly">',
+					'<span class="pushbot-choice-icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style="width:16px;height:16px"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 14h-2v-6h2v6zm0-8h-2V6h2v2z"/></svg></span>',
+					'<span class="pushbot-choice-label">每天零点重置流量</span>',
+				'</button>',
+				'<button type="button" class="pushbot-choice-button is-off" data-flag="debuglevel">',
+					'<span class="pushbot-choice-icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style="width:16px;height:16px"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 14h-2v-2h2v2zm0-4h-2V8h2v4z"/></svg></span>',
+					'<span class="pushbot-choice-label">开启日志</span>',
+				'</button>',
+			'</div>',
+			'<div class="pushbot-card-subtitle">精简模式</div>',
+			'<div class="pushbot-choice-list">',
+				'<button type="button" class="pushbot-choice-button is-off" data-value="device">',
+					'<span class="pushbot-choice-icon">' + iconMap.device + '</span>',
+					'<span class="pushbot-choice-label">精简当前设备列表</span>',
+				'</button>',
+				'<button type="button" class="pushbot-choice-button is-off" data-value="nowtime">',
+					'<span class="pushbot-choice-icon">' + iconMap.nowtime + '</span>',
+					'<span class="pushbot-choice-label">精简当前时间</span>',
+				'</button>',
+				'<button type="button" class="pushbot-choice-button is-off" data-value="content">',
+					'<span class="pushbot-choice-icon">' + iconMap.content + '</span>',
+					'<span class="pushbot-choice-label">只推送标题</span>',
+				'</button>',
+			'</div>'
+		].join('');
+
+		var hc = document.querySelector('.pushbot-header-card');
+		if (hc && hc.parentNode) {
+			hc.parentNode.insertBefore(card, hc.nextSibling);
+		} else {
+			liteRow.parentNode.insertBefore(card, liteRow);
+		}
+
+		var toggleButton = card.querySelector('.pushbot-toggle-button');
+		var choiceButtons = Array.prototype.slice.call(card.querySelectorAll('.pushbot-choice-button'));
+		var flagButtons = Array.prototype.slice.call(card.querySelectorAll('[data-flag]'));
+
+		function syncState() {
+			var enabled = enableInput.checked;
+			toggleButton.classList.toggle('is-on', enabled);
+			toggleButton.classList.toggle('is-off', !enabled);
+			toggleButton.querySelector('.pushbot-toggle-status').textContent = enabled ? '已启用' : '已禁用';
+
+			choiceButtons.forEach(function(button) {
+				var value = button.getAttribute('data-value');
+				var matched = liteInputs.filter(function(input) {
+					return input.value === value;
+				});
+				var active = matched.length > 0 && matched[0].checked;
+				button.classList.toggle('is-on', active);
+				button.classList.toggle('is-off', !active);
+			});
+
+			flagButtons.forEach(function(button) {
+				var flag = button.getAttribute('data-flag');
+				var matched = extraFlagInputs.filter(function(inp) {
+					return inp.name.split('.').pop() === flag;
+				});
+				var active = matched.length > 0 && matched[0].checked;
+				button.classList.toggle('is-on', active);
+				button.classList.toggle('is-off', !active);
+			});
+		}
+
+		toggleButton.addEventListener('click', function(e) {
+			e.preventDefault();
+			enableInput.checked = !enableInput.checked;
+			syncState();
+		});
+
+		choiceButtons.forEach(function(button) {
+			button.addEventListener('click', function(e) {
+				e.preventDefault();
+				var value = button.getAttribute('data-value');
+				var matched = liteInputs.filter(function(input) {
+					return input.value === value;
+				});
+				if (matched.length) {
+					matched[0].checked = !matched[0].checked;
+					syncState();
+				}
+			});
+		});
+
+		flagButtons.forEach(function(button) {
+			button.addEventListener('click', function(e) {
+				e.preventDefault();
+				var flag = button.getAttribute('data-flag');
+				var matched = extraFlagInputs.filter(function(inp) {
+					return inp.name.split('.').pop() === flag;
+				});
+				if (matched.length) {
+					matched[0].checked = !matched[0].checked;
+					syncState();
+				}
+			});
+		});
+
+		enableInput.addEventListener('change', syncState);
+		liteInputs.forEach(function(input) {
+			input.addEventListener('change', syncState);
+		});
+		extraFlagInputs.forEach(function(input) {
+			input.addEventListener('change', syncState);
+		});
+
+		syncState();
+	}
+
+	function initDisturbCard() {
+	if (document.getElementById('pushbot_disturb_card')) return;
+	if (!document.getElementById('pushbot_terminal_card')) {
+			setTimeout(initDisturbCard, 200);
+			return;
+		}
+
+		/* find rows by title text */
+		function frTitle(tag) {
+			var all = document.querySelectorAll('.cbi-value');
+			for (var xi = 0; xi < all.length; xi++) {
+				var t = all[xi].querySelector('.cbi-value-title');
+				if (t && t.textContent.indexOf(tag) >= 0) return all[xi];
+			}
+			return null;
+		}
+		var sheepRow = frTitle('免打扰时段');
+		var sheepSel = sheepRow ? sheepRow.querySelector('select') : null;
+		var startRow = frTitle('免打扰开始');
+		var startSel = startRow ? startRow.querySelector('select') : null;
+		var endRow = frTitle('免打扰结束');
+		var endSel = endRow ? endRow.querySelector('select') : null;
+		var mac1Row = frTitle('MAC过滤');
+		/* skip MAC过滤2 */
+		var allValRows = document.querySelectorAll('.cbi-value');
+		var mac1Found = false;
+		for (var xi2 = 0; xi2 < allValRows.length; xi2++) {
+			var t2 = allValRows[xi2].querySelector('.cbi-value-title');
+			if (t2 && t2.textContent.indexOf('MAC过滤') >= 0) {
+				if (!mac1Found) { mac1Row = allValRows[xi2]; mac1Found = true; }
+			}
+		}
+		var mac1Sel = mac1Row ? mac1Row.querySelector('select') : null;
+		var mac2Row = frTitle('MAC过滤2');
+		var mac2Sel = mac2Row ? mac2Row.querySelector('select') : null;
+		var wlRow = findRowByFieldName('pushbot_whitelist');
+		var blRow = findRowByFieldName('pushbot_blacklist');
+		var ifaceRow = findRowByFieldName('pushbot_interface');
+		var olRow = findRowByFieldName('MAC_online_list');
+		var oflRow = findRowByFieldName('MAC_offline_list');
+
+		if (!sheepRow || !sheepSel) { setTimeout(initDisturbCard, 300); return; }
+
+		/* stash select rows — selects go to hiddenBox */
+		[sheepRow, startRow, endRow, mac1Row, mac2Row].forEach(function(r) { if (r) stashFormElements(r); });
+
+		/* for conditional rows: save their inputs into a safe box, remove rows */
+		var macSafeBox = document.createElement('div');
+		macSafeBox.style.display = 'none';
+		macSafeBox.id = 'pushbot_mac_safe';
+		(document.querySelector('form') || document.body).appendChild(macSafeBox);
+		function saveWidget(row) {
+			if (!row) return null;
+			var w = row.querySelector('input') || row.querySelector('select') || row.querySelector('textarea');
+			if (w) macSafeBox.appendChild(w);
+			row.remove();
+			return w;
+		}
+		var ifWidget = saveWidget(ifaceRow);
+
+		var card = document.createElement('div');
+		card.id = 'pushbot_disturb_card';
+		card.className = 'pushbot-mode-card';
+		card.style.margin = '0 0 16px 0';
+
+		/* helper: hidden container for DynamicList — one hidden input per value */
+		/* append to hiddenBox (inside <form>) to ensure submission */
+		var macHiddenBox = document.createElement('div');
+		macHiddenBox.style.display = 'none';
+		var hf = document.getElementById('pushbot_hidden_fields') || document.querySelector('form');
+		(hf || document.body).appendChild(macHiddenBox);
+		function rebuildMacHidden(optionName, vals) {
+			var sel = '[name="cbid.pushbot.pushbot.' + optionName + '"]';
+			macHiddenBox.querySelectorAll(sel).forEach(function(el) { el.remove(); });
+			vals.forEach(function(v) {
+				if (!v) return;
+				var inp = document.createElement('input');
+				inp.type = 'hidden';
+				inp.name = 'cbid.pushbot.pushbot.' + optionName;
+				inp.value = v;
+				macHiddenBox.appendChild(inp);
+			});
+		}
+		/* read ALL values from DynamicList rows before removing them */
+		function readAllVals(row) {
+			var vals = [];
+			if (!row) return vals;
+			row.querySelectorAll('input, select').forEach(function(el) {
+				if (el.value) vals.push(el.value);
+			});
+			return vals;
+		}
+		var _wl = readAllVals(wlRow); var wlVals = _wl.length > 0 ? _wl : (typeof PUSHBOT_WL !== 'undefined' ? PUSHBOT_WL : []);
+		var _bl = readAllVals(blRow); var blVals = _bl.length > 0 ? _bl : (typeof PUSHBOT_BL !== 'undefined' ? PUSHBOT_BL : []);
+		var _ol = readAllVals(olRow); var olVals = _ol.length > 0 ? _ol : (typeof PUSHBOT_OL !== 'undefined' ? PUSHBOT_OL : []);
+		var _ofl = readAllVals(oflRow); var oflVals = _ofl.length > 0 ? _ofl : (typeof PUSHBOT_OFL !== 'undefined' ? PUSHBOT_OFL : []);
+		/* then remove rows — our hidden inputs in macHiddenBox handle submission */
+		[wlRow, blRow, olRow, oflRow].forEach(function(r) { if (r) r.remove(); });
+		rebuildMacHidden('pushbot_whitelist', wlVals);
+		rebuildMacHidden('pushbot_blacklist', blVals);
+		rebuildMacHidden('MAC_online_list', olVals);
+		rebuildMacHidden('MAC_offline_list', oflVals);
+
+		/* ── helper: make a choice-list row from select options ── */
+		function makeChoiceList(sel, labelMap, onChange) {
+			var div = document.createElement('div');
+			div.className = 'pushbot-choice-list';
+			var btns = [];
+			for (var oi = 0; oi < sel.options.length; oi++) {
+				var opt = sel.options[oi];
+				var b = document.createElement('button');
+				b.type = 'button';
+				b.className = 'pushbot-choice-button';
+				b.textContent = labelMap[opt.value] || opt.text;
+				b.setAttribute('data-v', opt.value);
+				b.addEventListener('click', function(e) {
+					e.preventDefault();
+					sel.value = this.getAttribute('data-v');
+					btns.forEach(function(b2) { syncChoice(b2, sel); });
+					if (onChange) onChange();
+				});
+				btns.push(b);
+				div.appendChild(b);
+			}
+			function syncChoice(btn, s) {
+				var on = btn.getAttribute('data-v') === s.value;
+				btn.className = 'pushbot-choice-button ' + (on ? 'is-on' : 'is-off');
+			}
+			sel.addEventListener('change', function() { btns.forEach(function(b) { syncChoice(b, sel); }); if(onChange) onChange(); });
+			btns.forEach(function(b) { syncChoice(b, sel); });
+			return div;
+		}
+
+		card.innerHTML = '<div class="pushbot-card-top"><span class="pushbot-card-title" style="font-size:16px;font-weight:800">免打扰</span></div>';
+
+		/* ── 免打扰设置 ── */
+		var st = document.createElement('div');
+		st.className = 'pushbot-inline-title';
+		st.style.cssText = 'margin:8px 0 6px 2px;text-transform:none;font-size:13px';
+		st.textContent = '免打扰设置';
+		card.appendChild(st);
+		var sheepLabels = {'':'关闭','1':'模式一：脚本挂起','2':'模式二：静默模式'};
+		card.appendChild(makeChoiceList(sheepSel, sheepLabels, function() { renderTime(); }));
+
+		/* ── 免打扰时间 ── */
+		var timeWrap = document.createElement('div');
+		timeWrap.id = 'pm_dnd_time';
+		var tt = document.createElement('div');
+		tt.className = 'pushbot-inline-title';
+		tt.style.cssText = 'margin:12px 0 6px 2px;text-transform:none;font-size:13px';
+		tt.textContent = '免打扰时间（每天）';
+		timeWrap.appendChild(tt);
+		var tr = document.createElement('div');
+		tr.style.cssText = 'display:flex;align-items:center;gap:10px;flex-wrap:wrap';
+		var stInp = document.createElement('input');
+		stInp.type = 'number'; stInp.min = 0; stInp.max = 23;
+		stInp.style.cssText = 'width:72px;padding:7px 10px;border-radius:8px;border:1px solid rgba(148,163,184,0.3);font-size:13px;text-align:center;background:rgba(255,255,255,0.7);color:inherit';
+		stInp.className = 'pushbot-dnd-input';
+		stInp.value = startSel ? startSel.value : '0';
+		stInp.addEventListener('change', function() { if (startSel) startSel.value = stInp.value; });
+		var dash = document.createElement('span');
+		dash.textContent = '—';
+		dash.style.cssText = 'font-size:16px;font-weight:700;color:#94a3b8';
+		var enInp = document.createElement('input');
+		enInp.type = 'number'; enInp.min = 0; enInp.max = 23;
+		enInp.style.cssText = 'width:72px;padding:7px 10px;border-radius:8px;border:1px solid rgba(148,163,184,0.3);font-size:13px;text-align:center;background:rgba(255,255,255,0.7);color:inherit';
+		enInp.className = 'pushbot-dnd-input';
+		enInp.value = endSel ? endSel.value : '8';
+		enInp.addEventListener('change', function() { if (endSel) endSel.value = enInp.value; });
+		tr.appendChild(stInp); tr.appendChild(dash); tr.appendChild(enInp);
+		timeWrap.appendChild(tr);
+		card.appendChild(timeWrap);
+
+		function renderTime() {
+			var show = sheepSel.value === '1' || sheepSel.value === '2';
+			timeWrap.style.display = show ? '' : 'none';
+		}
+		renderTime();
+
+		/* ── MAC 过滤 1 ── */
+		var m1t = document.createElement('div');
+		m1t.className = 'pushbot-inline-title';
+		m1t.style.cssText = 'margin:14px 0 6px 2px;text-transform:none;font-size:13px';
+		m1t.textContent = 'MAC 过滤';
+		card.appendChild(m1t);
+		if (mac1Sel) {
+			var mac1Labels = {'':'禁用','allow':'忽略列表内设备','block':'仅通知列表内设备','interface':'仅通知此接口设备'};
+			card.appendChild(makeChoiceList(mac1Sel, mac1Labels, function() { renderMac1(); }));
+		}
+
+		/* ── MAC 1 conditional ── */
+		var mac1Body = document.createElement('div');
+		mac1Body.id = 'pm_mac1_body';
+		card.appendChild(mac1Body);
+		function makeMacTagField(optionName, tag, container) {
+			var t = document.createElement('div');
+			t.className = 'pushbot-inline-title';
+			t.style.cssText = 'margin:10px 0 4px 2px;text-transform:none;font-size:12px;color:#64748b';
+			t.textContent = tag;
+			container.appendChild(t);
+
+			var box = document.createElement('div');
+			box.className = 'pushbot-inline-field';
+			box.style.cssText = 'padding:10px 12px;margin:0';
+
+			var row = document.createElement('div');
+			row.style.cssText = 'display:flex;gap:8px;align-items:center';
+			var inp = document.createElement('input');
+			inp.type = 'text';
+			inp.placeholder = 'XX:XX:XX:XX:XX:XX';
+			inp.style.cssText = 'flex:1;padding:7px 10px;border-radius:8px;border:1px solid rgba(148,163,184,0.3);font-size:13px;background:rgba(255,255,255,0.7);color:inherit';
+			/* datalist for MAC hints */
+			var listId = 'mh_' + optionName;
+			inp.setAttribute('list', listId);
+			var dlist = document.createElement('datalist');
+			dlist.id = listId;
+			if (typeof PUSHBOT_MAC_HINTS !== 'undefined') {
+				PUSHBOT_MAC_HINTS.forEach(function(h) {
+					var o = document.createElement('option');
+					o.value = h.m;
+					o.textContent = h.n ? h.m + ' (' + h.n + ')' : h.m;
+					dlist.appendChild(o);
+				});
+			}
+			row.appendChild(inp);
+			row.appendChild(dlist);
+
+			var addBtn = document.createElement('button');
+			addBtn.type = 'button';
+			addBtn.textContent = '添加';
+			addBtn.className = 'pushbot-choice-button is-on';
+			addBtn.style.cssText = 'padding:7px 14px;font-size:12px';
+			row.appendChild(addBtn);
+			box.appendChild(row);
+
+			var tagC = document.createElement('div');
+			tagC.className = 'pushbot-alias-tags';
+			tagC.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-top:8px';
+			box.appendChild(tagC);
+
+			function sync() {
+				var vals = [];
+				tagC.querySelectorAll('.pushbot-alias-tag').forEach(function(el) {
+					var txt = el.textContent.replace('✕', '').trim();
+					if (txt) vals.push(txt);
+				});
+				rebuildMacHidden(optionName, vals);
+			}
+			function addTag(text) {
+				if (!text) return;
+				var el = document.createElement('span');
+				el.className = 'pushbot-alias-tag';
+				el.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;font-size:12px;background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.25);color:inherit';
+				el.textContent = text;
+				var del = document.createElement('button');
+				del.type = 'button';
+				del.innerHTML = '✕';
+				del.style.cssText = 'border:none;background:none;cursor:pointer;font-size:12px;color:#94a3b8;padding:0 2px';
+				del.title = '移除';
+				del.addEventListener('click', function(e) { e.preventDefault(); el.remove(); sync(); });
+				el.appendChild(del);
+				tagC.appendChild(el);
+				sync();
+			}
+			addBtn.addEventListener('click', function(e) {
+				e.preventDefault();
+				var val = inp.value.trim(); if (val) { addTag(val); inp.value = ''; }
+			});
+			inp.addEventListener('keydown', function(e) {
+				if (e.key === 'Enter') { e.preventDefault(); var val = inp.value.trim(); if (val) { addTag(val); inp.value = ''; } }
+			});
+
+			/* load existing values — fallback to server-side injected data */
+			var existing = [];
+			macHiddenBox.querySelectorAll('[name="cbid.pushbot.pushbot.' + optionName + '"]').forEach(function(el) {
+				if (el.value) existing.push(el.value);
+			});
+			if (existing.length === 0) {
+				var svr = {
+					pushbot_whitelist: typeof PUSHBOT_WL !== 'undefined' ? PUSHBOT_WL : [],
+					pushbot_blacklist: typeof PUSHBOT_BL !== 'undefined' ? PUSHBOT_BL : [],
+					MAC_online_list: typeof PUSHBOT_OL !== 'undefined' ? PUSHBOT_OL : [],
+					MAC_offline_list: typeof PUSHBOT_OFL !== 'undefined' ? PUSHBOT_OFL : []
+				};
+				existing = svr[optionName] || [];
+				if (existing.length > 0) rebuildMacHidden(optionName, existing);
+			}
+			existing.forEach(function(v) { if (v) addTag(v); });
+
+			container.appendChild(box);
+		}
+
+		function renderMac1() {
+			mac1Body.innerHTML = '';
+			var v = mac1Sel ? mac1Sel.value : '';
+			if (v === 'allow') makeMacTagField('pushbot_whitelist', '忽略列表', mac1Body);
+			if (v === 'block') makeMacTagField('pushbot_blacklist', '关注列表', mac1Body);
+			if (v === 'interface') {
+				var t = document.createElement('div');
+				t.className = 'pushbot-inline-title';
+				t.style.cssText = 'margin:10px 0 4px 2px;text-transform:none;font-size:12px;color:#64748b';
+				t.textContent = '接口名称';
+				mac1Body.appendChild(t);
+				/* use ifWidget if found, else find any interface select in DOM */
+				var srcSel = ifWidget;
+				if (!srcSel || !srcSel.options || srcSel.options.length === 0) {
+					var allSels = document.querySelectorAll('select[name$=".ipv4_interface"], select[name$=".pushbot_interface"]');
+					for (var si = 0; si < allSels.length; si++) {
+						if (allSels[si].options && allSels[si].options.length > 0) {
+							srcSel = allSels[si]; break;
+						}
+					}
+				}
+				var sel = document.createElement('select');
+				sel.style.cssText = 'width:100%;padding:7px;border-radius:8px;border:1px solid rgba(148,163,184,0.3)';
+				/* ensure form submission — add hidden fallback input */
+				var hiddenIf = document.createElement('input');
+				hiddenIf.type = 'hidden';
+				hiddenIf.name = 'cbid.pushbot.pushbot.pushbot_interface';
+				hiddenIf.value = '';
+				if (srcSel) {
+					for (var oi = 0; oi < srcSel.options.length; oi++) {
+						var opt = document.createElement('option');
+						opt.value = srcSel.options[oi].value;
+						opt.textContent = srcSel.options[oi].text;
+						if (srcSel.options[oi].selected) {
+							opt.selected = true;
+							hiddenIf.value = srcSel.options[oi].value;
+						}
+						sel.appendChild(opt);
+					}
+				} else {
+					/* last resort: text input */
+					var inp = document.createElement('input');
+					inp.type = 'text';
+					inp.placeholder = 'br-lan';
+					inp.style.cssText = 'width:100%;padding:7px 10px;border-radius:8px;border:1px solid rgba(148,163,184,0.3);font-size:13px;box-sizing:border-box;background:rgba(255,255,255,0.7);color:inherit';
+					sel = inp;
+				}
+				sel.addEventListener('change', function() {
+					var val = this.value;
+					hiddenIf.value = val;
+					if (ifWidget) ifWidget.value = val;
+				});
+				mac1Body.appendChild(sel);
+				mac1Body.appendChild(hiddenIf);
+			}
+		}
+		renderMac1();
+
+		/* ── MAC 过滤 2 ── */
+		var m2t = document.createElement('div');
+		m2t.className = 'pushbot-inline-title';
+		m2t.style.cssText = 'margin:14px 0 6px 2px;text-transform:none;font-size:13px';
+		m2t.textContent = 'MAC 过滤 2';
+		card.appendChild(m2t);
+		if (mac2Sel) {
+			var mac2Labels = {'':'禁用','MAC_online':'列表内任意设备在线时免打扰','MAC_offline':'列表内设备都离线后免打扰'};
+			card.appendChild(makeChoiceList(mac2Sel, mac2Labels, function() { renderMac2(); }));
+		}
+
+		/* ── MAC 2 conditional ── */
+		var mac2Body = document.createElement('div');
+		mac2Body.id = 'pm_mac2_body';
+		card.appendChild(mac2Body);
+		function renderMac2() {
+			mac2Body.innerHTML = '';
+			var v = mac2Sel ? mac2Sel.value : '';
+			if (v === 'MAC_online') makeMacTagField('MAC_online_list', '在线免打扰列表', mac2Body);
+			if (v === 'MAC_offline') makeMacTagField('MAC_offline_list', '任意离线免打扰列表', mac2Body);
+		}
+		renderMac2();
+
+		/* insert after terminal card */
+		var termCard = document.getElementById('pushbot_terminal_card');
+		if (termCard && termCard.parentNode) {
+			termCard.parentNode.insertBefore(card, termCard.nextSibling);
+		}
+	}
+
+	/* register all init functions FIRST, before any direct call that might throw */
+	window.addEventListener('load', initCard);
+	window.addEventListener('load', initPushModeCard);
+	window.addEventListener('load', initTerminalCard);
+	window.addEventListener('load', initDisturbCard);
+	window.addEventListener('load', initModernTabs);
+	setTimeout(initCard, 500);
+	setTimeout(initPushModeCard, 500);
+	setTimeout(initTerminalCard, 550);
+	setTimeout(initDisturbCard, 600);
+	setTimeout(initModernTabs, 650);
+	/* also try direct call if DOM ready, but guard against errors */
+	if (document.readyState !== 'loading') {
+		try { initCard(); } catch(e) {}
+	}
+
+	/* ── initScheduledPushCard inside IIFE to access helper functions ── */
+	function initScheduledPushCard() {
+	if (document.getElementById('pushbot_scheduled_card')) return;
+
+	/* find original rows */
+	var crontabRow = findRowByFieldName('crontab');
+	var crontabSel = crontabRow ? crontabRow.querySelector('select') : null;
+	if (!crontabRow || !crontabSel) { setTimeout(initScheduledPushCard, 300); return; }
+
+	var reg1Row = findRowByFieldName('regular_time');
+	var reg1Sel = reg1Row ? reg1Row.querySelector('select') : null;
+	var reg2Row = findRowByFieldName('regular_time_2');
+	var reg2Sel = reg2Row ? reg2Row.querySelector('select') : null;
+	var reg3Row = findRowByFieldName('regular_time_3');
+	var reg3Sel = reg3Row ? reg3Row.querySelector('select') : null;
+	var intervalRow = findRowByFieldName('interval_time');
+	var intervalSel = intervalRow ? intervalRow.querySelector('select') : null;
+	var titleRow = findRowByFieldName('send_title');
+	var titleInp = titleRow ? titleRow.querySelector('input') : null;
+	var titleDesc = titleRow ? titleRow.querySelector('.cbi-value-description') : null;
+	var googleRow = findRowByFieldName('google_check_timeout');
+	var googleInp = googleRow ? googleRow.querySelector('input') : null;
+	var googleDesc = googleRow ? googleRow.querySelector('.cbi-value-description') : null;
+	var sendBtnRow = findRowByFieldName('手动发送');
+	var sendBtn = sendBtnRow ? sendBtnRow.querySelector('.cbi-button') : null;
+
+	/* find flag rows by title text */
+	function frTitle(tag) {
+		var all = document.querySelectorAll('.cbi-value');
+		for (var xi = 0; xi < all.length; xi++) {
+			var t = all[xi].querySelector('.cbi-value-title');
+			if (t && t.textContent.indexOf(tag) >= 0) return all[xi];
+		}
+		return null;
+	}
+	var statusRow = frTitle('系统运行情况');
+	var statusCb = statusRow ? statusRow.querySelector('input[type="checkbox"]') : null;
+	var tempRow = frTitle('设备温度');
+	var tempCb = tempRow ? tempRow.querySelector('input[type="checkbox"]') : null;
+	var wanRow = frTitle('WAN信息');
+	var wanCb = wanRow ? wanRow.querySelector('input[type="checkbox"]') : null;
+	var clientRow = frTitle('客户端列表');
+	var clientCb = clientRow ? clientRow.querySelector('input[type="checkbox"]') : null;
+
+	/* stash rows */
+	stashFormElements(crontabRow);
+	if (reg1Row) stashFormElements(reg1Row);
+	if (reg2Row) stashFormElements(reg2Row);
+	if (reg3Row) stashFormElements(reg3Row);
+	if (intervalRow) stashFormElements(intervalRow);
+	if (titleRow) stashFormElements(titleRow);
+	if (googleRow) stashFormElements(googleRow);
+	if (sendBtnRow) stashFormElements(sendBtnRow);
+	[statusRow, tempRow, wanRow, clientRow].forEach(function(r) { if (r) stashFormElements(r); });
+
+	/* ── build card ── */
+	var card = document.createElement('div');
+	card.id = 'pushbot_scheduled_card';
+	card.className = 'pushbot-mode-card';
+
+	/* header */
+	var header = document.createElement('div');
+	header.className = 'pushbot-card-top';
+	header.innerHTML = '<span class="pushbot-card-title" style="font-size:16px;font-weight:800">定时推送</span>';
+	card.appendChild(header);
+
+	/* ── Row: 定时任务设定 ── */
+	var taskTitle = document.createElement('div');
+	taskTitle.className = 'pushbot-inline-title';
+	taskTitle.style.cssText = 'margin:6px 0 6px 2px;text-transform:none;font-size:13px';
+	taskTitle.textContent = '定时任务设定';
+	card.appendChild(taskTitle);
+
+	var crontabLabels = {'': '关闭', '1': '定时发送', '2': '间隔发送'};
+	var crontabList = document.createElement('div');
+	crontabList.className = 'pushbot-choice-list';
+
+	var crontabBtns = [];
+	var crontabOpts = [];
+	for (var oi = 0; oi < crontabSel.options.length; oi++) {
+		var opt = crontabSel.options[oi];
+		crontabOpts.push({ v: opt.value, l: crontabLabels[opt.value] || opt.text });
+	}
+	crontabOpts.forEach(function(o) {
+		var b = document.createElement('button');
+		b.type = 'button';
+		b.className = 'pushbot-choice-button';
+		b.textContent = o.l;
+		b.setAttribute('data-v', o.v);
+		b.addEventListener('click', function(e) {
+			e.preventDefault();
+			crontabSel.value = o.v;
+			syncCrontab();
+			renderCrontabContent();
+		});
+		crontabBtns.push(b);
+		crontabList.appendChild(b);
+	});
+	function syncCrontab() {
+		crontabBtns.forEach(function(b) {
+			var on = b.getAttribute('data-v') === crontabSel.value;
+			b.className = 'pushbot-choice-button ' + (on ? 'is-on' : 'is-off');
+		});
+	}
+	crontabSel.addEventListener('change', function() { syncCrontab(); renderCrontabContent(); });
+	syncCrontab();
+	card.appendChild(crontabList);
+
+	/* ── conditional content container ── */
+	var contentBody = document.createElement('div');
+	contentBody.id = 'sp_content_body';
+	card.appendChild(contentBody);
+
+	function renderCrontabContent() {
+		contentBody.innerHTML = '';
+		var mode = crontabSel.value;
+
+		if (mode === '' || mode === null) return; /* 关闭, no content */
+
+		/* ── time settings ── */
+		if (mode === '1') {
+			/* 定时发送 - three time selectors */
+			var timeTitle = document.createElement('div');
+			timeTitle.className = 'pushbot-inline-title';
+			timeTitle.style.cssText = 'margin:12px 0 6px 2px;text-transform:none;font-size:13px';
+			timeTitle.textContent = '发送时间';
+			contentBody.appendChild(timeTitle);
+
+			var timeRow = document.createElement('div');
+			timeRow.style.cssText = 'display:flex;gap:12px;flex-wrap:wrap';
+
+			/* helper to make hour selector */
+			function makeHourSelect(origSel, label) {
+				var wrap = document.createElement('div');
+				wrap.style.cssText = 'flex:1;min-width:120px';
+				var lbl = document.createElement('div');
+				lbl.className = 'pushbot-inline-title';
+				lbl.style.cssText = 'text-transform:none;font-size:12px;margin-bottom:4px';
+				lbl.textContent = label;
+				wrap.appendChild(lbl);
+
+				var sel = document.createElement('select');
+				sel.style.cssText = 'width:100%;padding:7px 10px;border-radius:8px;border:1px solid rgba(148,163,184,0.3);font-size:13px;background:rgba(255,255,255,0.7);color:inherit;font-family:inherit';
+				/* build options 0-23 + 关闭 for time 2,3 */
+				if (origSel) {
+					for (var hi = 0; hi < origSel.options.length; hi++) {
+						var o = document.createElement('option');
+						o.value = origSel.options[hi].value;
+						o.textContent = origSel.options[hi].textContent;
+						if (origSel.options[hi].selected) o.selected = true;
+						sel.appendChild(o);
+					}
+				} else {
+					for (var hi = 0; hi <= 23; hi++) {
+						var o = document.createElement('option');
+						o.value = hi;
+						o.textContent = '每天' + hi + '点';
+						sel.appendChild(o);
+					}
+				}
+				sel.addEventListener('change', function() {
+					if (origSel) origSel.value = this.value;
+				});
+				wrap.appendChild(sel);
+				return wrap;
+			}
+
+			timeRow.appendChild(makeHourSelect(reg1Sel, '时间一'));
+			timeRow.appendChild(makeHourSelect(reg2Sel, '时间二'));
+			timeRow.appendChild(makeHourSelect(reg3Sel, '时间三'));
+			contentBody.appendChild(timeRow);
+		}
+
+		if (mode === '2') {
+			/* 间隔发送 */
+			var intTitle = document.createElement('div');
+			intTitle.className = 'pushbot-inline-title';
+			intTitle.style.cssText = 'margin:12px 0 6px 2px;text-transform:none;font-size:13px';
+			intTitle.textContent = '发送间隔';
+			contentBody.appendChild(intTitle);
+
+			var intWrap = document.createElement('div');
+			intWrap.className = 'pushbot-inline-field';
+			intWrap.style.cssText = 'margin:0';
+			var intSel = document.createElement('select');
+			intSel.style.cssText = 'width:100%;padding:7px 10px;border-radius:8px;border:1px solid rgba(148,163,184,0.3);font-size:13px;background:rgba(255,255,255,0.7);color:inherit;font-family:inherit';
+			if (intervalSel) {
+				for (var hi = 0; hi < intervalSel.options.length; hi++) {
+					var o = document.createElement('option');
+					o.value = intervalSel.options[hi].value;
+					o.textContent = intervalSel.options[hi].textContent;
+					if (intervalSel.options[hi].selected) o.selected = true;
+					intSel.appendChild(o);
+				}
+				intSel.addEventListener('change', function() { intervalSel.value = this.value; });
+			} else {
+				for (var hi = 1; hi <= 23; hi++) {
+					var o = document.createElement('option');
+					o.value = hi;
+					o.textContent = hi + '小时';
+					intSel.appendChild(o);
+				}
+			}
+			intWrap.appendChild(intSel);
+			var intDesc = document.createElement('div');
+			intDesc.className = 'pushbot-inline-description';
+			intDesc.textContent = '从 00:00 开始，每 * 小时发送一次';
+			intWrap.appendChild(intDesc);
+			contentBody.appendChild(intWrap);
+		}
+
+		/* ── push content flags ── */
+		var contentTitle = document.createElement('div');
+		contentTitle.className = 'pushbot-inline-title';
+		contentTitle.style.cssText = 'margin:14px 0 6px 2px;text-transform:none;font-size:13px';
+		contentTitle.textContent = '推送内容';
+		contentBody.appendChild(contentTitle);
+
+		var contentList = document.createElement('div');
+		contentList.className = 'pushbot-choice-list';
+		var flags = [
+			{ cb: statusCb, label: '系统运行情况' },
+			{ cb: tempCb, label: '设备温度' },
+			{ cb: wanCb, label: 'WAN信息' },
+			{ cb: clientCb, label: '客户端列表' }
+		];
+		flags.forEach(function(f) {
+			if (!f.cb) return;
+			var b = document.createElement('button');
+			b.type = 'button';
+			b.className = 'pushbot-choice-button';
+			var on = !!(f.cb.checked);
+			b.className = 'pushbot-choice-button ' + (on ? 'is-on' : 'is-off');
+			b.innerHTML = '<span>' + f.label + '</span>';
+			b.addEventListener('click', function(e) {
+				e.preventDefault();
+				f.cb.checked = !f.cb.checked;
+				var on2 = f.cb.checked;
+				this.className = 'pushbot-choice-button ' + (on2 ? 'is-on' : 'is-off');
+			});
+			contentList.appendChild(b);
+		});
+		contentBody.appendChild(contentList);
+
+		/* ── row: 推送标题 + 全球互联检测超时时间 ── */
+		var bottomRow = document.createElement('div');
+		bottomRow.style.cssText = 'display:flex;gap:12px;margin-top:14px;flex-wrap:wrap';
+
+		/* left: 推送标题 */
+		if (titleInp) {
+			var titleWrap = document.createElement('div');
+			titleWrap.style.cssText = 'flex:2;min-width:200px';
+			var ttl = document.createElement('div');
+			ttl.className = 'pushbot-inline-title';
+			ttl.style.cssText = 'text-transform:none;font-size:12px;margin-bottom:4px';
+			ttl.textContent = '推送标题';
+			titleWrap.appendChild(ttl);
+			var inpClone = titleInp.cloneNode(true);
+			inpClone.removeAttribute('name');
+			inpClone.style.cssText = 'width:100%;padding:7px 10px;border-radius:8px;border:1px solid rgba(148,163,184,0.3);font-size:13px;box-sizing:border-box;background:rgba(255,255,255,0.7);color:inherit';
+			inpClone.addEventListener('change', function() { titleInp.value = this.value; });
+			titleInp.addEventListener('change', function() { inpClone.value = titleInp.value; });
+			titleWrap.appendChild(inpClone);
+			if (titleDesc) {
+				var td = document.createElement('div');
+				td.className = 'pushbot-inline-description';
+				td.style.cssText = 'margin-top:4px';
+				td.innerHTML = titleDesc.innerHTML;
+				titleWrap.appendChild(td);
+			}
+			bottomRow.appendChild(titleWrap);
+		}
+
+		/* right: 全球互联检测超时时间 */
+		if (googleInp) {
+			var googleWrap = document.createElement('div');
+			googleWrap.style.cssText = 'flex:1;min-width:150px';
+			var gt = document.createElement('div');
+			gt.className = 'pushbot-inline-title';
+			gt.style.cssText = 'text-transform:none;font-size:12px;margin-bottom:4px';
+			gt.textContent = '全球互联检测超时时间';
+			googleWrap.appendChild(gt);
+			var gClone = googleInp.cloneNode(true);
+			gClone.removeAttribute('name');
+			gClone.style.cssText = 'width:100%;padding:7px 10px;border-radius:8px;border:1px solid rgba(148,163,184,0.3);font-size:13px;box-sizing:border-box;background:rgba(255,255,255,0.7);color:inherit';
+			gClone.addEventListener('change', function() { googleInp.value = this.value; });
+			googleInp.addEventListener('change', function() { gClone.value = googleInp.value; });
+			googleWrap.appendChild(gClone);
+			if (googleDesc) {
+				var gd = document.createElement('div');
+				gd.className = 'pushbot-inline-description';
+				gd.style.cssText = 'margin-top:4px';
+				gd.innerHTML = googleDesc.innerHTML;
+				googleWrap.appendChild(gd);
+			}
+			bottomRow.appendChild(googleWrap);
+		}
+
+		contentBody.appendChild(bottomRow);
+
+		/* ── 手动发送 button (right-aligned) ── */
+		var origSendBtn = document.querySelector('[name$="._add"]');
+		if (origSendBtn) {
+			var sendRow = document.createElement('div');
+			sendRow.style.cssText = 'display:flex;justify-content:flex-end;margin-top:16px';
+			var sBtn = document.createElement('button');
+			sBtn.type = 'button';
+			sBtn.textContent = '手动发送';
+			sBtn.className = 'pushbot-sendtest-btn';
+			sBtn.addEventListener('click', function(e) {
+				e.preventDefault();
+				/* trigger the original CBI button's action: save config then send */
+				sBtn.disabled = true;
+				sBtn.textContent = '发送中...';
+				/* set the original button as the clicked submit button */
+				origSendBtn.click();
+			});
+			sendRow.appendChild(sBtn);
+			contentBody.appendChild(sendRow);
+		}
+	}
+
+	/* ── initial render ── */
+	renderCrontabContent();
+
+	/* insert into scheduled pane */
+	var pane = document.getElementById('pushbot_pane_scheduled');
+	if (pane) {
+		pane.innerHTML = '';
+		pane.appendChild(card);
+	}
+}
+
+	/* also call initScheduledPushCard with retry logic */
+	setTimeout(function() {
+		try { initScheduledPushCard(); } catch(e) {}
+	}, 700);
+})();
+
+function initModernTabs() {
+	if (document.getElementById('pushbot_modern_tabs')) return;
+
+	var headerCard = document.querySelector('.pushbot-header-card');
+	if (!headerCard || !headerCard.parentNode) return;
+
+	/* wait for cards to exist before building tabs */
+	if (!document.getElementById('pushbot_mode_card') || !document.getElementById('pushbot_pushmode_card')) {
+		setTimeout(initModernTabs, 100);
+		return;
+	}
+
+	/* build tab bar */
+	var tabBar = document.createElement('div');
+	tabBar.id = 'pushbot_modern_tabs';
+	tabBar.className = 'pushbot-tab-bar';
+	tabBar.innerHTML =
+		'<button type="button" class="pushbot-tab is-active" data-tab="basic">基本设置</button>' +
+		'<button type="button" class="pushbot-tab" data-tab="content">推送内容</button>' +
+		'<button type="button" class="pushbot-tab" data-tab="scheduled">定时推送</button>' +
+		'<button type="button" class="pushbot-tab" data-tab="client">在线设备</button>' +
+		'<button type="button" class="pushbot-tab" data-tab="log">日志</button>';
+
+	headerCard.parentNode.insertBefore(tabBar, headerCard.nextSibling);
+
+	/* content containers after tab bar */
+	var basicPane = document.createElement('div');
+	basicPane.id = 'pushbot_pane_basic';
+	basicPane.className = 'pushbot-tab-pane is-visible';
+
+	var contentPane = document.createElement('div');
+	contentPane.id = 'pushbot_pane_content';
+	contentPane.className = 'pushbot-tab-pane';
+	contentPane.innerHTML = '<div class="pushbot-mode-card" style="padding:32px;text-align:center;color:#94a3b8;font-size:14px">推送内容设置即将到来</div>';
+
+	var scheduledPane = document.createElement('div');
+	scheduledPane.id = 'pushbot_pane_scheduled';
+	scheduledPane.className = 'pushbot-tab-pane';
+	scheduledPane.innerHTML = '<div class="pushbot-mode-card" style="padding:32px;text-align:center;color:#94a3b8;font-size:14px">加载中...</div>';
+
+	var clientPane = document.createElement('div');
+	clientPane.id = 'pushbot_pane_client';
+	clientPane.className = 'pushbot-tab-pane';
+	clientPane.innerHTML = '<div class="pushbot-mode-card" style="padding:0;overflow:hidden"><div class="pushbot-log-container"><div class="pushbot-log-content" id="pushbot_client_content"><p style="padding:12px;margin:0;color:#94a3b8;text-align:center">加载中...</p></div></div></div>';
+
+	var logPane = document.createElement('div');
+	logPane.id = 'pushbot_pane_log';
+	logPane.className = 'pushbot-tab-pane';
+	logPane.innerHTML = [
+		'<div class="pushbot-mode-card" style="padding:0;overflow:hidden">',
+			'<div class="pushbot-log-container">',
+				'<div class="pushbot-log-header">',
+					'<div class="pushbot-log-controls">',
+						'<label class="pushbot-log-switch" id="log_auto_switch">',
+							'<span class="pushbot-log-switch-text">自动刷新</span>',
+							'<input type="checkbox" id="log_auto_toggle" checked>',
+							'<span class="pushbot-log-switch-track"></span>',
+						'</label>',
+						'<button class="pushbot-log-btn" id="log_clear_btn">清除日志</button>',
+					'</div>',
+				'</div>',
+				'<div class="pushbot-log-content" id="pushbot_log_content"><pre style="margin:0;padding:12px;font-family:Menlo,Consolas,monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;word-break:break-all">加载中...</pre></div>',
+			'</div>',
+		'</div>'
+	].join('');
+
+	tabBar.parentNode.insertBefore(basicPane, tabBar.nextSibling);
+	tabBar.parentNode.insertBefore(contentPane, basicPane.nextSibling);
+	tabBar.parentNode.insertBefore(scheduledPane, contentPane.nextSibling);
+	tabBar.parentNode.insertBefore(clientPane, scheduledPane.nextSibling);
+	tabBar.parentNode.insertBefore(logPane, clientPane.nextSibling);
+
+	/* move cards (运行控制 + 推送模式 + 终端信息) into basic pane */
+	var runCard = document.getElementById('pushbot_mode_card');
+	var pushCard = document.getElementById('pushbot_pushmode_card');
+	var termCard = document.getElementById('pushbot_terminal_card');
+	if (runCard) basicPane.appendChild(runCard);
+	if (pushCard) basicPane.appendChild(pushCard);
+	if (termCard) basicPane.appendChild(termCard);
+
+	/* hide old "基本设置" and "日志" LuCI tabs, switch to "推送内容" */
+	var oldTabMenu = document.querySelector('.cbi-tabmenu');
+	if (oldTabMenu) {
+		var links = oldTabMenu.querySelectorAll('a');
+		links.forEach(function(a) {
+			if (a.textContent.indexOf('基本设置') >= 0 || a.textContent.indexOf('日志') >= 0 || a.textContent.indexOf('免打扰') >= 0 || a.textContent.indexOf('在线设备') >= 0 || a.textContent.indexOf('定时推送') >= 0) {
+				var li = a.parentNode;
+				if (li) li.style.display = 'none';
+			}
+		});
+		links.forEach(function(a) {
+			if (a.textContent.indexOf('推送内容') >= 0) {
+				a.click();
+			}
+		});
+	}
+
+	/* tab switching — old tabs remain visible below */
+	var tabs = tabBar.querySelectorAll('.pushbot-tab');
+	tabs.forEach(function(tab) {
+		tab.addEventListener('click', function(e) {
+			e.preventDefault();
+			var name = tab.getAttribute('data-tab');
+			tabs.forEach(function(t) { t.classList.remove('is-active'); });
+			tab.classList.add('is-active');
+		document.getElementById('pushbot_pane_basic').classList.toggle('is-visible', name === 'basic');
+		document.getElementById('pushbot_pane_content').classList.toggle('is-visible', name === 'content');
+		document.getElementById('pushbot_pane_scheduled').classList.toggle('is-visible', name === 'scheduled');
+		document.getElementById('pushbot_pane_client').classList.toggle('is-visible', name === 'client');
+		document.getElementById('pushbot_pane_log').classList.toggle('is-visible', name === 'log');
+		if (name === 'log') loadLog();
+		if (name === 'client') loadClients();
+		});
+	});
+
+	/* ── log viewer ── */
+	var logTimer = null;
+	function loadLog() {
+		var pre = document.querySelector('#pushbot_log_content pre');
+		if (!pre) return;
+		XHR.get('<%=url([[admin]], [[services]], [[pushbot]], [[get_log]])%>', null,
+			function(x) {
+				if (x && x.status == 200) {
+					pre.textContent = x.responseText || '(空)';
+					pre.scrollTop = pre.scrollHeight;
+				}
+			}
+		);
+	}
+	var logToggle = document.getElementById('log_auto_toggle');
+	var logClear = document.getElementById('log_clear_btn');
+	if (logToggle) {
+		logToggle.addEventListener('change', function() {
+			if (this.checked) {
+				logTimer = setInterval(loadLog, 3000);
+				loadLog();
+			} else {
+				if (logTimer) { clearInterval(logTimer); logTimer = null; }
+			}
+		});
+		/* start auto-refresh by default when log tab is first activated */
+		logToggle.checked = true;
+	}
+	if (logClear) {
+		logClear.addEventListener('click', function(e) {
+			e.preventDefault();
+			XHR.get('<%=url([[admin]], [[services]], [[pushbot]], [[clear_log]])%>', null,
+				function() {
+					var pre = document.querySelector('#pushbot_log_content pre');
+					if (pre) pre.textContent = '(空)';
+				}
+			);
+		});
+	}
+
+	/* ── client (在线设备) viewer ── */
+	var clientTimer = null;
+	function timeForHumans(seconds) {
+		if (seconds < 60) return seconds + ' 秒';
+		if (seconds < 3600) return Math.floor(seconds / 60) + ' 分 ' + (seconds % 60) + ' 秒';
+		if (seconds < 86400) return Math.floor(seconds / 3600) + ' 小时 ' + Math.floor((seconds % 3600) / 60) + ' 分';
+		return Math.floor(seconds / 86400) + ' 天 ' + Math.floor((seconds % 86400) / 3600) + ' 小时';
+	}
+	function loadClients() {
+		var container = document.getElementById('pushbot_client_content');
+		if (!container) return;
+		XHR.get('<%=url([[admin]], [[services]], [[pushbot]], [[client_list]])%>', null,
+			function(x) {
+				if (!x || x.status != 200) { container.innerHTML = '<p style="padding:12px;margin:0;color:#ef4444;text-align:center">加载失败</p>'; return; }
+				var data;
+				try { data = JSON.parse(x.responseText); } catch(e) { data = []; }
+				if (!data || !data.length) {
+					container.innerHTML = '<p style="padding:12px;margin:0;color:#94a3b8;text-align:center">暂无在线设备</p>';
+					return;
+				}
+				var html = '<div style="overflow-x:auto"><table class="pushbot-client-table"><thead><tr><th>主机名</th><th>MAC 地址</th><th>IP 地址</th><th>在线时间</th></tr></thead><tbody>';
+				data.forEach(function(c) {
+					var h = c.hostname || '-';
+					if (h.indexOf('?') === 0) h = h.substring(1);
+					if (!h || h === '?') h = '-';
+					html += '<tr><td>' + escHtml(h) + '</td><td class="pushbot-cell-mac">' + escHtml(c.mac) + '</td><td>' + escHtml(c.ip) + '</td><td>' + timeForHumans(Math.max(0, c.uptime)) + '</td></tr>';
+				});
+				html += '</tbody></table></div>';
+				container.innerHTML = html;
+			}
+		);
+	}
+	function escHtml(s) {
+		return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+	}
+	/* start auto-refresh for client list */
+	clientTimer = setInterval(function() {
+		var pane = document.getElementById('pushbot_pane_client');
+		if (pane && pane.classList.contains('is-visible')) loadClients();
+	}, 5000);
+}
+//]]&gt;
 </script>
-<style>.mar-10 {margin-left: 50px; margin-right: 10px;}</style>
+<style>
+.mar-10 {margin-left: 50px; margin-right: 10px;}
+
+.pushbot-mode-card {
+	margin: 10px 0 16px 0;
+	padding: 16px 18px 18px;
+	border: 1px solid rgba(148, 163, 184, 0.24);
+	border-radius: 16px;
+	background: rgba(246, 247, 250, 0.86);
+	box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+}
+
+.pushbot-header-card {
+	margin: 0 0 16px 0;
+	padding: 18px 20px;
+}
+
+.pushbot-pushmode-card {
+	margin: 0 0 16px 0;
+	padding: 18px 20px;
+}
+
+.pushbot-pushmode-row {
+	display: flex;
+	gap: 12px;
+	flex-wrap: wrap;
+	margin-top: 12px;
+}
+
+.pushbot-pushmode-column {
+	flex: 1 1 240px;
+	min-width: 0;
+}
+
+.pushbot-pushmode-action-column {
+	flex: 0 1 180px;
+	display: flex;
+	align-items: flex-end;
+	justify-content: flex-end;
+	padding-bottom: 4px;
+}
+
+.pushbot-inline-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 10px 12px;
+	border-radius: 12px;
+	background: rgba(255, 255, 255, 0.62);
+	border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.pushbot-inline-title {
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	color: #475569;
+	text-transform: uppercase;
+}
+
+.pushbot-inline-body {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.pushbot-inline-body-compact {
+	gap: 4px;
+}
+
+.pushbot-inline-body input,
+.pushbot-inline-body select,
+.pushbot-inline-body textarea {
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+.pushbot-inline-body .cbi-button {
+	width: auto;
+	min-width: 104px;
+	align-self: flex-start;
+}
+
+.pushbot-inline-description {
+	font-size: 12px;
+	line-height: 1.6;
+	color: #64748b;
+}
+
+.pushbot-pushmode-list {
+	margin-top: 2px;
+}
+
+.pushbot-pushmode-settings {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.pushbot-header-content {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+
+.pushbot-status-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	border: 1px solid transparent;
+	box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+	white-space: nowrap;
+}
+
+.pushbot-status-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 999px;
+	background: currentColor;
+	box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.24);
+}
+
+.pushbot-status-badge.is-running {
+	background: linear-gradient(135deg, #10b981, #059669);
+	color: #ffffff;
+}
+
+.pushbot-status-badge.is-stopped {
+	background: linear-gradient(135deg, #fecaca, #fda4af);
+	color: #b91c1c;
+}
+
+@media (prefers-color-scheme: dark) {
+	.pushbot-mode-card {
+		background: rgba(10, 10, 18, 0.75) !important;
+		border-color: rgba(255, 255, 255, 0.08) !important;
+		box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+	}
+
+	.pushbot-card-title {
+		color: #e8e8e8 !important;
+	}
+
+	.pushbot-card-subtitle {
+		color: #d9d9d9 !important;
+	}
+
+	.pushbot-status-badge.is-stopped {
+		background: linear-gradient(135deg, rgba(248, 113, 113, 0.28), rgba(244, 63, 94, 0.32)) !important;
+		color: #fecaca !important;
+	}
+
+	.pushbot-status-badge.is-running {
+		background: linear-gradient(135deg, rgba(16, 185, 129, 0.42), rgba(5, 150, 105, 0.46)) !important;
+		color: #dcfce7 !important;
+	}
+
+	.pushbot-inline-field {
+		background: rgba(17, 24, 39, 0.72) !important;
+		border-color: rgba(255, 255, 255, 0.08) !important;
+	}
+
+	.pushbot-inline-title {
+		color: #e2e8f0 !important;
+	}
+
+	.pushbot-inline-description {
+		color: #cbd5e1 !important;
+	}
+
+	.pushbot-choice-button {
+		background: linear-gradient(180deg, #2f2f33 0%, #242426 100%) !important;
+		color: #d8d8d8 !important;
+		border-color: rgba(255, 255, 255, 0.08) !important;
+		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 2px 8px rgba(0, 0, 0, 0.28) !important;
+	}
+
+	.pushbot-sendtest-btn {
+		background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+		color: #ffffff !important;
+		box-shadow: 0 8px 18px rgba(37, 99, 235, 0.35) !important;
+	}
+	.pushbot-sendtest-btn:hover {
+		box-shadow: 0 10px 22px rgba(37, 99, 235, 0.5) !important;
+	}
+}
+
+/* ── terminal card alias dark mode ── */
+@media (prefers-color-scheme: dark) {
+	.pushbot-alias-input {
+		background: rgba(30, 41, 59, 0.72) !important;
+		border-color: rgba(255, 255, 255, 0.10) !important;
+		color: #e2e8f0 !important;
+	}
+	.pushbot-alias-tag {
+		background: rgba(59, 130, 246, 0.20) !important;
+		border-color: rgba(59, 130, 246, 0.35) !important;
+	}
+	.pushbot-dnd-input {
+		background: rgba(30, 41, 59, 0.72) !important;
+		border-color: rgba(255, 255, 255, 0.10) !important;
+		color: #e2e8f0 !important;
+	}
+}
+
+/* ── log viewer ── */
+.pushbot-log-container {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+/* ── client table ── */
+.pushbot-client-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 13px;
+}
+.pushbot-client-table thead th {
+	padding: 10px 14px;
+	text-align: left;
+	font-weight: 700;
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: #64748b;
+	border-bottom: 2px solid rgba(148,163,184,0.2);
+	background: rgba(248,250,252,0.5);
+}
+.pushbot-client-table tbody td {
+	padding: 9px 14px;
+	border-bottom: 1px solid rgba(148,163,184,0.1);
+	color: #1e293b;
+}
+.pushbot-client-table tbody tr:hover {
+	background: rgba(59,130,246,0.04);
+}
+.pushbot-client-table tbody tr:last-child td {
+	border-bottom: none;
+}
+.pushbot-cell-mac {
+	font-family: Menlo, Consolas, monospace;
+	font-size: 12px;
+	letter-spacing: 0.02em;
+}
+
+.pushbot-log-header {
+	padding: 12px 16px;
+	border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+.pushbot-log-controls {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+.pushbot-log-switch {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	cursor: pointer;
+	font-size: 13px;
+	font-weight: 600;
+	color: #475569;
+	user-select: none;
+}
+.pushbot-log-switch input[type="checkbox"] {
+	display: none;
+}
+.pushbot-log-switch-track {
+	width: 36px;
+	height: 20px;
+	border-radius: 999px;
+	background: #cbd5e1;
+	position: relative;
+	transition: background 0.2s ease;
+}
+.pushbot-log-switch-track::after {
+	content: '';
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 16px;
+	height: 16px;
+	border-radius: 999px;
+	background: #ffffff;
+	transition: transform 0.2s ease;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+.pushbot-log-switch input:checked + .pushbot-log-switch-track {
+	background: #3b82f6;
+}
+.pushbot-log-switch input:checked + .pushbot-log-switch-track::after {
+	transform: translateX(16px);
+}
+.pushbot-log-btn {
+	padding: 7px 16px;
+	border: 1px solid rgba(148, 163, 184, 0.25);
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.7);
+	color: #475569;
+	font-size: 13px;
+	font-weight: 600;
+	font-family: inherit;
+	cursor: pointer;
+	transition: all 0.15s ease;
+}
+.pushbot-log-btn:hover {
+	background: rgba(239, 68, 68, 0.08);
+	border-color: rgba(239, 68, 68, 0.25);
+	color: #dc2626;
+}
+.pushbot-log-content {
+	flex: 1;
+	max-height: 480px;
+	overflow-y: auto;
+	background: rgba(0, 0, 0, 0.02);
+}
+.pushbot-log-content pre {
+	margin: 0;
+	padding: 12px 16px;
+	font-family: Menlo, Consolas, monospace;
+	font-size: 12px;
+	line-height: 1.6;
+	white-space: pre-wrap;
+	word-break: break-all;
+	color: #333;
+}
+@media (prefers-color-scheme: dark) {
+	.pushbot-log-content {
+		background: rgba(0, 0, 0, 0.20) !important;
+	}
+	.pushbot-log-content pre {
+		color: #cbd5e1 !important;
+	}
+	.pushbot-log-switch {
+		color: #cbd5e1 !important;
+	}
+	.pushbot-log-switch-track {
+		background: #475569 !important;
+	}
+	.pushbot-log-btn {
+		background: rgba(30, 41, 59, 0.5) !important;
+		border-color: rgba(255, 255, 255, 0.10) !important;
+		color: #cbd5e1 !important;
+	}
+	.pushbot-log-btn:hover {
+		background: rgba(239, 68, 68, 0.15) !important;
+		color: #fca5a5 !important;
+	}
+	.pushbot-log-header {
+		border-color: rgba(255, 255, 255, 0.06) !important;
+	}
+	.pushbot-client-table thead th {
+		color: #cbd5e1 !important;
+		border-color: rgba(255,255,255,0.10) !important;
+		background: rgba(10,10,18,0.5) !important;
+	}
+	.pushbot-client-table tbody td {
+		color: #d9d9d9 !important;
+		border-color: rgba(255,255,255,0.05) !important;
+	}
+	.pushbot-client-table tbody tr:hover {
+		background: rgba(96,165,250,0.10) !important;
+	}
+}
+
+/* ── modern tabs ── */
+.pushbot-tab-bar {
+	display: flex;
+	gap: 4px;
+	margin: 0 0 14px 0;
+	padding: 4px;
+	border-radius: 14px;
+	background: rgba(226, 232, 240, 0.66);
+	border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.pushbot-tab {
+	padding: 8px 20px;
+	border: none;
+	border-radius: 11px;
+	font-size: 13px;
+	font-weight: 700;
+	font-family: inherit;
+	cursor: pointer;
+	color: #475569;
+	background: transparent;
+	transition: all 0.2s ease;
+}
+.pushbot-tab.is-active {
+	background: #ffffff;
+	color: #0f172a;
+	box-shadow: 0 4px 12px rgba(15, 23, 42, 0.10), inset 0 -2px 0 #3b82f6;
+}
+.pushbot-tab:hover:not(.is-active) {
+	color: #1e293b;
+	background: rgba(255, 255, 255, 0.40);
+}
+
+.pushbot-tab-pane {
+	display: none;
+}
+.pushbot-tab-pane.is-visible {
+	display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+	.pushbot-tab-bar {
+		background: rgba(30, 41, 59, 0.70) !important;
+		border-color: rgba(255, 255, 255, 0.08) !important;
+	}
+	.pushbot-tab {
+		color: #cbd5e1 !important;
+	}
+	.pushbot-tab.is-active {
+		background: rgba(30, 41, 59, 0.92) !important;
+		color: #f1f5f9 !important;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.30), inset 0 -2px 0 #60a5fa !important;
+	}
+	.pushbot-tab:hover:not(.is-active) {
+		color: #f8fafc !important;
+		background: rgba(51, 65, 85, 0.50) !important;
+	}
+}
+
+.pushbot-card-top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 8px;
+}
+
+.pushbot-card-title {
+	font-size: 22px;
+	font-weight: 800;
+	letter-spacing: 0.02em;
+	line-height: 1.2;
+	color: #111827;
+}
+
+.pushbot-card-subtitle {
+	margin: 2px 0 0 0;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.7;
+	color: #475569;
+}
+
+
+.pushbot-toggle-button,
+.pushbot-choice-button {
+	border: 1px solid transparent;
+	transition: all 0.2s ease;
+	font-family: inherit;
+}
+
+.pushbot-toggle-button {
+	padding: 8px 14px;
+	border-radius: 999px;
+	font-weight: 700;
+	font-size: 13px;
+	cursor: pointer;
+}
+
+.pushbot-toggle-button.is-on {
+	background: linear-gradient(135deg, #10b981, #059669);
+	color: #ffffff;
+	box-shadow: 0 8px 18px rgba(16, 185, 129, 0.26);
+}
+
+.pushbot-toggle-button.is-off {
+	background: linear-gradient(135deg, #fecaca, #fda4af);
+	color: #b91c1c;
+	box-shadow: 0 8px 18px rgba(239, 68, 68, 0.14);
+}
+
+.pushbot-choice-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.pushbot-choice-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 9px 12px;
+	border-radius: 12px;
+	background: rgba(255, 255, 255, 0.75);
+	color: #334155;
+	cursor: pointer;
+}
+
+
+.pushbot-choice-button.is-on {
+	background: linear-gradient(135deg, rgba(59, 130, 246, 0.28), rgba(14, 165, 233, 0.34));
+	border-color: rgba(59, 130, 246, 0.55);
+	color: #0f172a;
+	box-shadow: 0 10px 20px rgba(37, 99, 235, 0.24);
+	transform: translateY(-1px);
+}
+
+.pushbot-sendtest-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 9px 22px;
+	border: 1px solid transparent;
+	border-radius: 999px;
+	font-size: 13px;
+	font-weight: 700;
+	font-family: inherit;
+	cursor: pointer;
+	background: linear-gradient(135deg, #3b82f6, #2563eb);
+	color: #ffffff;
+	box-shadow: 0 8px 18px rgba(37, 99, 235, 0.26);
+	transition: all 0.2s ease;
+	align-self: center;
+	margin-top: 4px;
+}
+.pushbot-sendtest-btn:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 10px 22px rgba(37, 99, 235, 0.34);
+}
+
+@media (prefers-color-scheme: dark) {
+	.pushbot-choice-button {
+		background: #1f2023 !important;
+		color: #c8c8c8 !important;
+	}
+
+	.pushbot-choice-button.is-on {
+		background: linear-gradient(135deg, rgba(56, 139, 253, 0.55), rgba(34, 211, 238, 0.36)) !important;
+		border-color: rgba(96, 165, 250, 0.8) !important;
+		color: #f8fafc !important;
+		box-shadow: 0 10px 22px rgba(59, 130, 246, 0.4) !important;
+		transform: translateY(-1px);
+	}
+}
+
+body.dark .pushbot-choice-button.is-on,
+body[data-theme="dark"] .pushbot-choice-button.is-on,
+body[data-theme="black"] .pushbot-choice-button.is-on,
+body[class*="dark"] .pushbot-choice-button.is-on {
+	color: #f8fafc;
+}
+
+.pushbot-choice-button.is-off {
+	filter: grayscale(0.95);
+	opacity: 0.8;
+}
+
+.pushbot-choice-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	flex-shrink: 0;
+}
+
+.pushbot-choice-icon svg {
+	width: 18px;
+	height: 18px;
+	fill: currentColor;
+}
+</style>
 <fieldset class="cbi-section">
-	<p id="pushbot_status">
-		<em><%:Collecting data...%></em>
-	</p>
+	<div class="pushbot-mode-card pushbot-header-card">
+		<div class="pushbot-card-top">
+			<div class="pushbot-header-content">
+				<div class="pushbot-card-title">PushBot</div>
+				<div class="pushbot-card-subtitle">「全能推送」，英文名「PushBot」，是一款从服务器推送报警信息和日志到各平台的工具。<br>支持钉钉推送，企业微信推送，PushPlus推送。<br>本插件由 tty228/luci-app-serverchan 创建，然后七年修改为全能推送自用。<br><br>如果你在使用中遇到问题，请到这里提交：<a href="https://github.com/zzsj0928/luci-app-pushbot" target="_blank">github 项目地址</a></div>
+			</div>
+			<div id="pushbot_status_badge" class="pushbot-status-badge is-stopped" role="status" aria-live="polite">
+				<span class="pushbot-status-dot"></span>
+				<span id="pushbot_status_text"><%:NOT RUNNING%></span>
+			</div>
+		</div>
+	</div>
 </fieldset>
