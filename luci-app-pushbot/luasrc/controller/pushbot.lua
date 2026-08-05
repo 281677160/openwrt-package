@@ -42,6 +42,15 @@ end
 
 function act_client_list()
 	local clients = {}
+	-- 通过 pushbot usage list 获取 "mac total_bytes"(wrtbwmon 失败时自动回落 nlbwmon)
+	local usage_map = {}
+	local u = luci.sys.exec("/usr/bin/pushbot/pushbot usage list 2>/dev/null")
+	if u then
+		for line in u:gmatch("[^\r\n]+") do
+			local mac, bytes = line:match("^(%S+)%s+(%S+)")
+			if mac and bytes then usage_map[mac:upper()] = tonumber(bytes) or 0 end
+		end
+	end
 	local f = io.open("/tmp/pushbot/ipAddress", "r")
 	if f then
 		for l in f:lines() do
@@ -50,13 +59,21 @@ function act_client_list()
 				local ip, mac, hn, up = l:match("^(%S+)%s+(%S+)%s+(%S+)%s+(%S+)")
 				if mac then
 					local n = os.time()
-					clients[#clients+1] = {ip=ip or "", mac=mac:upper(), hostname=hn or "", uptime=((tonumber(up) and n - tonumber(up)) or 0)}
+					clients[#clients+1] = {ip=ip or "", mac=mac:upper(), hostname=hn or "", uptime=((tonumber(up) and n - tonumber(up)) or 0), usage=format_bytes(usage_map[mac:upper()] or 0)}
 				end
 			end
 		end
 		f:close()
 	end
 	luci.http.prepare_content("application/json"); luci.http.write_json(clients)
+end
+
+function format_bytes(n)
+	n = tonumber(n) or 0
+	if n > 1073741824 then return string.format("%.2f G", n / 1073741824) end
+	if n > 1048576 then return string.format("%.2f M", n / 1048576) end
+	if n > 1024 then return string.format("%.2f K", n / 1024) end
+	return tostring(n) .. " B"
 end
 
 function get_log()
@@ -75,7 +92,7 @@ function act_get_config()
 	local sys = require("luci.sys")
 	local c, l, f, s = {}, {}, {}, {}
 
-	local scalar_opts = {"pushbot_enable","lite_enable","jsonpath","dd_webhook","we_webhook","pp_token","pp_channel","pp_webhook","pp_topic_enable","pp_topic","pushdeer_key","pushdeer_srv_enable","pushdeer_srv","fs_webhook","bark_token","bark_srv_enable","bark_srv","bark_sound","bark_icon_enable","bark_icon","bark_level","device_name","sleeptime","oui_data","oui_dir","reset_regularly","debuglevel","pushbot_sheep","starttime","endtime","macmechanism","pushbot_interface","macmechanism2","crontab","regular_time","regular_time_2","regular_time_3","interval_time","send_title","router_status","router_temp","router_wan","client_list","google_check_timeout","pushbot_up","pushbot_down","cpuload_enable","cpuload","temperature_enable","temperature","client_usage","client_usage_max","client_usage_disturb","pushbot_ipv4","ipv4_interface","pushbot_ipv6","ipv6_interface","web_logged","ssh_logged","web_login_failed","ssh_login_failed","login_max_num","web_login_black","ip_black_timeout","up_timeout","down_timeout","timeout_retry_count","thread_num","soc_code","pve_host","pve_port","err_enable","err_sheep_enable","network_err_event","system_time_event","autoreboot_time","network_restart_time","public_ip_event","public_ip_retry_count"}
+	local scalar_opts = {"pushbot_enable","lite_enable","jsonpath","dd_webhook","we_webhook","pp_token","pp_channel","pp_webhook","pp_topic_enable","pp_topic","pushdeer_key","pushdeer_srv_enable","pushdeer_srv","fs_webhook","bark_token","bark_srv_enable","bark_srv","bark_sound","bark_icon_enable","bark_icon","bark_level","device_name","sleeptime","oui_data","oui_dir","reset_regularly","debuglevel","pushbot_sheep","starttime","endtime","macmechanism","pushbot_interface","macmechanism2","crontab","regular_time","regular_time_2","regular_time_3","interval_time","send_title","router_status","router_temp","router_wan","client_list","google_check_timeout","pushbot_up","pushbot_down","cpuload_enable","cpuload","temperature_enable","temperature","client_usage","client_usage_max","client_usage_disturb","pushbot_ipv4","ipv4_interface","pushbot_ipv6","ipv6_interface","web_logged","ssh_logged","web_login_failed","ssh_login_failed","login_max_num","web_login_black","ip_black_timeout","up_timeout","down_timeout","timeout_retry_count","thread_num","soc_code","pve_host","pve_port","err_enable","err_sheep_enable","network_err_event","system_time_event","autoreboot_time","network_restart_time","public_ip_event","public_ip_retry_count","font_title","font_success","font_fail","font_client","font_module"}
 	for _, o in ipairs(scalar_opts) do local v = uci:get("pushbot", "pushbot", o); if v then c[o] = v end end
 	local lite_ok, lite_raw = pcall(function() return uci:get_list("pushbot", "pushbot", "lite_enable") end)
 	if lite_ok and type(lite_raw) == "table" and #lite_raw > 0 then c["lite_enable"] = lite_raw
@@ -109,6 +126,8 @@ function act_save_config()
 
 	local file_paths = {diy_json="/usr/bin/pushbot/api/diy.json", ipv4_list="/usr/bin/pushbot/api/ipv4.list", ipv6_list="/usr/bin/pushbot/api/ipv6.list", ip_black_list="/usr/bin/pushbot/api/ip_blacklist"}
 	local list_opts = {device_aliases=true, pushbot_whitelist=true, pushbot_blacklist=true, MAC_online_list=true, MAC_offline_list=true, ip_white_list=true, client_usage_whitelist=true, err_device_aliases=true}
+	-- 颜色选项仅接受 #RRGGBB,非法值直接清除(回退预设色),防止 shell 注入
+	local font_opts = {font_title=true, font_success=true, font_fail=true, font_client=true, font_module=true}
 	local sq = function(s) return "'" .. s:gsub("'", "'\\''") .. "'" end
 	local uci_cmd = function(...)
 		local c = "/sbin/uci -q"
@@ -116,7 +135,10 @@ function act_save_config()
 		os.execute(c)
 	end
 	for opt, val in pairs(data) do
-		if file_paths[opt] then
+		-- 颜色选项:仅接受 #RRGGBB 字符串,其余任何类型/格式一律清除,阻断 shell 注入
+		if font_opts[opt] and (type(val) ~= "string" or val == "" or not val:match("^#%x%x%x%x%x%x$")) then
+			uci_cmd("delete", "pushbot.pushbot." .. sq(opt))
+		elseif file_paths[opt] then
 			if val and type(val) == "string" and val ~= "" then fs.writefile(file_paths[opt], val:gsub("\r\n", "\n"))
 			else fs.writefile(file_paths[opt], "") end
 		elseif list_opts[opt] then
