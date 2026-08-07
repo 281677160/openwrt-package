@@ -8,20 +8,14 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=shadowsocksr-libev
 PKG_VERSION:=2.5.6
-PKG_RELEASE:=11
-
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/shadowsocksrr/shadowsocksr-libev
-PKG_SOURCE_DATE:=2018-03-07
-PKG_SOURCE_VERSION:=d63ff863800a5645aca4309d5dd5962bd1e95543
-PKG_MIRROR_HASH:=146fa4511a52da2aaa1e11ea0294cfb450e62643156c5da3b10e037ef43961f6
+PKG_RELEASE:=12
 
 PKG_LICENSE:=GPL-3.0
 PKG_LICENSE_FILES:=LICENSE
 
 PKG_FIXUP:=autoreconf
 PKG_USE_MIPS16:=0
-PKG_BUILD_FLAGS:=no-mips16
+PKG_BUILD_FLAGS:=no-mips16 gc-sections lto
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
 
@@ -57,8 +51,7 @@ CONFIGURE_ARGS += \
 	--disable-assert \
 	--enable-system-shared-lib
 
-TARGET_CFLAGS += -flto
-TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed
+TARGET_LDFLAGS += -Wl,--as-needed
 
 $(foreach component,$(SHADOWSOCKSR_COMPONENTS), \
   $(eval $(call BuildPackage,shadowsocksr-libev-ssr-$(component))) \
