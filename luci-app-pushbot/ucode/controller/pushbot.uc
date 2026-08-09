@@ -74,13 +74,13 @@ return {
 	},
 
 	act_send_test: function() {
-		system("/usr/bin/pushbot/pushbot test &");
+		system("/usr/bin/pushbot/pushbot test >/dev/null 2>&1 &");
 		http.prepare_content("application/json");
 		http.write_json({ ok: true });
 	},
 
 	act_send_manual: function() {
-		system("/usr/bin/pushbot/pushbot send &");
+		system("/usr/bin/pushbot/pushbot send >/dev/null 2>&1 &");
 		http.prepare_content("application/json");
 		http.write_json({ ok: true });
 	},
@@ -139,7 +139,7 @@ return {
 			"pushbot_interface","macmechanism2","crontab","regular_time",
 			"regular_time_2","regular_time_3","interval_time","send_title",
 			"router_status","router_temp","router_wan","client_list",
-			"google_check_timeout","pushbot_up","pushbot_down",
+			"google_check_count","pushbot_up","pushbot_down","table_format",
 			"cpuload_enable","cpuload","temperature_enable","temperature",
 			"client_usage","client_usage_max","client_usage_disturb",
 			"pushbot_ipv4","ipv4_interface","pushbot_ipv6","ipv6_interface",
@@ -362,6 +362,18 @@ return {
 			}
 		}
 		uci_commit("pushbot");
+
+		/* 保存后联动服务状态（避免"config 启用但服务未启动"）：
+		 *   enable=1 → 服务未跑则启动，已在跑则重启使新配置生效
+		 *   enable=0 → 停止服务（配合主脚本 enable_detection 双保险）
+		 *   后台(&)执行，避免阻塞 HTTP 请求导致前端"保存失败" */
+		let u = cursor();
+		let en = u.get("pushbot", "pushbot", "pushbot_enable");
+		if (en == "1" || en == 1 || en == true)
+			system("/etc/init.d/pushbot start >/dev/null 2>&1 &");
+		else if (en == "0" || en == 0 || en == false)
+			system("/etc/init.d/pushbot stop >/dev/null 2>&1 &");
+
 		http.write_json({ ok: true });
 	},
 
