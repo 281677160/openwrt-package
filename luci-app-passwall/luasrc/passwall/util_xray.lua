@@ -981,37 +981,26 @@ function gen_config(var)
 		end
 
 
-		function gen_socks_config_node(node_id, socks_id, remarks)
-			if node_id then
-				socks_id = node_id:sub(1 + #"Socks_")
-			end
-			local result
-			local socks_node = uci:get_all(appname, socks_id) or nil
-			if socks_node then
-				if not remarks then
-					remarks = socks_node.port
-				end
-				result = {
-					[".name"] = "Socksid_" .. socks_id,
-					remarks = remarks,
+		function get_node_by_id(node_id)
+			if not node_id or node_id == "" or node_id == "nil" then return nil end
+			local section = uci:get_all(appname, node_id) or {}
+			if section[".type"] == "socks" then
+				local result = {
+					[".name"] = node_id,
+					remarks = "socks[%s]" % section.port,
 					type = "Xray",
 					protocol = "socks",
 					address = "127.0.0.1",
-					port = socks_node.port,
+					port = section.port,
 					transport = "tcp",
 					stream_security = "none"
 				}
+				return result
 			end
-			return result
-		end
-
-		function get_node_by_id(node_id)
-			if not node_id or node_id == "" or node_id == "nil" then return nil end
-			if node_id:find("Socks_") then
-				return gen_socks_config_node(node_id)
-			else
-				return uci:get_all(appname, node_id)
+			if section[".type"] == "nodes" then
+				return section
 			end
+			return nil
 		end
 
 		function gen_loopback(outbound_tag, loopback_dst)
@@ -1405,11 +1394,15 @@ function gen_config(var)
 						[".name"] = "GFW_Mode_List",
 						remarks = "GFW_Mode_List",
 						domain_list = (domain_list ~= "") and domain_list or nil,
-						ip_list = (ip_list ~= "") and ip_list or nil
+						ip_list = (ip_list ~= "") and ip_list or nil,
+						group = node["shunt_group"]
 					})
 				end
 			end
 			foreach_shunt_rule(function(e)
+				if node["shunt_group"] ~= e.group then
+					return
+				end
 				local outbound_tag = gen_shunt_node(e[".name"])
 				if outbound_tag and e.remarks then
 					if outbound_tag == "default" then
@@ -1729,7 +1722,7 @@ function gen_config(var)
 			elseif remote_dns_query_strategy == "UseIPv6" then
 				table.insert(fakedns, fakedns6)
 			end
-			if remote_dns_fake and inner_fakedns ~= "1" then
+			if remote_dns_fake then
 				table.insert(dns.servers, 1, _remote_fakedns)
 			end
 		end
