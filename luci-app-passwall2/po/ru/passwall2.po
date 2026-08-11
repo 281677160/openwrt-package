@@ -118,12 +118,6 @@ msgstr "0 — отключить функцию"
 msgid "Current node: %s"
 msgstr "Текущий узел: %s"
 
-msgid "Direct domain DNS routing"
-msgstr "Прямая маршрутизация DNS домена"
-
-msgid "Please note that the program will not start if the format is incorrect!"
-msgstr "Обратите внимание, что программа не запустится, если формат указан неверно!"
-
 msgid "IP:Port mode acceptable, multi value split with english comma."
 msgstr "Допустим формат IP:Port. Несколько значений указывайте через запятую."
 
@@ -2439,5 +2433,5 @@ msgstr "Не задано"
 msgid "Cipher Suites"
 msgstr "Наборы шифров"
 
-msgid "Configures the list of supported cipher suites, separated by :"
-msgstr "Задает список поддерживаемых наборов шифров, разделенных двоеточием (:)."
+msgid "Configures the list of supported cipher suites."
+msgstr "Задает список поддерживаемых наборов шифров."

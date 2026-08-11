@@ -642,15 +642,12 @@ function get_full_node_remarks(n)
 	return remarks
 end
 
-function gen_uuid(format)
+function gen_uuid()
 	local uuid = sys.exec("echo -n $(cat /proc/sys/kernel/random/uuid)")
-	if format == nil then
-		uuid = string.gsub(uuid, "-", "")
-	end
 	return uuid
 end
 
-function gen_short_uuid(length)
+function gen_random_char(length)
 	if not length then length = 8 end
 	return sys.exec("echo -n $(head /dev/urandom | tr -dc A-Za-z0-9 | head -c %s)" % length)
 end
@@ -1017,7 +1014,6 @@ local default_file_tree = {
 }
 
 local function get_api_json(url)
-	local jsonc = require "luci.jsonc"
 	local gh_proxy = uci_get_type("global_app", "github_proxy", "0")
 	local return_code, content
 	if gh_proxy == "1" then
@@ -1348,6 +1344,25 @@ function set_default_cbi()
 			self.template  = appname .. "/cbi/tvalue"
 		end
 	end
+	if true then
+		--DynamicList
+		local DynamicList = cbi.DynamicList
+		function DynamicList.write(self, section, value)
+			local new_t = {}
+			if type(value) == "table" then
+				new_t = table_remove_duplicates(value)
+			else
+				new_t = { value }
+			end
+			local new_val
+			if self.cast == "string" then
+				new_val = table.concat(new_t, " ")
+			else
+				new_val = new_t
+			end
+			return cbi.AbstractValue.write(self, section, new_val)
+		end
+	end
 end
 
 function return_map(map)
@@ -1372,6 +1387,7 @@ function return_map(map)
 end
 
 function luci_types(id, m, s, type_name, option_prefix)
+	local cbi = require "luci.cbi"
 	local fv_type
 	local field_type = s.fields["type"]
 	if field_type then
@@ -1409,11 +1425,25 @@ function luci_types(id, m, s, type_name, option_prefix)
 						if self.custom_write then
 							self:custom_write(section, value)
 						else
+							local new_val = value
+							if util.instanceof(self, cbi.DynamicList) then
+								local new_t = {}
+								if type(value) == "table" then
+									new_t = table_remove_duplicates(value)
+								else
+									new_t = { value }
+								end
+								if self.cast == "string" then
+									new_val = table.concat(new_t, " ")
+								else
+									new_val = new_t
+								end
+							end
 							if self.rewrite_option then
-								m:set(section, self.rewrite_option, value)
+								m:set(section, self.rewrite_option, new_val)
 							else
 								if self.option:find(option_prefix) == 1 then
-									m:set(section, self.option:sub(1 + #option_prefix), value)
+									m:set(section, self.option:sub(1 + #option_prefix), new_val)
 								end
 							end
 						end
@@ -1876,4 +1906,21 @@ function get_network_devices()
 	end
 	table.sort(_devices, function(a, b) return a.sort < b.sort end)
 	return _devices
+end
+
+
+function table_remove_duplicates(t)
+	if not t or #t == 0 then return nil end
+	local t_lookup = {}
+	local new_t = {}
+	local x
+	for _, x in ipairs(t) do
+		if x and #x > 0 then
+			if not t_lookup[x] then
+				t_lookup[x] = x
+				new_t[#new_t+1] = x
+			end
+		end
+	end
+	return new_t
 end
