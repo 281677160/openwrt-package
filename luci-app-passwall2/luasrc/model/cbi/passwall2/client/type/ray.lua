@@ -116,12 +116,12 @@ if load_balancing_options then -- [[ Load balancing Start ]]
 		end
 	end
 	-- Reading the old DynamicList
-	function o.cfgvalue(self, section)
-		return m.uci:get_list(appname, section, "balancing_node") or {}
+	function o.custom_cfgvalue(self, section)
+		return table.concat(m:get(section, "balancing_node") or {}, " ")
 	end
 	-- Write-and-hold DynamicList
 	function o.custom_write(self, section, value)
-		local old = m.uci:get_list(appname, section, "balancing_node") or {}
+		local old = m:get(section, "balancing_node") or {}
 		local new, set = {}, {}
 		for v in value:gmatch("%S+") do
 			new[#new + 1] = v
@@ -129,13 +129,13 @@ if load_balancing_options then -- [[ Load balancing Start ]]
 		end
 		for _, v in ipairs(old) do
 			if not set[v] then
-				m.uci:set_list(appname, section, "balancing_node", new)
+				m:set(section, "balancing_node", new)
 				return
 			end
 			set[v] = nil
 		end
 		for _ in pairs(set) do
-			m.uci:set_list(appname, section, "balancing_node", new)
+			m:set(section, "balancing_node", new)
 			return
 		end
 	end
@@ -518,7 +518,20 @@ o = s:option(Flag, _n("use_mldsa65Verify"), translate("ML-DSA-65"))
 o.default = "0"
 o:depends({ [_n("tls")] = true, [_n("reality")] = true })
 
-o = s:option(Value, _n("cipherSuites"), translate("Cipher Suites"), '<a href="https://go.dev/src/crypto/tls/cipher_suites.go#L44" target="_blank">***</a>' .. " " .. translate("Configures the list of supported cipher suites, separated by :"))
+o = s:option(DynamicList, _n("cipherSuites"), translate("Cipher Suites"), '<a href="https://go.dev/src/crypto/tls/cipher_suites.go#L44" target="_blank">***</a>' .. " " .. translate("Configures the list of supported cipher suites."))
+o:value("TLS_AES_128_GCM_SHA256")
+o:value("TLS_AES_256_GCM_SHA384")
+o:value("TLS_CHACHA20_POLY1305_SHA256")
+o:value("TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA")
+o:value("TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA")
+o:value("TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
+o:value("TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA")
+o:value("TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256")
+o:value("TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384")
+o:value("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256")
+o:value("TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384")
+o:value("TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256")
+o:value("TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256")
 o:depends({ [_n("tls")] = true, [_n("reality")] = false })
 
 o = s:option(TextValue, _n("reality_mldsa65Verify"), "ML-DSA-65 " .. translate("Public key"))

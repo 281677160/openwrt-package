@@ -23,25 +23,6 @@ for k, e in ipairs(api.get_valid_nodes()) do
 	nodes_table[#nodes_table + 1] = e
 end
 
-local dynamicList_write = function(self, section, value)
-	local t = {}
-	local t2 = {}
-	if type(value) == "table" then
-		local x
-		for _, x in ipairs(value) do
-			if x and #x > 0 then
-				if not t2[x] then
-					t2[x] = x
-					t[#t+1] = x
-				end
-			end
-		end
-	else
-		t = { value }
-	end
-	t = table.concat(t, " ")
-	return DynamicList.write(self, section, t)
-end
 local doh_validate = function(self, value, t)
 	if value ~= "" then
 		local flag = 0
@@ -176,7 +157,6 @@ sources.validate = function(self, value, t)
 
 	return value
 end
-sources.write = dynamicList_write
 
 o = s:option(ListValue, "mode", translate("Mode"))
 o:value("0", translate("No Proxy"))
