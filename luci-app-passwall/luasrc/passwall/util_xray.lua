@@ -31,6 +31,11 @@ local function get_domain_excluded()
 	return hosts
 end
 
+local function get_log_level(s)
+	if s == "warn" then s = "warning" end
+	return s
+end
+
 function gen_outbound(flag, node, tag, proxy_table)
 	local result = nil
 	if node then
@@ -165,7 +170,8 @@ function gen_outbound(flag, node, tag, proxy_table)
 					certificates = (node.tls_certificate == "1" and node.tls_certificate_pem ~= "") and {
 						certificate = api.split(node.tls_certificate_pem, "\n"),
 						usage = "verify"
-					} or nil
+					} or nil,
+					cipherSuites = node.cipherSuites or nil
 				} or nil,
 				realitySettings = (node.stream_security == "reality") and {
 					serverName = node.tls_serverName,
@@ -349,11 +355,11 @@ function gen_outbound(flag, node, tag, proxy_table)
 					end
 					if fragment and fragment_table and ({raw=1, ws=1, httpupgrade=1, grpc=1, xhttp=1})[TP] then
 						finalmask.tcp = finalmask.tcp or {}
-						finalmask.tcp[#finalmask.tcp+1] = api.clone(fragment_table)
+						table.insert(finalmask.tcp, 1, api.clone(fragment_table))
 					end
 					if noise and noise_table and (TP == "mkcp" or (TP == "xhttp" and node.alpn == "h3")) then
 						finalmask.udp = finalmask.udp or {}
-						finalmask.udp[#finalmask.udp+1] = api.clone(noise_table)
+						table.insert(finalmask.udp, 1, api.clone(noise_table))
 					end
 					if node.finalmask and node.finalmask ~= "" then
 						local ok, fm = pcall(jsonc.parse, api.base64Decode(node.finalmask))
@@ -453,7 +459,7 @@ function gen_outbound(flag, node, tag, proxy_table)
 			local dns_key = dns_proto .. "|" .. config_address .. "|" .. tostring(config_port)
 			if not GLOBAL.DNS_SERVER[dns_key] then
 				GLOBAL.DNS_SERVER[dns_key] = {
-					tag = "dns-node-" .. api.gen_short_uuid(),
+					tag = "dns-node-" .. api.gen_random_char(),
 					-- queryStrategy = node.domain_strategy or "UseIP",
 					address = config_address,
 					port = config_port,
@@ -635,7 +641,7 @@ function gen_config_server(node)
 	local config = {
 		log = {
 			-- error = "/tmp/etc/passwall_server/log/" .. user[".name"] .. ".log",
-			loglevel = ("1" == node.log) and node.loglevel or "none"
+			loglevel = ("1" == node.log) and get_log_level(node.loglevel) or "none"
 		},
 		-- 传入连接
 		inbounds = {
@@ -1966,7 +1972,7 @@ function gen_config(var)
 			end)(),
 			log = {
 				-- error = string.format("/tmp/etc/%s/%s.log", appname, node[".name"]),
-				loglevel = loglevel
+				loglevel = get_log_level(loglevel)
 			},
 			-- DNS
 			dns = dns,
