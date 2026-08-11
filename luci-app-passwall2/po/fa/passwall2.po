@@ -121,12 +121,6 @@ msgstr "0 به معنای عدم استفاده است"
 msgid "Current node: %s"
 msgstr "گره فعلی: %s"
 
-msgid "Direct domain DNS routing"
-msgstr "مسیریابی مستقیم DNS دامنه"
-
-msgid "Please note that the program will not start if the format is incorrect!"
-msgstr "لطفا توجه داشته باشید که اگر قالب نادرست باشد، برنامه شروع نخواهد شد!"
-
 msgid "IP:Port mode acceptable, multi value split with english comma."
 msgstr "حالت IP:Port قابل قبول است، مقادیر متعدد را با کاما انگلیسی جدا کنید."
 
@@ -2441,5 +2435,5 @@ msgstr "تنظیم نشده"
 msgid "Cipher Suites"
 msgstr "سوئیت‌های رمزدار"
 
-msgid "Configures the list of supported cipher suites, separated by :"
-msgstr "فهرست مجموعه‌های رمز پشتیبانی‌شده را که با موارد زیر از هم جدا شده‌اند، پیکربندی می‌کند:"
+msgid "Configures the list of supported cipher suites."
+msgstr "فهرست مجموعه‌های رمز پشتیبانی‌شده را پیکربندی می‌کند."

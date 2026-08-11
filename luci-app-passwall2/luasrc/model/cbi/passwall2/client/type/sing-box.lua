@@ -118,12 +118,12 @@ if load_urltest_options then -- [[ URLTest Start ]]
 		end
 	end
 	-- Reading the old DynamicList
-	function o.cfgvalue(self, section)
-		return m.uci:get_list(appname, section, "urltest_node") or {}
+	function o.custom_cfgvalue(self, section)
+		return table.concat(m:get(section, "urltest_node") or {}, " ")
 	end
 	-- Write-and-hold DynamicList
 	function o.custom_write(self, section, value)
-		local old = m.uci:get_list(appname, section, "urltest_node") or {}
+		local old = m:get(section, "urltest_node") or {}
 		local new, set = {}, {}
 		for v in value:gmatch("%S+") do
 			new[#new + 1] = v
@@ -131,13 +131,13 @@ if load_urltest_options then -- [[ URLTest Start ]]
 		end
 		for _, v in ipairs(old) do
 			if not set[v] then
-				m.uci:set_list(appname, section, "urltest_node", new)
+				m:set(section, "urltest_node", new)
 				return
 			end
 			set[v] = nil
 		end
 		for _ in pairs(set) do
-			m.uci:set_list(appname, section, "urltest_node", new)
+			m:set(section, "urltest_node", new)
 			return
 		end
 	end
@@ -574,7 +574,20 @@ o.validate = function(self, value)
 	return value
 end
 
-o = s:option(Value, _n("cipherSuites"), translate("Cipher Suites"), '<a href="https://go.dev/src/crypto/tls/cipher_suites.go#L44" target="_blank">***</a>' .. " " .. translate("Configures the list of supported cipher suites, separated by :"))
+o = s:option(DynamicList, _n("cipherSuites"), translate("Cipher Suites"), '<a href="https://go.dev/src/crypto/tls/cipher_suites.go#L44" target="_blank">***</a>' .. " " .. translate("Configures the list of supported cipher suites."))
+o:value("TLS_AES_128_GCM_SHA256")
+o:value("TLS_AES_256_GCM_SHA384")
+o:value("TLS_CHACHA20_POLY1305_SHA256")
+o:value("TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA")
+o:value("TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA")
+o:value("TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA")
+o:value("TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA")
+o:value("TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256")
+o:value("TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384")
+o:value("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256")
+o:value("TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384")
+o:value("TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256")
+o:value("TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256")
 o:depends({ [_n("tls")] = true })
 
 o = s:option(Flag, _n("ech"), translate("ECH"))
