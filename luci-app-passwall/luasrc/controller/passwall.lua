@@ -87,7 +87,6 @@ function index()
 	entry({"admin", "services", appname, "delete_select_nodes"}, call("delete_select_nodes")).leaf = true
 	entry({"admin", "services", appname, "reassign_group"}, call("reassign_group")).leaf = true
 	entry({"admin", "services", appname, "get_node"}, call("get_node")).leaf = true
-	entry({"admin", "services", appname, "save_node_order"}, call("save_node_order")).leaf = true
 	entry({"admin", "services", appname, "save_node_list_opt"}, call("save_node_list_opt")).leaf = true
 	entry({"admin", "services", appname, "update_rules"}, call("update_rules")).leaf = true
 	entry({"admin", "services", appname, "rollback_rules"}, call("rollback_rules")).leaf = true
@@ -99,7 +98,6 @@ function index()
 	entry({"admin", "services", appname, "get_shunt_rules"}, call("get_shunt_rules")).leaf = true
 	entry({"admin", "services", appname, "add_shunt_rule"}, call("add_shunt_rule")).leaf = true
 	entry({"admin", "services", appname, "delete_select_shunt_rules"}, call("delete_select_shunt_rules")).leaf = true
-	entry({"admin", "services", appname, "save_shunt_rule_order"}, call("save_shunt_rule_order")).leaf = true
 
 	--[[rule_list]]
 	entry({"admin", "services", appname, "read_rulelist"}, call("read_rulelist")).leaf = true
@@ -394,7 +392,7 @@ function socks_status()
 	e.use_http = 0
 	if tonumber(use_http) > 0 then
 		e.use_http = 1
-		e.http_status = luci.sys.call(string.format("/bin/busybox top -bn1 | grep -v 'grep' | grep '/tmp/etc/passwall/bin/' | grep -v '_acl_' | grep '%s' | grep -E 'HTTP_|HTTP2SOCKS' > /dev/null", id)) == 0
+		e.http_status = luci.sys.call(string.format("/bin/busybox top -bn1 | grep -v -E 'grep|acl/|acl_' | grep '%s/bin/' | grep '%s' | grep -E '\\+http|_http' > /dev/null", appname, id)) == 0
 	end
 	http_write_json(e)
 end
@@ -718,19 +716,6 @@ function get_node()
 		for i = 1, #other_nodes do result[#result + 1] = other_nodes[i] end
 	end
 	http_write_json(result)
-end
-
-function save_node_order()
-	local ids = http.formvalue("ids") or ""
-	local new_order = {}
-	for id in ids:gmatch("([^,]+)") do
-		new_order[#new_order + 1] = id
-	end
-	for idx, name in ipairs(new_order) do
-		luci.sys.call(string.format("uci -q reorder %s.%s=%d", appname, name, idx - 1))
-	end
-	api.sh_uci_commit(appname)
-	http_write_json({ status = "ok" })
 end
 
 function reassign_group()
@@ -1169,7 +1154,7 @@ function add_shunt_rule()
 	if add_name then
 		local has = uci:get(appname, uid)
 		if has then
-			http_write_json_error({ message = "This ID already exists." })
+			http_write_json_error({ message = i18n.translate("This ID already exists.") })
 			return
 		end
 	else
@@ -1208,17 +1193,4 @@ function delete_select_shunt_rules()
 	else
 		api.uci_save(uci, appname, true, true)
 	end
-end
-
-function save_shunt_rule_order()
-	local ids = http.formvalue("ids") or ""
-	local new_order = {}
-	for id in ids:gmatch("([^,]+)") do
-		new_order[#new_order + 1] = id
-	end
-	for idx, name in ipairs(new_order) do
-		luci.sys.call(string.format("uci -q reorder %s.%s=%d", appname, name, idx - 1))
-	end
-	api.sh_uci_commit(appname)
-	http_write_json({ status = "ok" })
 end

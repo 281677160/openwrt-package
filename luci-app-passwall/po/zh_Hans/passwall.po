@@ -448,12 +448,6 @@ msgstr "节点备注"
 msgid "Add Mode"
 msgstr "添加方式"
 
-msgid "Save Order"
-msgstr "保存当前顺序"
-
-msgid "Saved current page order successfully."
-msgstr "保存当前页面顺序成功。"
-
 msgid "Drag to reorder"
 msgstr "拖动以重排"
 
@@ -1099,6 +1093,9 @@ msgstr "分流规则组"
 
 msgid "Please note attention to the priority, the higher the order, the higher the priority."
 msgstr "请注意优先级问题，排序越上面优先级越高。"
+
+msgid "This ID already exists."
+msgstr "该 ID 已存在。"
 
 msgid "Update..."
 msgstr "更新中"
