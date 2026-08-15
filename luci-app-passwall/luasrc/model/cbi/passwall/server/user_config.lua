@@ -1,4 +1,4 @@
-api = require "luci.passwall2.api"
+api = require "luci.passwall.api"
 api.set_default_cbi()
 
 m = Map(api.s_config)
@@ -17,7 +17,7 @@ o.datatype = "and(uciname,maxlength(24))"
 o.rmempty = false
 function o.validate(self, value, section)
 	local exists = false
-	m:foreach("user", function(s)
+	m.uci:foreach("passwall_server", "user", function(s)
 		if s[".name"] ~= section and s.username == value then
 			exists = true
 			return false
@@ -36,19 +36,5 @@ o = s:option(Value, "uuid",  "UUID")
 o.datatype = "uuid"
 o.default = api.gen_uuid()
 o.rmempty = false
-
-o = s:option(Value, "wireguard_public_key", "Wireguard " .. translate("Public Key"))
-o.datatype = "base64"
-
-o = s:option(Value, "wireguard_private_key", "Wireguard " .. translate("Private Key"))
-o.datatype = "base64"
-
-o = s:option(DummyValue, "gen_wireguard_key")
-o.template = m:template_path("/server/server_wireguard")
-
-o = s:option(Value, "wireguard_pre_shared_key", "Wireguard " .. translate("Pre shared key"))
-o.datatype = "base64"
-
-o = s:option(DynamicList, "allowed_ips", "Wireguard " .. translate("Allowed IPs"))
 
 return api.return_map(m)
