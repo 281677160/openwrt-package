@@ -1,16 +1,14 @@
 module("luci.passwall2.util_sing-box", package.seeall)
 local api = require "luci.passwall2.api"
-local uci = api.uci
 local sys = api.sys
 local jsonc = api.jsonc
-local appname = api.appname
 local fs = api.fs
 local CACHE_PATH = api.CACHE_PATH
 local split = api.split
 local ech_domain = {}
 
 local local_version = api.get_app_version("sing-box"):match("[^v]+")
-local version_ge_1_13_0 = api.compare_versions(local_version, ">=", "1.13.0")
+local version_ge_1_14_0 = api.compare_versions(local_version, ">=", "1.14.0")
 
 local GLOBAL = {
 	DNS_SERVER = {}
@@ -23,7 +21,7 @@ local GEO_VAR = {
 	IP_PATH = nil,
 	SITE_TAGS = {},
 	IP_TAGS = {},
-	TO_SRS_PATH = "/tmp/etc/" .. appname .."_tmp/singbox_srss/"
+	TO_SRS_PATH = CACHE_PATH .. "/singbox_srss/"
 }
 
 function check_geoview()
@@ -34,7 +32,7 @@ function check_geoview()
 	if GEO_VAR.OK == 0 then
 		api.log(0, "!!! Note: Geo rules cannot be used if the Geoview component is missing or the version is too low.")
 	else
-		GEO_VAR.DIR = GEO_VAR.DIR or (uci:get(appname, "@global_rules[0]", "v2ray_location_asset") or "/usr/share/v2ray/"):match("^(.*)/")
+		GEO_VAR.DIR = GEO_VAR.DIR or (api.uci_get_c("@global_rules[0]", "v2ray_location_asset") or "/usr/share/v2ray/"):match("^(.*)/")
 		GEO_VAR.SITE_PATH = GEO_VAR.SITE_PATH or (GEO_VAR.DIR .. "/geosite.dat")
 		GEO_VAR.IP_PATH = GEO_VAR.IP_PATH or (GEO_VAR.DIR .. "/geoip.dat")
 		if not fs.access(GEO_VAR.TO_SRS_PATH) then
@@ -139,8 +137,7 @@ function gen_outbound(flag, node, tag, proxy_table)
 				config_file = string.format("%s_%s_%s_%s.json", flag, tag, node_id, new_port)
 			end
 			if run_socks_instance then
-				sys.call(string.format('/usr/share/%s/app.sh run_socks "%s"> /dev/null',
-					appname,
+				sys.call(string.format('/usr/share/passwall2/app.sh run_socks "%s"> /dev/null',
 					string.format("flag=%s node=%s bind=%s socks_port=%s config_file=%s relay_port=%s",
 						new_port, --flag
 						node_id, --node
@@ -686,6 +683,8 @@ function gen_outbound(flag, node, tag, proxy_table)
 end
 
 function gen_config_server(node)
+	local endpoints = {}
+	local inbounds = {}
 	local outbounds = {
 		{ type = "direct", tag = "direct" }
 	}
@@ -794,7 +793,7 @@ function gen_config_server(node)
 	if node.users and #node.users > 0 then
 		users = {}
 		for i, v in ipairs(node.users) do
-			local user = uci:get_all("passwall2_server", v) or {}
+			local user = api.uci_get_s(v) or {}
 			if user[".type"] == "user" then
 				local u = {}
 				if node.protocol == "mixed" or node.protocol == "socks" or node.protocol == "http" or node.protocol == "naive" then
@@ -827,6 +826,12 @@ function gen_config_server(node)
 				if node.protocol == "hysteria2" then
 					u.name = user.username
 					u.password = user.password
+				end
+				if node.protocol == "wireguard" then
+					u.public_key = user.wireguard_public_key
+					u.pre_shared_key = user.wireguard_pre_shared_key
+					u.allowed_ips = user.allowed_ips or {}
+					u.persistent_keepalive_interval = 0
 				end
 				users[#users + 1] = u
 			end
@@ -995,6 +1000,18 @@ function gen_config_server(node)
 		end
 	end
 
+	if node.protocol == "wireguard" then
+		inbound.listen = nil
+		inbound.system = node.wireguard_system_interface == "1" and true or false
+		inbound.name = "sbwg_" .. node[".name"]
+		inbound.mtu = tonumber(node.wireguard_mtu or 1408)
+		inbound.address = node.wireguard_local_address
+		inbound.private_key = node.wireguard_private_key
+		if users then
+			inbound.peers = users
+		end
+	end
+
 	if node.protocol == "direct" then
 		protocol_table = {
 			network = (node.d_protocol ~= "TCP,UDP") and node.d_protocol or nil,
@@ -1007,6 +1024,13 @@ function gen_config_server(node)
 		for key, value in pairs(protocol_table) do
 			inbound[key] = value
 		end
+	end
+
+	if node.protocol == "wireguard" then
+		inbound.listen = nil
+		table.insert(endpoints, inbound)
+	else
+		table.insert(inbounds, inbound)
 	end
 
 	local route = {
@@ -1030,7 +1054,7 @@ function gen_config_server(node)
 			}
 			sys.call(string.format("mkdir -p %s && touch %s/%s", api.TMP_IFACE_PATH, api.TMP_IFACE_PATH, node.outbound_node_iface))
 		else
-			local outbound_node_t = uci:get_all("passwall2", node.outbound_node)
+			local outbound_node_t = api.uci_get_c(node.outbound_node)
 			if node.outbound_node == "_socks" or node.outbound_node == "_http" then
 				outbound_node_t = {
 					type = node.type,
@@ -1064,7 +1088,8 @@ function gen_config_server(node)
 				}
 			}
 		},
-		inbounds = { inbound },
+		endpoints = endpoints,
+		inbounds = inbounds,
 		outbounds = outbounds,
 		route = route
 	}
@@ -1119,6 +1144,7 @@ function gen_config(var)
 	local remote_dns_query_strategy = var["remote_dns_query_strategy"]
 	local remote_dns_fake = var["remote_dns_fake"]
 	local remote_dns_client_ip = var["remote_dns_client_ip"]
+	local remote_rewrite_ttl = var["remote_rewrite_ttl"] or "30"
 	local dns_cache = var["dns_cache"]
 	local tags = var["tags"]
 	local no_run = var["no_run"]
@@ -1132,7 +1158,7 @@ function gen_config(var)
 
 	local CACHE_TEXT_FILE = CACHE_PATH .. "/cache_" .. flag .. ".txt"
 
-	local singbox_settings = uci:get_all(appname, "@global_singbox[0]") or {}
+	local singbox_settings = api.uci_get_c("@global_singbox[0]") or {}
 
 	local route = {
 		rules = {}
@@ -1195,7 +1221,7 @@ function gen_config(var)
 
 	local node = nil
 	if node_id then
-		node = uci:get_all(appname, node_id)
+		node = api.uci_get_c(node_id)
 	end
 
 	if local_socks_port then
@@ -1290,7 +1316,7 @@ function gen_config(var)
 
 		function get_node_by_id(node_id)
 			if not node_id or node_id == "" or node_id == "nil" then return nil end
-			local section = uci:get_all(appname, node_id) or {}
+			local section = api.uci_get_c(node_id) or {}
 			if section[".type"] == "socks" then
 				local result = {
 					[".name"] = node_id,
@@ -1569,7 +1595,7 @@ function gen_config(var)
 			end
 
 			--shunt rule
-			uci:foreach(appname, "shunt_rules", function(e)
+			api.uci_foreach_c("shunt_rules", function(e)
 				if node["shunt_group"] ~= e.group then
 					return
 				end
@@ -1835,16 +1861,16 @@ function gen_config(var)
 	if dns_listen_port then
 		local dns_host = ""
 		if flag == "global" then
-			dns_host = uci:get(appname, "@global[0]", "dns_hosts") or ""
+			dns_host = api.uci_get_c("@global[0]", "dns_hosts") or ""
 		else
 			flag = flag:gsub("acl_", "")
-			local dns_hosts_mode = uci:get(appname, flag, "dns_hosts_mode") or "default"
+			local dns_hosts_mode = api.uci_get_c(flag, "dns_hosts_mode") or "default"
 			if dns_hosts_mode == "default" then
-				dns_host = uci:get(appname, "@global[0]", "dns_hosts") or ""
+				dns_host = api.uci_get_c("@global[0]", "dns_hosts") or ""
 			elseif dns_hosts_mode == "disable" then
 				dns_host = ""
 			elseif dns_hosts_mode == "custom" then
-				dns_host = uci:get(appname, flag, "dns_hosts") or ""
+				dns_host = api.uci_get_c(flag, "dns_hosts") or ""
 			end
 		end
 		if #dns_host > 0 then
@@ -1982,7 +2008,12 @@ function gen_config(var)
 		else default_dns_flag = "direct"
 		end
 		dns.final = default_dns_flag
-		dns.strategy = default_dns_flag == "remote" and remote_strategy or direct_strategy
+		-- Single-stack (ipv4_only / ipv6_only) is enforced per-domain via the
+		-- query_type / reject rules generated below. The global dns.strategy applies
+		-- to every DNS server that does not set its own query_strategy, so keep it
+		-- dual-stack; otherwise a single-stack choice on one path would also force the
+		-- other path (e.g. direct / CN domains) into single-stack. See issue #1220.
+		dns.strategy = "prefer_ipv6"
 
 		-- DNS in order of shunt
 		if dns_domain_rules and #dns_domain_rules > 0 then
@@ -2024,7 +2055,7 @@ function gen_config(var)
 					end
 					if value.outboundTag ~= "block" and value.outboundTag ~= "direct" then
 						dns_rule.server = "remote"
-						dns_rule.rewrite_ttl = 30
+						dns_rule.rewrite_ttl = tonumber(remote_rewrite_ttl)
 						if true then
 							local block_rule
 							if remote_strategy == "ipv4_only" then
@@ -2071,11 +2102,25 @@ function gen_config(var)
 			end
 		end
 		if default_dns_flag == "remote" then
+			local block_rule
 			local dns_rule_query_type = { "A", "AAAA" }
 			if remote_strategy == "ipv4_only" then
+				block_rule = {
+					query_type = { "AAAA" },
+					action = "predefined",
+					rcode = "NOERROR"
+				}
 				dns_rule_query_type = { "A" }
 			elseif remote_strategy == "ipv6_only" then
+				block_rule = {
+					query_type = { "A" },
+					action = "predefined",
+					rcode = "NOERROR"
+				}
 				dns_rule_query_type = { "AAAA" }
+			end
+			if block_rule then
+				table.insert(dns.rules, block_rule)
 			end
 			if remote_dns_fake then
 				-- When default is not direct and enable fakedns, default DNS use FakeDNS.
@@ -2083,17 +2128,16 @@ function gen_config(var)
 					query_type = dns_rule_query_type,
 					server = fakedns_tag,
 					disable_cache = true,
-					rewrite_ttl = 30
+					rewrite_ttl = tonumber(remote_rewrite_ttl)
 				}
 				table.insert(dns.rules, fakedns_dns_rule)
-			else
-				local remote_dns_rule = {
-					query_type = dns_rule_query_type,
-					server = "remote",
-					disable_cache = true,
-				}
-				table.insert(dns.rules, remote_dns_rule)
 			end
+			local remote_dns_rule = {
+				server = "remote",
+				disable_cache = true,
+				rewrite_ttl = tonumber(remote_rewrite_ttl)
+			}
+			table.insert(dns.rules, remote_dns_rule)
 		end
 		local dns_in_inbound = {
 			type = "direct",
