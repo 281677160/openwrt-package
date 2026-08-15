@@ -1,5 +1,7 @@
 module("luci.passwall2.api", package.seeall)
 appname = "passwall2"
+c_config = "passwall2"
+s_config = "passwall2_server"
 local com = require "luci.passwall2.com"
 nixio = require "nixio"
 fs = require "nixio.fs"
@@ -15,14 +17,15 @@ command_timeout = 300
 OPENWRT_ARCH = nil
 DISTRIB_ARCH = nil
 
+LOCK_PREFIX = "/tmp/lock/passwall2"
 LOG_FILE = "/tmp/log/passwall2.log"
-CACHE_PATH = "/tmp/etc/passwall2_tmp"
-TMP_PATH = "/tmp/etc/" .. appname
+TMP_PATH = "/tmp/etc/passwall2"
+CACHE_PATH = TMP_PATH .. "_tmp"
 TMP_IFACE_PATH = TMP_PATH .. "/iface"
 
 local lang = uci:get("luci", "main", "lang") or "auto"
 if lang == "auto" then
-	local auto_lang = uci:get(appname, "@global[0]", "auto_lang")
+	local auto_lang = uci:get(c_config, "@global[0]", "auto_lang")
 	if auto_lang then lang = auto_lang end
 end
 if lang == "auto" then
@@ -60,7 +63,85 @@ function is_old_uci()
 	return sys.call("grep -E 'require[ \t]*\"uci\"' /usr/lib/lua/luci/model/uci.lua >/dev/null 2>&1") == 0
 end
 
+function uci_del(config, section, option)
+	if option then
+		return uci:delete(config, section, option)
+	else
+		return uci:delete(config, section)
+	end
+end
+
+function uci_get(config, section, option)
+	if not section then
+		return uci:get_all(config)
+	elseif option then
+		return uci:get(config, section, option) or nil
+	else
+		return uci:get_all(config, section)
+	end
+end
+
+function uci_set(config, section, option, value)
+	if type(value) == "number" then
+		value = value .. ""
+	end
+	if #value > 0 then
+		if option then
+			if type(value) == "table" then
+				return uci:set_list(config, section, option, value)
+			else
+				return uci:set(config, section, option, value)
+			end
+		else
+			return uci:set(config, section, value)
+		end
+	else
+		return uci_del(config, section, option)
+	end
+end
+
+function uci_del_c(section, option)
+	return uci_del(c_config, section, option)
+end
+
+function uci_foreach_c(stype, func)
+	uci:foreach(c_config, stype, func)
+end
+
+function uci_get_c(section, option)
+	return uci_get(c_config, section, option)
+end
+
+function uci_set_c(section, option, value)
+	return uci_set(c_config, section, option, value)
+end
+
+function uci_save_c(commit, apply)
+	return uci_save(uci, c_config, commit, apply)
+end
+
+function uci_del_s(section, option)
+	return uci_del(s_config, section, option)
+end
+
+function uci_foreach_s(stype, func)
+	uci:foreach(s_config, stype, func)
+end
+
+function uci_get_s(section, option)
+	return uci_get(s_config, section, option)
+end
+
+function uci_set_s(section, option, value)
+	return uci_set(s_config, section, option, value)
+end
+
+function uci_save_s(commit, apply)
+	return uci_save(uci, s_config, commit, apply)
+end
+
 function uci_save(cursor, config, commit, apply)
+	if not cursor then cursor = uci end
 	if is_old_uci() then
 		cursor:save(config)
 		if commit then
@@ -234,7 +315,7 @@ function curl_direct(url, file, args)
 end
 
 function curl_auto(url, file, args)
-	local localhost_proxy = uci:get(appname, "@global[0]", "localhost_proxy") or "1"
+	local localhost_proxy = uci_get_c("@global[0]", "localhost_proxy") or "1"
 	if localhost_proxy == "1" then
 		return curl_base(url, file, args)
 	else
@@ -493,7 +574,7 @@ function get_node_name(node_id)
 	if type(node_id) == "table" then
 		e = node_id
 	else
-		e = uci:get_all(appname, node_id)
+		e = uci_get_c(node_id)
 	end
 	if e then
 		if e.type and e.remarks then
@@ -509,11 +590,11 @@ function get_node_name(node_id)
 end
 
 function get_valid_nodes()
-	local show_node_info = uci_get_type("global_other", "show_node_info") or "0"
+	local show_node_info = uci_get_c("@global_other[0]", "show_node_info") or "0"
 	local nodes = {}
 	local default_nodes = {}
 	local other_nodes = {}
-	uci:foreach(appname, "nodes", function(e)
+	uci:foreach(c_config, "nodes", function(e)
 		e.id = e[".name"]
 		if e.type and e.remarks then
 			local type_name = e.type
@@ -586,7 +667,7 @@ function get_node_list()
 		socks_list = {},
 		normal_list = {},
 	}
-	uci:foreach(appname, "socks", function(s)
+	uci:foreach(c_config, "socks", function(s)
 		if s.enabled == "1" and s.node then
 			node_list.socks_list[#node_list.socks_list + 1] = {
 				id = s[".name"],
@@ -685,22 +766,6 @@ function gen_random_char(length)
 	return sys.exec("echo -n $(head /dev/urandom | tr -dc A-Za-z0-9 | head -c %s)" % length)
 end
 
-function uci_get_type(type, config, default)
-	local value = uci:get_first(appname, type, config, default) or sys.exec("echo -n $(uci -q get " .. appname .. ".@" .. type .."[0]." .. config .. ")")
-	if (value == nil or value == "") and (default and default ~= "") then
-		value = default
-	end
-	return value
-end
-
-function uci_get_type_id(id, config, default)
-	local value = uci:get(appname, id, config, default) or sys.exec("echo -n $(uci -q get " .. appname .. "." .. id .. "." .. config .. ")")
-	if (value == nil or value == "") and (default and default ~= "") then
-		value = default
-	end
-	return value
-end
-
 function chmod_755(file)
 	if file and file ~= "" then
 		if not fs.access(file, "rwx", "rx", "rx") then
@@ -710,7 +775,7 @@ function chmod_755(file)
 end
 
 function get_customed_path(e)
-	return uci_get_type("global_app", e .. "_file")
+	return uci_get_c("@global_app[0]", e .. "_file")
 end
 
 function finded_com(e)
@@ -769,7 +834,7 @@ end
 function get_app_path(app_name)
 	if com[app_name] then
 		local def_path = com[app_name].default_path
-		local path = uci_get_type("global_app", app_name:gsub("%-","_") .. "_file")
+		local path = uci_get_c("@global_app[0]", app_name:gsub("%-","_") .. "_file")
 		path = path and (#path>0 and path or def_path) or def_path
 		return path
 	end
@@ -1345,53 +1410,91 @@ function is_js_luci()
 	return sys.call('[ -f "/www/luci-static/resources/uci.js" ]') == 0
 end
 
-function set_apply_on_parse(map)
-	if not map then
-		return
-	end
-	local lang = uci:get("luci", "main", "lang") or "auto"
-	if lang == "auto" then
-		local http = require "luci.http"
-		local aclang = http.getenv("HTTP_ACCEPT_LANGUAGE") or ""
-		for lpat in aclang:gmatch("[%w-]+") do
-			lpat = lpat and lpat:gsub("-", "_")
-			if uci:get("luci", "languages", lpat) then
-				lang = lpat
-				break
-			end
-			lpat = lpat and lpat:lower()
-			if uci:get("luci", "languages", lpat) then
-				lang = lpat
-				break
-			end
-		end
-		if lang ~= "auto" then
-			sh_uci_set(appname, "@global[0]", "auto_lang", lang, true)
-		end
-	end
-	if is_js_luci() == true then
-		local hide_popup_box = nil
-		if hide_popup_box == true then
-			map.apply_on_parse = false
-			map.on_after_apply = function(self)
-				if self.redirect then
-					os.execute("sleep 1")
-					luci.http.redirect(self.redirect)
-				end
-			end
-		else
-			apply_redirect(map)
-			local old = map.on_after_save
-			map.on_after_save = function(self)
-				if old then old(self) end
-				map:set("@global[0]", "timestamp", os.time())
-			end
-		end
-	end
-end
-
 function set_default_cbi()
 	local cbi = require "luci.cbi"
+	if true then
+		--Map
+		local Map = cbi.Map
+		local original_init = Map.__init__
+		function Map.__init__(self, config, ...)
+			if not config then config = c_config end
+			original_init(self, config, ...)
+			self.api = require "luci.passwall2.api"
+		end
+		function Map.foreach(self, stype, func)
+			self.uci:foreach(self.config, stype, func)
+		end
+		function Map.template_path(self, template)
+			return appname .. template
+		end
+		function Map.appendTemplate(self, template, data)
+			local obj = cbi.Template(self:template_path(template))
+			obj.map = self
+			if data and next(data) then
+				for k, v in pairs(data) do
+					obj[k] = v
+				end
+			end
+			self:append(obj)
+			return obj
+		end
+
+		local lang = uci:get("luci", "main", "lang") or "auto"
+		if lang == "auto" then
+			local http = require "luci.http"
+			local aclang = http.getenv("HTTP_ACCEPT_LANGUAGE") or ""
+			for lpat in aclang:gmatch("[%w-]+") do
+				lpat = lpat and lpat:gsub("-", "_")
+				if uci:get("luci", "languages", lpat) then
+					lang = lpat
+					break
+				end
+				lpat = lpat and lpat:lower()
+				if uci:get("luci", "languages", lpat) then
+					lang = lpat
+					break
+				end
+			end
+			if lang ~= "auto" then
+				sh_uci_set(c_config, "@global[0]", "auto_lang", lang, true)
+			end
+		end
+		if is_js_luci() == true then
+			local hide_popup_box = nil
+			if hide_popup_box == true then
+				Map.apply_on_parse = false
+				Map.on_after_apply = function(self)
+					if self.redirect then
+						os.execute("sleep 1")
+						luci.http.redirect(self.redirect)
+					end
+				end
+			else
+				apply_redirect(Map)
+				local old = Map.on_after_save
+				Map.on_after_save = function(self)
+					if old then old(self) end
+					self:set("@global[0]", "timestamp", os.time())
+				end
+			end
+		end
+	end
+	if true then
+		--AbstractSection
+		local AbstractSection = cbi.AbstractSection
+		function AbstractSection.appendTemplate(self, template, data)
+			local obj = cbi.Template(self.map:template_path(template))
+			obj.map = self.map
+			obj.section = self
+			if data and next(data) then
+				for k, v in pairs(data) do
+					obj[k] = v
+				end
+			end
+			self:append(obj)
+			return obj
+		end
+	end
 	if true then
 		--TextValue
 		local TextValue = cbi.TextValue
@@ -1428,18 +1531,15 @@ function return_map(map)
 	if true then
 		-- header
 		local header = cbi.Template(appname .. "/cbi/header")
-		header.api = api
-		header.config = map.config
+		header.map = map
 		table.insert(map.children, 1, header)
 	end
 	if true then
 		-- footer
 		local footer = cbi.Template(appname .. "/cbi/footer")
-		footer.api = api
-		footer.config = map.config
+		footer.map = map
 		map:append(footer)
 	end
-
 	return map
 end
 
@@ -1570,7 +1670,7 @@ function format_go_time(input, default)
 end
 
 function apply_redirect(m)
-	local tmp_uci_file = "/etc/config/" .. appname .. "_redirect"
+	local tmp_uci_file = "/etc/config/" .. c_config .. "_redirect"
 	if m.redirect and m.redirect ~= "" then
 		if fs.access(tmp_uci_file) then
 			local redirect
@@ -1588,7 +1688,7 @@ function apply_redirect(m)
 		m.on_after_save = function(self)
 			local redirect = self.redirect
 			if redirect and redirect ~= "" then
-				uci:set(appname .. "_redirect", "@redirect[0]", "url", redirect)
+				uci:set(c_config .. "_redirect", "@redirect[0]", "url", redirect)
 			end
 		end
 	else
@@ -1693,7 +1793,7 @@ end
 function get_socks_backup_nodes(id)
 	id = trim(id)
 	if id == "" then return "" end
-	local socks = uci:get_all(appname, id)
+	local socks = uci_get_c(id)
 	local nodes
 	if socks.backup_node_add_mode and socks.backup_node_add_mode == "batch" then
 		local node = {}
@@ -1714,7 +1814,7 @@ function get_socks_backup_nodes(id)
 end
 
 function get_core(field, candidates)
-	local v = uci:get(appname, "@global_subscribe[0]", field)
+	local v = uci_get_c("@global_subscribe[0]", field)
 	if v and v ~= "" then
 		for _, c in ipairs(candidates) do
 			if c[2] == v and c[1] then
@@ -1917,4 +2017,37 @@ function table_remove_duplicates(t)
 		end
 	end
 	return new_t
+end
+
+function gen_wireguard_key()
+	if sys.call("command -v wg >/dev/null") == 0 then
+		local private_key = sys.exec('echo -n $(wg genkey)')
+		local public_key = sys.exec('echo -n $(echo "%s" | wg pubkey)' % private_key)
+		return {
+			private_key = private_key,
+			public_key = public_key
+		}
+	end
+	local xray = finded_com("xray")
+	if xray then
+		local result = sys.exec(xray .. " wg | awk -F ': ' '{print $2}'")
+		local s = split(result, "\n")
+		local private_key = s[1]
+		local public_key = s[2]
+		return {
+			private_key = private_key,
+			public_key = public_key
+		}
+	end
+	local sb = finded_com("sing-box")
+	if sb then
+		local result = sys.exec(sb .. " generate wg-keypair | awk '{print $2}'")
+		local s = split(result, "\n")
+		local private_key = s[1]
+		local public_key = s[2]
+		return {
+			private_key = private_key,
+			public_key = public_key
+		}
+	end
 end
