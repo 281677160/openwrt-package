@@ -480,13 +480,20 @@ o.validate = function(self, value, t)
 		end
 		local _tcp_node = s.fields["tcp_node"]:formvalue(t)
 		if _dns_mode and _tcp_node then
-			if (m:get(_tcp_node, "type") or ""):lower() ~= _dns_mode and not _tcp_node:find("Socks_") then
+			if (m:get(_tcp_node, "type") or ""):lower() ~= _dns_mode and not _tcp_node:find("socks_") then
 				return nil, translatef("TCP node must be '%s' type to use FakeDNS.", _dns_mode)
 			end
 		end
 	end
 	return value
 end
+
+o = s:taboption("DNS", Value, "remote_rewrite_ttl", translate("Remote DNS") .. " TTL")
+o.datatype = "min(1)"
+o.default = "30"
+o:depends({dns_mode = "sing-box", dns_shunt = "dnsmasq"})
+o:depends({dns_mode = "sing-box", dns_shunt = "chinadns-ng"})
+o:depends({smartdns_dns_mode = "sing-box", dns_shunt = "smartdns"})
 
 o = s:taboption("DNS", ListValue, "chinadns_ng_default_tag", translate("Default DNS"))
 o.default = "none"
@@ -669,6 +676,7 @@ o.rmempty = false
 
 s2 = m:section(TypedSection, "socks", translate("Socks Config"))
 s2.template = "cbi/tblsection"
+s2.sortable = true
 s2.anonymous = true
 s2.addremove = true
 s2.extedit = api.url("socks_config", "%s")
@@ -763,11 +771,13 @@ o.default = n + 1080
 o.datatype = "port"
 o.rmempty = false
 
+--[[
 if has_singbox or has_xray then
 	o = s2:option(Value, "http_port", "HTTP " .. translate("Listen Port"))
 	o.default = 0
 	o.datatype = "port"
 end
+]]--
 
 local tcp = s.fields["tcp_node"]
 local udp = s.fields["udp_node"]
@@ -794,6 +804,7 @@ for k, v in pairs(nodes_table) do
 				s.fields["xray_dns_mode"]:depends({ tcp_node = v.id })
 			else
 				s.fields["singbox_dns_mode"]:depends({ tcp_node = v.id })
+				s.fields["remote_rewrite_ttl"]:depends({ tcp_node = v.id })
 			end
 		end
 	else
@@ -814,5 +825,7 @@ for k, v in pairs(nodes_table) do
 end
 
 m:appendTemplate("/global/footer", {shunt_list = api.jsonc.stringify(shunt_list)})
+
+m:appendTemplate("/cbi/sortable", {sectiontype = s2.sectiontype})
 
 return api.return_map(m)
