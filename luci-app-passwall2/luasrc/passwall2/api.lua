@@ -1,3 +1,6 @@
+-- Copyright (C) 2022-2025 xiaorouji
+-- Copyright (C) 2026 Openwrt-Passwall Organization
+
 module("luci.passwall2.api", package.seeall)
 appname = "passwall2"
 c_config = "passwall2"
@@ -17,10 +20,11 @@ command_timeout = 300
 OPENWRT_ARCH = nil
 DISTRIB_ARCH = nil
 
-LOCK_PREFIX = "/tmp/lock/passwall2"
-LOG_FILE = "/tmp/log/passwall2.log"
-TMP_PATH = "/tmp/etc/passwall2"
+LOCK_PREFIX = "/tmp/lock/" .. c_config
+LOG_FILE = "/tmp/log/" .. c_config .. ".log"
+TMP_PATH = "/tmp/etc/" .. c_config
 CACHE_PATH = TMP_PATH .. "_tmp"
+S_TMP_PATH = "/tmp/etc/" .. s_config
 TMP_IFACE_PATH = TMP_PATH .. "/iface"
 
 local lang = uci:get("luci", "main", "lang") or "auto"
@@ -594,7 +598,7 @@ function get_valid_nodes()
 	local nodes = {}
 	local default_nodes = {}
 	local other_nodes = {}
-	uci:foreach(c_config, "nodes", function(e)
+	uci_foreach_c("nodes", function(e)
 		e.id = e[".name"]
 		if e.type and e.remarks then
 			local type_name = e.type
@@ -667,8 +671,8 @@ function get_node_list()
 		socks_list = {},
 		normal_list = {},
 	}
-	uci:foreach(c_config, "socks", function(s)
-		if s.enabled == "1" and s.node then
+	uci_foreach_c("socks", function(s)
+		if s.node then
 			node_list.socks_list[#node_list.socks_list + 1] = {
 				id = s[".name"],
 				remark = i18n.translate("Socks Config") .. " [" .. s.port .. i18n.translate("Port") .. "]",
@@ -756,6 +760,29 @@ function get_full_node_remarks(n)
 	return remarks
 end
 
+function get_random_normal_node(exclude_id)
+	local exclude_id_lookup = {}
+	if type(exclude_id) == "table" then
+		for i, v in ipairs(exclude_id) do
+			exclude_id_lookup[v] = true
+		end
+	elseif type(exclude_id) == "string" then
+		exclude_id_lookup[exclude_id] = true
+	end
+	local normal_list = {}
+	for k, e in ipairs(get_valid_nodes()) do
+		if e.node_type == "normal" and not exclude_id_lookup[e[".name"]] then
+			normal_list[#normal_list + 1] = e
+		end
+	end
+	if #normal_list > 0 then
+		math.randomseed(os.time())
+		local num = math.random(1, #normal_list)
+		return normal_list[num]
+	end
+	return nil
+end
+
 function gen_uuid()
 	local uuid = sys.exec("echo -n $(cat /proc/sys/kernel/random/uuid)")
 	return uuid
@@ -814,16 +841,16 @@ function clone(org)
 end
 
 local function get_bin_version_cache(file, cmd)
-	sys.call("mkdir -p /tmp/etc/passwall2_tmp")
+	sys.call("mkdir -p " .. CACHE_PATH)
 	if fs.access(file) then
 		chmod_755(file)
 		local md5 = sys.exec("echo -n $(md5sum " .. file .. " | awk '{print $1}')")
-		if fs.access("/tmp/etc/passwall2_tmp/" .. md5) then
-			return sys.exec("echo -n $(cat /tmp/etc/passwall2_tmp/%s)" % md5)
+		if fs.access(CACHE_PATH .. "/" .. md5) then
+			return sys.exec("echo -n $(cat %s)" % { CACHE_PATH .. "/" .. md5 })
 		else
 			local version = sys.exec(string.format("echo -n $(%s %s)", file, cmd))
 			if version and version ~= "" then
-				sys.call("echo '" .. version .. "' > " .. "/tmp/etc/passwall2_tmp/" .. md5)
+				sys.call("echo '%s' > %s"  % { version, CACHE_PATH .. "/" .. md5})
 				return version
 			end
 		end
@@ -1415,11 +1442,23 @@ function set_default_cbi()
 	if true then
 		--Map
 		local Map = cbi.Map
-		local original_init = Map.__init__
+		local default_init = Map.__init__
 		function Map.__init__(self, config, ...)
 			if not config then config = c_config end
-			original_init(self, config, ...)
+			default_init(self, config, ...)
 			self.api = require "luci.passwall2.api"
+		end
+		if is_js_luci() == true then
+			local default_parse = Map.parse
+			function Map.parse(self, ...)
+				apply_redirect(self)
+				local old = self.on_after_save
+				self.on_after_save = function(self)
+					if old then old(self) end
+					self:set("@global[0]", "timestamp", os.time())
+				end
+				return default_parse(self, ...)
+			end
 		end
 		function Map.foreach(self, stype, func)
 			self.uci:foreach(self.config, stype, func)
@@ -1459,25 +1498,6 @@ function set_default_cbi()
 				sh_uci_set(c_config, "@global[0]", "auto_lang", lang, true)
 			end
 		end
-		if is_js_luci() == true then
-			local hide_popup_box = nil
-			if hide_popup_box == true then
-				Map.apply_on_parse = false
-				Map.on_after_apply = function(self)
-					if self.redirect then
-						os.execute("sleep 1")
-						luci.http.redirect(self.redirect)
-					end
-				end
-			else
-				apply_redirect(Map)
-				local old = Map.on_after_save
-				Map.on_after_save = function(self)
-					if old then old(self) end
-					self:set("@global[0]", "timestamp", os.time())
-				end
-			end
-		end
 	end
 	if true then
 		--AbstractSection
@@ -1498,9 +1518,9 @@ function set_default_cbi()
 	if true then
 		--TextValue
 		local TextValue = cbi.TextValue
-		local original_init = TextValue.__init__
+		local default_init = TextValue.__init__
 		function TextValue.__init__(self, ...)
-			original_init(self, ...)
+			default_init(self, ...)
 			self.template  = appname .. "/cbi/tvalue"
 		end
 	end
@@ -1543,102 +1563,113 @@ function return_map(map)
 	return map
 end
 
-function luci_types(id, m, s, type_name, option_prefix)
+function luci_types(s, s2)
 	local cbi = require "luci.cbi"
+	local m = s.map
+	local id = s2.section
+	local type_name = s2.type_name
+	local option_prefix = s2.option_prefix
 	local fv_type
 	local field_type = s.fields["type"]
 	if field_type then
 		fv_type = field_type:formvalue(id)
 	end
-	local rewrite_option_table = {}
-	for key, value in pairs(s.fields) do
-		if key:find(option_prefix) == 1 then
-			if not s.fields[key].not_rewrite then
-				if s.fields[key].rewrite_option then
-					if not rewrite_option_table[s.fields[key].rewrite_option] then
-						rewrite_option_table[s.fields[key].rewrite_option] = 1
+	for i, v in ipairs(s2.children) do
+		local o = s2.children[i]
+		o.config_option = o.option
+		o.option_prefix = option_prefix
+		o.option = option_prefix .. o.option
+		if not o.not_rewrite then
+			o.cfgvalue = function(self, section)
+				-- Add a custom `custom_cfgvalue` attribute. If a custom `custom_cfgvalue` function exists, the custom `cfgvalue` logic will be used.
+				if self.custom_cfgvalue then
+					return self:custom_cfgvalue(section)
+				else
+					if self.rewrite_option then
+						return m:get(section, self.rewrite_option)
 					else
-						rewrite_option_table[s.fields[key].rewrite_option] = rewrite_option_table[s.fields[key].rewrite_option] + 1
+						return m:get(section, self.config_option)
 					end
 				end
-
-				s.fields[key].cfgvalue = function(self, section)
-					-- Add a custom `custom_cfgvalue` attribute. If a custom `custom_cfgvalue` function exists, the custom `cfgvalue` logic will be used.
-					if self.custom_cfgvalue then
-						return self:custom_cfgvalue(section)
+			end
+			o.write = function(self, section, value)
+				if s.fields["type"]:formvalue(id) == type_name then
+					-- Add a custom `custom_write` attribute; if a custom `custom_write` function exists, then use the custom write logic.
+					if self.custom_write then
+						self:custom_write(section, value)
+					else
+						local new_val = value
+						if util.instanceof(self, cbi.DynamicList) then
+							local new_t = {}
+							if type(value) == "table" then
+								new_t = table_remove_duplicates(value)
+							else
+								new_t = { value }
+							end
+							if self.cast == "string" then
+								new_val = table.concat(new_t, " ")
+							else
+								new_val = new_t
+							end
+						end
+						if self.rewrite_option then
+							m:set(section, self.rewrite_option, new_val)
+						else
+							m:set(section, self.config_option, new_val)
+						end
+					end
+				end
+			end
+			o.remove = function(self, section)
+				if s.fields["type"]:formvalue(id) == type_name then
+					-- Add a custom `custom_remove` attribute; if a custom `custom_remove` function exists, use the custom remove logic.
+					if self.custom_remove then
+						self:custom_remove(section)
 					else
 						if self.rewrite_option then
-							return m:get(section, self.rewrite_option)
+							m:del(section, self.rewrite_option)
 						else
-							if self.option:find(option_prefix) == 1 then
-								return m:get(section, self.option:sub(1 + #option_prefix))
-							end
+							m:del(section, self.config_option)
 						end
 					end
 				end
-				s.fields[key].write = function(self, section, value)
-					if s.fields["type"]:formvalue(id) == type_name then
-						-- Add a custom `custom_write` attribute; if a custom `custom_write` function exists, then use the custom write logic.
-						if self.custom_write then
-							self:custom_write(section, value)
-						else
-							local new_val = value
-							if util.instanceof(self, cbi.DynamicList) then
-								local new_t = {}
-								if type(value) == "table" then
-									new_t = table_remove_duplicates(value)
-								else
-									new_t = { value }
-								end
-								if self.cast == "string" then
-									new_val = table.concat(new_t, " ")
-								else
-									new_val = new_t
-								end
-							end
-							if self.rewrite_option then
-								m:set(section, self.rewrite_option, new_val)
-							else
-								if self.option:find(option_prefix) == 1 then
-									m:set(section, self.option:sub(1 + #option_prefix), new_val)
-								end
-							end
-						end
-					end
-				end
-				s.fields[key].remove = function(self, section)
-					if s.fields["type"]:formvalue(id) == type_name then
-						-- Add a custom `custom_remove` attribute; if a custom `custom_remove` function exists, use the custom remove logic.
-						if self.custom_remove then
-							self:custom_remove(section)
-						else
-							if self.rewrite_option and rewrite_option_table[self.rewrite_option] == 1 then
-								m:del(section, self.rewrite_option)
-							else
-								if self.option:find(option_prefix) == 1 then
-									m:del(section, self.option:sub(1 + #option_prefix))
-								end
-							end
-						end
-					end
-				end
-			end
-
-			local deps = s.fields[key].deps
-			if #deps > 0 then
-				for index, value in ipairs(deps) do
-					deps[index]["type"] = type_name
-				end
-			else
-				s.fields[key]:depends({ type = type_name })
-			end
-
-			if fv_type and fv_type ~= type_name then
-				s.fields[key].rmempty = true
 			end
 		end
+
+		local deps = o.deps
+		if #deps > 0 then
+			local function process_deps(dep)
+				local rewrite_deps = {}
+				for k, v in pairs(dep) do
+					if k:find("!") then
+						rewrite_deps[k] = v
+					else
+						rewrite_deps[option_prefix .. k] = v
+					end
+				end
+				if not rewrite_deps['!reverse'] then
+					rewrite_deps["type"] = type_name
+				end
+				return rewrite_deps
+			end
+			for index, value in ipairs(deps) do
+				local rewrite_deps = process_deps(value)
+				if rewrite_deps then
+					deps[index] = rewrite_deps
+				end
+			end
+		else
+			o:depends({ type = type_name })
+		end
+
+		if fv_type and fv_type ~= type_name then
+			o.rmempty = true
+		end
+
+		s:append(o)
 	end
 end
+
 function format_go_time(input, default)
 	input = input and trim(input)
 	local N = 0
