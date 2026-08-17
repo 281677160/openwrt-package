@@ -13,7 +13,6 @@ LUA_UTIL_PATH=/usr/lib/lua/luci/passwall
 UTIL_SINGBOX=$LUA_UTIL_PATH/util_sing-box.lua
 UTIL_SS=$LUA_UTIL_PATH/util_shadowsocks.lua
 UTIL_XRAY=$LUA_UTIL_PATH/util_xray.lua
-UTIL_NAIVE=$LUA_UTIL_PATH/util_naiveproxy.lua
 UTIL_HYSTERIA2=$LUA_UTIL_PATH/util_hysteria2.lua
 SINGBOX_BIN=$(first_type $(config_t_get global_app sing_box_file) sing-box)
 XRAY_BIN=$(first_type $(config_t_get global_app xray_file) xray)
@@ -98,7 +97,7 @@ run_ipt2socks() {
 
 run_singbox() {
 	local flag type node tcp_redir_port tcp_proxy_way udp_redir_port socks_address socks_port socks_username socks_password http_address http_port http_username http_password
-	local dns_listen_port direct_dns_query_strategy direct_dns_port direct_dns_udp_server direct_dns_tcp_server remote_dns_protocol remote_dns_udp_server remote_dns_tcp_server remote_dns_doh remote_dns_client_ip remote_fakedns remote_dns_query_strategy dns_cache dns_socks_address dns_socks_port
+	local dns_listen_port direct_dns_query_strategy direct_dns_port direct_dns_udp_server direct_dns_tcp_server remote_dns_protocol remote_dns_udp_server remote_dns_tcp_server remote_dns_doh remote_dns_client_ip remote_fakedns remote_dns_query_strategy remote_rewrite_ttl dns_cache dns_socks_address dns_socks_port
 	local loglevel log_file config_file server_host server_port no_run use_proxy_list use_gfw_list chn_list
 	eval_set_val "$@"
 	[ -z "$type" ] && {
@@ -179,6 +178,7 @@ run_singbox() {
 
 	[ -n "$remote_dns_client_ip" ] && json_add_string "remote_dns_client_ip" "${remote_dns_client_ip}"
 	[ "$remote_fakedns" = "1" ] && json_add_string "remote_dns_fake" "1"
+	[ -n "$remote_rewrite_ttl" ] && json_add_string "remote_rewrite_ttl" "${remote_rewrite_ttl}"
 	[ -n "$no_run" ] && json_add_string "no_run" "1"
 	local _json_arg="$(json_dump)"
 	lua $UTIL_SINGBOX gen_config "${_json_arg}" > $config_file
@@ -454,13 +454,6 @@ run_socks() {
 		[ -n "$relay_port" ] && _args="${_args} server_host=$server_host server_port=$server_port"
 		[ -n "$no_run" ] && _args="${_args} no_run=1"
 		run_xray flag=$flag node=$node socks_address=$bind socks_port=$socks_port config_file=$config_file log_file=$log_file ${_args}
-	;;
-	naiveproxy)
-		json_add_string "run_type" "socks"
-		json_add_string "local_addr" "$bind"
-		json_add_string "local_port" "$socks_port"
-		lua $UTIL_NAIVE gen_config "$(json_dump)" > $config_file
-		[ -n "$no_run" ] || ln_run "$(first_type naive)" naive $log_file "$config_file"
 	;;
 	ssr)
 		json_add_string "local_addr" "$bind"
@@ -763,6 +756,7 @@ run_redir() {
 					resolve_dns_log="${resolve_dns_log} + FakeDNS"
 					USE_FAKEDNS=1
 				}
+				_args="${_args} remote_rewrite_ttl=$(config_t_get global remote_rewrite_ttl)"
 				NEXT_DNS_LISTEN_PORT=$(expr $NEXT_DNS_LISTEN_PORT + 1)
 			}
 			_args="${_args} use_proxy_list=$USE_PROXY_LIST use_gfw_list=$USE_GFW_LIST chn_list=$CHN_LIST"
@@ -1274,6 +1268,7 @@ start_dns() {
 				_args="${_args} remote_fakedns=1"
 				USE_FAKEDNS=1
 			}
+			_args="${_args} remote_rewrite_ttl=$(config_t_get global remote_rewrite_ttl)"
 			local _remote_dns_client_ip=$(config_t_get global remote_dns_client_ip)
 			[ -n "${_remote_dns_client_ip}" ] && _args="${_args} remote_dns_client_ip=${_remote_dns_client_ip}"
 			TCP_PROXY_DNS=1
@@ -1621,9 +1616,9 @@ acl_app() {
 								dns_mode=$type
 								[ "$type" = "xray" ] && [ "$v2ray_dns_mode" = "http3" ] && v2ray_dns_mode="tcp"
 							}
-							dns_cache_key="${dns_mode}_${remote_dns}_${v2ray_dns_mode:-none}_${remote_dns_client_ip:-0}_${remote_fakedns:-0}"
+							dns_cache_key="${dns_mode}_${remote_dns}_${v2ray_dns_mode:-none}_${remote_dns_client_ip:-0}_${remote_fakedns:-0}_${remote_rewrite_ttl:-30}"
 							([ "$v2ray_dns_mode" = "doh" ] || [ "$v2ray_dns_mode" = "http3" ]) && {
-								dns_cache_key="${dns_mode}_${remote_dns_doh:-https://1.1.1.1/dns-query}_${v2ray_dns_mode:-doh}_${remote_dns_client_ip:-0}_${remote_fakedns:-0}"
+								dns_cache_key="${dns_mode}_${remote_dns_doh:-https://1.1.1.1/dns-query}_${v2ray_dns_mode:-doh}_${remote_dns_client_ip:-0}_${remote_fakedns:-0}_${remote_rewrite_ttl:-30}"
 							}
 
 							if [ "$remote_fakedns" = "1" ] || ([ "$protocol" = "_shunt" ] && [ "$(config_n_get $tcp_node fakedns)" = "1" ]); then
@@ -1750,7 +1745,10 @@ acl_app() {
 										_extra_param="${_extra_param} udp_redir_port=$redir_port"
 									}
 									config_file="$TMP_PATH/$config_file"
-									[ "${type}" = "sing-box" ] && type="singbox"
+									[ "${type}" = "sing-box" ] && {
+										type="singbox"
+										_extra_param="${_extra_param} remote_rewrite_ttl=${remote_rewrite_ttl:-30}"
+									}
 									_extra_param="${_extra_param} use_proxy_list=$use_proxy_list use_gfw_list=$use_gfw_list chn_list=$chn_list"
 									run_${type} flag=$tcp_node node=$tcp_node tcp_redir_port=$redir_port ${_extra_param} config_file=$config_file log_file=$log_file loglevel=$loglevel
 								else
@@ -1843,7 +1841,7 @@ acl_app() {
 			}
 			unset enabled sid remarks sources interface tcp_no_redir_ports udp_no_redir_ports use_global_config tcp_node udp_node use_direct_list use_proxy_list use_block_list use_gfw_list chn_list tcp_proxy_mode udp_proxy_mode filter_proxy_ipv6 dns_mode remote_dns v2ray_dns_mode remote_dns_doh remote_dns_client_ip
 			unset _ip _mac _iprange _ipset _ip_or_mac source_list tcp_port udp_port config_file _extra_param dns_cache_key log loglevel
-			unset _china_ng_listen _chinadns_local_dns _direct_dns_mode chinadns_ng_default_tag dnsmasq_filter_proxy_ipv6 remote_fakedns force_https_soa use_fakedns
+			unset _china_ng_listen _chinadns_local_dns _direct_dns_mode chinadns_ng_default_tag dnsmasq_filter_proxy_ipv6 remote_fakedns force_https_soa use_fakedns remote_rewrite_ttl
 		done
 		unset socks_port redir_port dns_port dnsmasq_port chinadns_port
 		[ -n "${has_enabled}" ] || {
@@ -1854,7 +1852,7 @@ acl_app() {
 }
 
 start() {
-	busybox pgrep -f /tmp/etc/passwall/bin > /dev/null 2>&1 && {
+	busybox pgrep -f ${TMP_PATH}/bin > /dev/null 2>&1 && {
 		logger -t PSW-RESTART "Upgrade or overload residue is detected, and the subprocess is being called to perform complete cleaning..."
 		(stop)
 		sleep 2
