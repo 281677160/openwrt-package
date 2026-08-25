@@ -4,7 +4,6 @@ api.set_default_cbi()
 local has_ss_rust = api.is_finded("sslocal")
 local has_singbox = api.finded_com("sing-box")
 local has_xray = api.finded_com("xray")
-local has_hysteria2 = api.finded_com("hysteria")
 local ss_type = {}
 local trojan_type = {}
 local vmess_type = {}
@@ -32,10 +31,6 @@ if has_xray then
 	if api.compare_versions(xray_version, ">=", "26.1.13") then
 		table.insert(hysteria2_type, s)
 	end
-end
-if has_hysteria2 then
-	local s = "hysteria2"
-	table.insert(hysteria2_type, s)
 end
 
 m = Map()
@@ -117,8 +112,8 @@ end
 o = s:option(DummyValue, "_update", translate("Manual subscription All"))
 o.rawhtml = true
 o.cfgvalue = function(self, section)
-    return string.format([[
-        <input type="button" class="btn cbi-button cbi-button-apply" onclick="ManualSubscribeAll()" value="%s" />]],
+	return string.format([[
+		<input type="button" class="btn cbi-button cbi-button-apply" onclick="ManualSubscribeAll()" value="%s" />]],
 	 translate("Manual subscription All"))
 end
 
@@ -215,8 +210,8 @@ end
 o = s:option(DummyValue, "_update", translate("Manual subscription"))
 o.rawhtml = true
 o.cfgvalue = function(self, section)
-    return string.format([[
-        <input type="button" class="btn cbi-button cbi-button-apply" onclick="ManualSubscribe('%s')" value="%s" />]],
+	return string.format([[
+		<input type="button" class="btn cbi-button cbi-button-apply" onclick="ManualSubscribe('%s')" value="%s" />]],
 	section, translate("Manual subscription"))
 end
 
