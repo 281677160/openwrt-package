@@ -675,7 +675,7 @@ function gen_config_server(node)
 		},
 		inbounds = {
 			{
-				listen = (node.bind_local == "1") and "127.0.0.1" or nil,
+				listen = "::",
 				port = tonumber(node.port),
 				protocol = node.protocol,
 				settings = settings,
@@ -922,12 +922,12 @@ function gen_config(var)
 	if xray_settings.fragment == "1" then
 		local lengths, delays = {}, {}
 		api.trim(xray_settings.fragment_lengths):gsub("[^,]+", function(w)
-		    w = w:gsub("%s+", "")
-		    if w ~= "" then lengths[#lengths+1] = w end
+			w = w:gsub("%s+", "")
+			if w ~= "" then lengths[#lengths+1] = w end
 		end)
 		api.trim(xray_settings.fragment_delays):gsub("[^,]+", function(w)
-		    w = w:gsub("%s+", "")
-		    if w ~= "" then delays[#delays+1] = w end
+			w = w:gsub("%s+", "")
+			if w ~= "" then delays[#delays+1] = w end
 		end)
 		fragment_table = {
 			type = "fragment",
@@ -1010,11 +1010,18 @@ function gen_config(var)
 	end
 
 	function get_node_by_id(node_id)
-		if not node_id or node_id == "" or node_id == "nil" then return nil end
-		local section = api.uci_get_c(node_id) or {}
+		local section
+		if type(node_id) == "table" then
+			section = node_id
+		elseif type(node_id) == "string" then
+			if node_id == "" or node_id == "nil" then return nil end
+			section = api.uci_get_c(node_id) or {}
+		else
+			return nil
+		end
 		if section[".type"] == "socks" then
-			local result = {
-				[".name"] = node_id,
+			return {
+				[".name"] = section[".name"],
 				remarks = "socks[%s]" % section.port,
 				type = "Xray",
 				protocol = "socks",
@@ -1023,7 +1030,6 @@ function gen_config(var)
 				transport = "tcp",
 				stream_security = "none"
 			}
-			return result
 		end
 		if section[".type"] == "nodes" then
 			return section
@@ -1269,12 +1275,7 @@ function gen_config(var)
 
 	function gen_outbound_get_tag(flag, node_id, tag, proxy_table)
 		if not node_id or node_id == "" or node_id == "nil" then return nil end
-		local node
-		if type(node_id) == "string" then
-			node = get_node_by_id(node_id)
-		elseif type(node_id) == "table" then
-			node = node_id
-		end
+		local node = get_node_by_id(node_id)
 		if not tag then tag = node[".name"] end
 		if node then
 			if proxy_table.chain_proxy == "1" or proxy_table.chain_proxy == "2" then
