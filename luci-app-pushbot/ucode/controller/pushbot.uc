@@ -125,7 +125,7 @@ return {
 	 *   url 模式：随机起点换列表内其他 URL 最多 3 次，带 --interface 适配多 WAN
 	 * 返回纯文本（获取失败时返回翻译后的失败文案） */
 	act_get_ip: function() {
-		let type = http.formvalue("type") ?? "4";
+		let ip_type = http.formvalue("type") ?? "4";
 		let mode = http.formvalue("mode") ?? "iface";
 		let iface = http.formvalue("iface") ?? "";
 		let urls  = http.formvalue("url")  ?? "";
@@ -137,7 +137,7 @@ return {
 
 		/* 私网/链路本地判断 */
 		function is_private(ip) {
-			if (type == "4") {
+			if (ip_type == "4") {
 				let m = match(ip, /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
 				if (!m) return true;
 				let a = +m[1], b = +m[2];
@@ -167,7 +167,7 @@ return {
 
 		let ip = "";
 		if (mode == "iface" && iface != "") {
-			if (type == "4") {
+			if (ip_type == "4") {
 				ip = run("/sbin/ifconfig " + sq(iface) +
 					" | awk '/inet addr/ {print $2}' | awk -F: '{print $2}'" +
 					" | grep -oE '[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}' | head -n1");
@@ -194,14 +194,14 @@ return {
 					/* 以 OpenWrt 防火墙区域判定 WAN：接口（或所属逻辑接口）出现在
 					   masq=1 的 zone 的 network 列表即视为 WAN。不依赖接口命名
 					   （用户可改名）与 IP 私网/公网。 */
-					let iswan = run("local li i d l3; if uci get network." + sq(iface) + " >/dev/null 2>&1; then li=" + sq(iface) + "; else li=''; for i in $(uci show network 2>/dev/null | grep -oE '^network\\.[^.]+\\\\.(device|ifname)=' | sed 's/^network\\\\.//; s/\\\\.\\(device\\\\|ifname\\)=$//' | sort -u); do d=$(uci get network.$i.device 2>/dev/null); [ \"$d\" = " + sq(iface) + " ] && li=\"$li $i\"; [ -z \"$d\" ] && d=$(uci get network.$i.ifname 2>/dev/null); [ \"$d\" = " + sq(iface) + " ] && li=\"$li $i\"; l3=$(ubus call network.interface.$i status 2>/dev/null | grep -oE '\\\"l3_device\\\": \\\"[^\\\"]*\\\"' | head -1 | cut -d'\\\"' -f4); [ \"$l3\" = " + sq(iface) + " ] && li=\"$li $i\"; done; fi; for i in $li; do for z in $(seq 0 20); do m=$(uci get firewall.@zone[$z].masq 2>/dev/null); [ -z \"$m\" ] && break; [ \"$m\" = \"1\" ] && echo \" $(uci get firewall.@zone[$z].network 2>/dev/null) \" | grep -q \" $i \" && exit 0; done; done; exit 1");
-					if (iswan == "0") bind = " --interface " + sq(iface);
+					let iswan = run("li=''; if uci -q get network." + sq(iface) + " >/dev/null; then li=" + sq(iface) + "; else for i in $(ubus list 'network.interface.*' 2>/dev/null | sed 's/^network[.]interface[.]//'); do d=$(uci -q get network.$i.device); [ \"$d\" = " + sq(iface) + " ] && li=\"$li $i\"; [ -z \"$d\" ] && d=$(uci -q get network.$i.ifname); [ \"$d\" = " + sq(iface) + " ] && li=\"$li $i\"; l3=$(ubus call network.interface.$i status 2>/dev/null | grep -oE '\"l3_device\": \"[^\"]*\"' | head -1 | cut -d'\"' -f4); [ \"$l3\" = " + sq(iface) + " ] && li=\"$li $i\"; done; fi; found=0; for i in $li; do for z in $(seq 0 20); do n=$(uci -q get firewall.@zone[$z].name); [ -z \"$n\" ] && break; m=$(uci -q get firewall.@zone[$z].masq); zn=$(uci -q get firewall.@zone[$z].network); if [ \"$m\" = \"1\" ]; then case \" $zn \" in *\" $i \"*) found=1; break 2;; esac; fi; done; done; echo \"$found\"");
+					if (iswan == "1") bind = " --interface " + sq(iface);
 				}
 				let start = time() % length(lines);
 				for (let i = 0; i < 3 && i < length(lines); i++) {
 					let pick = lines[(start + i) % length(lines)];
-					let out = run("curl -k -s -" + (type == "4" ? "4" : "6") + bind + " -m 8 " + sq(pick) +
-						(type == "4"
+					let out = run("curl -k -s -" + (ip_type == "4" ? "4" : "6") + bind + " -m 8 " + sq(pick) +
+						(ip_type == "4"
 							? " | grep -oE '[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}' | head -n1"
 							: " | grep -oE '([\\da-fA-F0-9]{1,4}(:{1,2})){1,15}[\\da-fA-F0-9]{1,4}' | head -n1"));
 					if (out != "") { ip = out; break; }
@@ -266,7 +266,7 @@ return {
 			"cpuload_enable","cpuload","temperature_enable","temperature",
 			"client_usage","client_usage_max","client_usage_disturb",
 			"pushbot_ipv4","ipv4_interface","pushbot_ipv6","ipv6_interface",
-			"web_logged","ssh_logged","web_login_failed","ssh_login_failed",
+			"web_logged","ssh_logged","web_login_failed","ssh_login_failed","wifi_connected","wifi_auth_failed",
 			"login_max_num","web_login_black","ip_black_timeout",
 			"up_timeout","down_timeout","timeout_retry_count","thread_num",
 			"soc_code","pve_host","pve_port","err_enable","err_sheep_enable",
@@ -345,6 +345,29 @@ return {
 			pf.close();
 		}
 		sysinfo.ifaces = ifaces;
+
+		/* wireless interfaces detection */
+		let wifi_ifs = [];
+		let wifi_seen = {};
+		/* 方式1: iw dev（开源驱动 mac80211） */
+		let wf = popen("iw dev 2>/dev/null | grep Interface | awk '{print $2}'", "r");
+		if (wf) {
+			for (let line = wf.read("line"); line; line = wf.read("line")) {
+				let n = replace(line, /\s+/, "");
+				if (length(n) > 0 && !wifi_seen[n]) { wifi_seen[n] = true; push(wifi_ifs, n); }
+			}
+			wf.close();
+		}
+		/* 方式2: 遍历 /sys/class/net 下带 wireless 的接口（MTK 闭源等 iw 无输出的平台） */
+		let wf2 = popen("ls /sys/class/net/*/wireless 2>/dev/null | sed 's|/sys/class/net/||;s|/wireless||;s/:$//'", "r");
+		if (wf2) {
+			for (let line = wf2.read("line"); line; line = wf2.read("line")) {
+				let n = replace(line, /\s+/, "");
+				if (length(n) > 0 && !wifi_seen[n]) { wifi_seen[n] = true; push(wifi_ifs, n); }
+			}
+			wf2.close();
+		}
+		sysinfo.wifi_ifs = wifi_ifs;
 
 		/* IP hints from arp */
 		let ip_hints = [];
