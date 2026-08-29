@@ -15,7 +15,7 @@ local xray_version = api.get_app_version("xray")
 local xray_min_version = "26.3.27"
 
 local function get_domain_excluded()
-	local path = "/usr/share/passwall/domains_excluded"
+	local path = string.format("/usr/share/%s/rules/domains_excluded", api.c_config)
 	local content = fs.readfile(path)
 	if not content then return nil end
 	local hosts = {}
@@ -308,7 +308,8 @@ function gen_outbound(flag, node, tag, proxy_table)
 								type = "realm",
 								settings = {
 									url = url,
-									stunServers = stun
+									stunServers = stun,
+									portMapping = (node.hysteria2_realm_upnp == "1") and { enabled = true } or nil
 								}
 							}
 							udp[#udp+1] = r
@@ -782,7 +783,8 @@ function gen_config_server(node)
 									type = "realm",
 									settings = {
 										url = url,
-										stunServers = stun
+										stunServers = stun,
+										portMapping = (node.hysteria2_realm_upnp == "1") and { enabled = true } or nil
 									}
 								}
 								udp[#udp+1] = r
