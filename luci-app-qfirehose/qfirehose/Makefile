@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=qfirehose
 PKG_VERSION:=1.7.1
-PKG_RELEASE:=1
+PKG_RELEASE:=6
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/ntbowen/qfirehose.git
