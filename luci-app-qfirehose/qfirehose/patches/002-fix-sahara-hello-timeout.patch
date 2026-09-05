@@ -1,0 +1,151 @@
+--- a/sahara.c
++++ b/sahara.c
+@@ -64,7 +64,7 @@
+ }
+ 
+ int qusb_use_usbfs_interface(const void *handle);
+-static int sahara_rx_data(void *usb_handle, void *rx_buffer, size_t bytes_to_read) {
++static int sahara_rx_data(void *usb_handle, void *rx_buffer, size_t bytes_to_read, int timeout_msec) {
+     q_sahara_packet_h* command_packet_header = NULL;
+     size_t bytes_read = 0;
+ 
+@@ -90,13 +90,16 @@
+         "Q_SAHARA_EIGHTEEN", // 		= 0x12,
+     };
+ 
++    if (timeout_msec == 0)
++        timeout_msec = 5000;
++
+     if (0 == bytes_to_read) {
+         if (qusb_use_usbfs_interface(usb_handle)) {
+-            bytes_read = qusb_noblock_read(usb_handle, rx_buffer, Q_SAHARA_RAW_BUF_SZ, 0, 5000);
++            bytes_read = qusb_noblock_read(usb_handle, rx_buffer, Q_SAHARA_RAW_BUF_SZ, 0, timeout_msec);
+             if (bytes_read < sizeof(q_sahara_packet_h)) return 0;
+         }
+         else {
+-            bytes_read = qusb_noblock_read(usb_handle, rx_buffer, sizeof(q_sahara_packet_h), 0, 5000);
++            bytes_read = qusb_noblock_read(usb_handle, rx_buffer, sizeof(q_sahara_packet_h), 0, timeout_msec);
+             if (bytes_read != sizeof(q_sahara_packet_h)) return 0;
+         }
+ 
+@@ -106,7 +109,7 @@
+ 
+             if (!qusb_use_usbfs_interface(usb_handle)) {
+                 bytes_read += qusb_noblock_read(usb_handle, (uint8_t *)rx_buffer + sizeof(q_sahara_packet_h),
+-                    le_uint32(command_packet_header->q_len) - sizeof(q_sahara_packet_h), 0, 5000);
++                    le_uint32(command_packet_header->q_len) - sizeof(q_sahara_packet_h), 0, timeout_msec);
+             }
+ 
+             if (bytes_read != (le_uint32(command_packet_header->q_len))) {
+@@ -120,7 +123,7 @@
+         }
+     }
+     else {
+-        bytes_read = qusb_noblock_read(usb_handle, rx_buffer, bytes_to_read, bytes_to_read, 5000);
++        bytes_read = qusb_noblock_read(usb_handle, rx_buffer, bytes_to_read, bytes_to_read, timeout_msec);
+     }
+ 
+     return 1;
+@@ -330,22 +333,69 @@
+     uint32_t q_image_id = 0;
+     struct sahara_pkt *pr_sahara_pkt;
+     char *cur_image = NULL;
++    int pending_pkt = 0;
+ 
+     pr_sahara_pkt = (struct sahara_pkt *)rx_buffer;
+ 
+ __wait_hello_packet:
+-    if (0 == sahara_rx_data(usb_handle, rx_buffer, 0))
+     {
+-        sahara_tx_data(usb_handle, tx_buffer, 1);
+-        if (0 == sahara_rx_data(usb_handle, rx_buffer, 0))
+-            return 0;
+-    }
++        int hello_retry = 0;
++        int blind_hello_sent = 0;
+ 
+-    if (le_uint32(pr_sahara_pkt->q_header.q_cmd) != Q_SAHARA_ONE)
+-    {
+-        dbg(LOG_ERROR, "Received a different q_cmd: %x while waiting for hello packet", pr_sahara_pkt->q_header.q_cmd);
+-        send_reset_command(usb_handle, rx_buffer);
+-        return 0;
++        for (hello_retry = 0; hello_retry < 4; hello_retry++) {
++            if (sahara_rx_data(usb_handle, rx_buffer, 0, hello_retry ? 5000 : 10000)) {
++                uint32_t q_cmd = le_uint32(pr_sahara_pkt->q_header.q_cmd);
++
++                if (q_cmd == Q_SAHARA_ONE)
++                    break;
++
++                if (q_cmd == 0x6D783F3C) { /* "<?xm" : firehose programmer already running */
++                    dbg(LOG_ERROR, "Target is already in firehose mode, power cycle the module and retry");
++                    return 0;
++                }
++
++                if (blind_hello_sent && (q_cmd == Q_SAHARA_THREE || q_cmd == Q_SAHARA_EIGHTEEN)) {
++                    /* target accepted our hello response even though we never saw its hello */
++                    dbg(LOG_INFO, "Target accepted blind hello response, starting image transfer");
++                    pending_pkt = 1;
++                    goto __image_transfer;
++                }
++
++                if (q_cmd == Q_SAHARA_FOUR) {
++                    dbg(LOG_ERROR, "Target is in sahara error state (image_tx_status=%d), power cycle the module and retry",
++                        le_uint32(pr_sahara_pkt->q_sahara_end_packet_image_tx.q_status));
++                    send_reset_command(usb_handle, tx_buffer);
++                    return 0;
++                }
++
++                if (q_cmd == 0x08) { /* Q_SAHARA_EIGTH: reset response */
++                    dbg(LOG_INFO, "Reset acknowledged, waiting for hello packet");
++                    blind_hello_sent = 0;
++                    continue;
++                }
++
++                dbg(LOG_ERROR, "Received a different q_cmd: %x while waiting for hello packet, sending reset and retry", q_cmd);
++                send_reset_command(usb_handle, tx_buffer);
++                usleep(500 * 1000);
++                blind_hello_sent = 0;
++            } else if (!blind_hello_sent) {
++                /* hello was most likely sent before we opened the device, answer it blindly */
++                dbg(LOG_ERROR, "No hello packet received, sending hello response anyway");
++                memset(rx_buffer, 0, sizeof(struct sahara_pkt));
++                pr_sahara_pkt->q_sahara_hello_packet.q_ver = le_uint32(2);
++                pr_sahara_pkt->q_sahara_hello_packet.q_ver_sup = le_uint32(1);
++                pr_sahara_pkt->q_sahara_hello_packet.q_mode = le_uint32(Q_SAHARA_MODE_ZERO);
++                if (0 == send_hello_response(usb_handle, tx_buffer, pr_sahara_pkt))
++                    return 0;
++                blind_hello_sent = 1;
++            } else {
++                dbg(LOG_ERROR, "No response to hello response, power cycle the module and retry");
++                return 0;
++            }
++        }
++        if (hello_retry >= 4) {
++            return 0;
++        }
+     }
+ 
+     if (0 == send_hello_response(usb_handle, tx_buffer, pr_sahara_pkt))
+@@ -354,9 +404,12 @@
+         return 0;
+     }
+ 
++__image_transfer:
+     while (1)
+     {
+-        if (0 == sahara_rx_data(usb_handle, rx_buffer, 0))
++        if (pending_pkt)
++            pending_pkt = 0;
++        else if (0 == sahara_rx_data(usb_handle, rx_buffer, 0, 5000))
+             return 0;
+ 
+         if (le_uint32(pr_sahara_pkt->q_header.q_cmd) == Q_SAHARA_THREE)
+@@ -400,7 +453,7 @@
+         }
+     }
+ 
+-    if (0 == sahara_rx_data(usb_handle, rx_buffer, 0))
++    if (0 == sahara_rx_data(usb_handle, rx_buffer, 0, 5000))
+         return 0;
+ 
+     dbg(LOG_INFO, "q_image_tx_status = %d", le_uint32(pr_sahara_pkt->q_sahara_done_packet_response.q_image_tx_status));
