@@ -1,0 +1,52 @@
+--- a/zip_7z.c	2026-09-04 21:28:12.329276412 +0800
++++ b/zip_7z.c	2026-09-04 21:29:09.974154057 +0800
+@@ -22,12 +22,39 @@
+ 
+ struct unzip_ctx *p_unzip_ctx;
+ 
++static int mkdir_recursive(const char *path) {
++    char tmp[512];
++    char *p = NULL;
++    size_t len;
++
++    snprintf(tmp, sizeof(tmp), "%s", path);
++    len = strlen(tmp);
++    if (len > 0 && tmp[len - 1] == '/')
++        tmp[len - 1] = '\0';
++    for (p = tmp + 1; *p; p++) {
++        if (*p == '/') {
++            *p = '\0';
++            mkdir(tmp, 0755);
++            *p = '/';
++        }
++    }
++    return mkdir(tmp, 0755);
++}
++
+ static int create_and_write_filesize(const char *file, long sz) {
+     char line[32];
++    char dir[512];
++    const char *last_slash;
++
++    last_slash = strrchr(file, '/');
++    if (last_slash) {
++        snprintf(dir, sizeof(dir), "%.*s", (int)(last_slash - file), file);
++        mkdir_recursive(dir);
++    }
+ 
+     int fd = open(file, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+     if (fd == -1) {
+-        dbg_time("open(%s) fail! errno: %d (%s)\n", line, errno, strerror(errno));
++        dbg_time("open(%s) fail! errno: %d (%s)\n", file, errno, strerror(errno));
+         return -1;
+     }
+      snprintf(line, sizeof(line), "%ld\n", sz);
+@@ -136,7 +163,7 @@
+ 
+         snprintf(ctx->line, sizeof(ctx->line), "%s/%s", tmp_dir, Name);
+        if (Length == 0) { //dir
+-            if (mkdir(ctx->line, 0755) != 0) {
++            if (mkdir_recursive(ctx->line) != 0) {
+                 dbg_time("mkdir(%s) fail! errno: %d (%s)\n", ctx->line, errno, strerror(errno));
+                 goto out;
+             }
