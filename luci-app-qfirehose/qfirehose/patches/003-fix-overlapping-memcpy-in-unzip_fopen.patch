@@ -1,0 +1,11 @@
+--- a/zip_7z.c
++++ b/zip_7z.c
+@@ -195,7 +195,7 @@
+         char *upper = strstr(file, firehose);
+ 
+         if (upper) {
+-            memcpy(upper, upper+strlen(firehose), strlen(upper+strlen(firehose))+1);
++            memmove(upper, upper+strlen(firehose), strlen(upper+strlen(firehose))+1);
+         }
+         
+         if (ctx->is_7z_file) {
