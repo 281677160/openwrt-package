@@ -20,6 +20,47 @@ timestamp=$(date +%Y%m%d_%H%M%S)
 log_file="$LOG_DIR/qfirehose_${timestamp}.log"
 pid_file="$LOG_DIR/pid"
 status_file="$LOG_DIR/status"
+stopped_file="$LOG_DIR/stopped_services"
+
+# EDL 保护：模块进入 9008 后 PBL 只接受 Sahara 协议，任何往 ttyUSB0 发送 AT 命令的
+# 探测进程（qmodem 的 modem_scand、ubus-at-daemon 等）都会让 PBL 进入错误状态，
+# 导致 hello 丢失、烧录无法开始。烧录期间停掉它们，结束后恢复。
+EDL_GUARD_SERVICES="qmodem_init qmodem_monitor ubus-at-daemon"
+
+edl_guard_stop() {
+    for s in $EDL_GUARD_SERVICES; do
+        [ -x "/etc/init.d/$s" ] || continue
+        if /etc/init.d/"$s" stop >/dev/null 2>&1; then
+            grep -qx "$s" "$stopped_file" 2>/dev/null || echo "$s" >> "$stopped_file"
+            echo "EDL guard: stopped $s" >> "$log_file"
+        fi
+    done
+    killall modem_scand 2>/dev/null
+}
+
+edl_device_present() {
+    local d
+    for d in /sys/bus/usb/devices/*; do
+        [ "$(cat "$d/idVendor" 2>/dev/null)" = "05c6" ] && \
+        [ "$(cat "$d/idProduct" 2>/dev/null)" = "9008" ] && return 0
+    done
+    return 1
+}
+
+edl_guard_restore() {
+    [ -f "$stopped_file" ] || return 0
+    # 模块仍在 9008（烧录失败或尚未复位）时不能恢复探测服务，
+    # 交给 /etc/hotplug.d/usb/05-qfirehose-edl-guard 在设备移除时恢复
+    if edl_device_present; then
+        echo "EDL guard: device still in EDL, services will be restored on removal" >> "$log_file"
+        return 0
+    fi
+    for s in $(cat "$stopped_file"); do
+        /etc/init.d/"$s" start >/dev/null 2>&1
+        echo "EDL guard: restored $s" >> "$log_file"
+    done
+    rm -f "$stopped_file"
+}
 
 # 创建符号链接指向最新的日志文件
 ln -sf "$log_file" "$LOG_DIR/current.log"
@@ -39,12 +80,15 @@ echo "QFirehose start at $(date)" > "$log_file"
 echo "Command: /usr/bin/qfirehose $*" >> "$log_file"
 echo "---" >> "$log_file"
 
+edl_guard_stop
+
 # 启动 qfirehose 并将其放入后台运行
 # stdout 直接重定向到文件（非管道），利用 qfirehose 内部的 fflush(stdout) 实现实时写入
 # stderr 也合并到 stdout，确保错误信息不丢失
 (
     /usr/bin/qfirehose "$@" >> "$log_file" 2>&1
     ret=$?
+    edl_guard_restore
     # 通过退出码和日志关键字双重判断结果
     if [ "$ret" = "0" ] && grep -q "Upgrade module successfully" "$log_file" 2>/dev/null; then
         echo "completed" > "$status_file"
