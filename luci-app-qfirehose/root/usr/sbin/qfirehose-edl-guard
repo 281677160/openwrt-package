@@ -1,0 +1,124 @@
+#!/bin/sh
+# EDL 保护工具，被 qfirehose-start 和 /etc/hotplug.d/usb/05-qfirehose-edl-guard 调用
+#
+# 原理：
+#   模组处于 EDL（05c6:9008）时 PBL 只接受 Sahara 协议，且 hello 只发一次。
+#   用户态程序想碰到 PBL，唯一途径是内核驱动（qcserial）暴露出来的 /dev/ttyUSB*。
+#   qfirehose 自己走 usbfs（/dev/bus/usb/...）并会主动 detach 内核驱动，不需要 tty。
+#   所以只要在 9008 接口绑定内核驱动的瞬间把驱动解绑，就不存在任何 tty 节点，
+#   无论系统里跑着什么未知的探测程序都无法污染 PBL——这是通用保护。
+#
+#   停止已知探测服务（qmodem 等）只是补充手段，可通过 UCI 覆盖：
+#   uci set qfirehose.config.edl_guard_services='svc1 svc2'
+#
+# 用法：
+#   qfirehose-edl-guard detach [sysfs_usb_device_path]   解绑 9008 接口上的内核驱动
+#   qfirehose-edl-guard present                          存在 9008 设备则返回 0
+#   qfirehose-edl-guard stop-services  [logfile]         停止探测服务并记录
+#   qfirehose-edl-guard restore-services [logfile] [force]  恢复之前停止的服务
+#                                                        （force：不检查 9008 是否仍存在）
+
+EDL_VID="05c6"
+EDL_PID="9008"
+LOG_DIR="/tmp/qfirehose_log"
+STOPPED_FILE="$LOG_DIR/stopped_services"
+DEFAULT_GUARD_SERVICES="qmodem_init qmodem_monitor ubus-at-daemon"
+
+log() {
+    logger -t qfirehose-edl-guard "$*"
+    [ -n "$LOGFILE" ] && echo "EDL guard: $*" >> "$LOGFILE"
+}
+
+is_edl_device() {
+    [ "$(cat "$1/idVendor" 2>/dev/null)" = "$EDL_VID" ] && \
+    [ "$(cat "$1/idProduct" 2>/dev/null)" = "$EDL_PID" ]
+}
+
+# 解绑一个 USB 设备下所有接口的内核驱动
+detach_device() {
+    local dev="$1" iface drv name
+    for iface in "$dev"/*:*; do
+        [ -d "$iface" ] || continue
+        drv="$iface/driver"
+        [ -e "$drv" ] || continue
+        name=$(basename "$(readlink -f "$drv")")
+        echo "$(basename "$iface")" > "$drv/unbind" 2>/dev/null && \
+            log "detached driver $name from $(basename "$iface") (EDL device)"
+    done
+}
+
+cmd_detach() {
+    local dev
+    if [ -n "$1" ]; then
+        dev="$1"
+        # 传入的可能是接口路径，回退到设备路径
+        case "$(basename "$dev")" in
+            *:*) dev=$(dirname "$dev") ;;
+        esac
+        is_edl_device "$dev" && detach_device "$dev"
+        return 0
+    fi
+    for dev in /sys/bus/usb/devices/*; do
+        case "$(basename "$dev")" in
+            *:*|usb*) continue ;;
+        esac
+        is_edl_device "$dev" && detach_device "$dev"
+    done
+    return 0
+}
+
+cmd_present() {
+    local dev
+    for dev in /sys/bus/usb/devices/*; do
+        case "$(basename "$dev")" in
+            *:*|usb*) continue ;;
+        esac
+        is_edl_device "$dev" && return 0
+    done
+    return 1
+}
+
+guard_services() {
+    local svcs
+    svcs=$(uci -q get qfirehose.config.edl_guard_services)
+    echo "${svcs:-$DEFAULT_GUARD_SERVICES}"
+}
+
+cmd_stop_services() {
+    local s
+    mkdir -p "$LOG_DIR"
+    for s in $(guard_services); do
+        [ -x "/etc/init.d/$s" ] || continue
+        if /etc/init.d/"$s" stop >/dev/null 2>&1; then
+            grep -qx "$s" "$STOPPED_FILE" 2>/dev/null || echo "$s" >> "$STOPPED_FILE"
+            log "stopped $s"
+        fi
+    done
+}
+
+cmd_restore_services() {
+    local s
+    [ -f "$STOPPED_FILE" ] || return 0
+    if [ "$FORCE" != "1" ] && cmd_present; then
+        log "device still in EDL, services will be restored on removal"
+        return 0
+    fi
+    for s in $(cat "$STOPPED_FILE"); do
+        /etc/init.d/"$s" start >/dev/null 2>&1
+        log "restored $s"
+    done
+    rm -f "$STOPPED_FILE"
+}
+
+cmd="$1"
+shift
+case "$cmd" in
+    detach)           cmd_detach "$1" ;;
+    present)          cmd_present ;;
+    stop-services)    LOGFILE="$1"; cmd_stop_services ;;
+    restore-services) LOGFILE="$1"; [ "$2" = "force" ] && FORCE=1; cmd_restore_services ;;
+    *)
+        echo "usage: $0 detach [sysfs_path] | present | stop-services [log] | restore-services [log]" >&2
+        exit 1
+        ;;
+esac

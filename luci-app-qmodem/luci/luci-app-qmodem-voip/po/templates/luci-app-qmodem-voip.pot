@@ -1,0 +1,365 @@
+# Translation template for luci-app-qmodem-voip
+# Generated automatically by extract_i18n_strings.py
+
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: view/qmodem-voip/call.js:15
+msgid "Active"
+msgstr ""
+
+#: qmodem-voip/surface.js:146
+#: view/qmodem-voip/call.js:408
+msgid "Allow browser audio"
+msgstr ""
+
+#: qmodem-voip/reducer.js:142
+msgid "Another endpoint answered this call first."
+msgstr ""
+
+#: qmodem-voip/surface.js:54
+msgid "Answer"
+msgstr ""
+
+#: qmodem-voip/surface.js:193
+msgid "Audio and media"
+msgstr ""
+
+#: qmodem-voip/surface.js:186
+msgid "Available while a browser-owned call is active."
+msgstr ""
+
+#: view/qmodem-voip/call.js:406
+msgid "Browser audio connects while the call is being established."
+msgstr ""
+
+#: view/qmodem-voip/call.js:406
+msgid "Browser audio is connected."
+msgstr ""
+
+#: qmodem-voip/surface.js:160
+msgid "Browser media"
+msgstr ""
+
+#: qmodem-voip/surface.js:118
+#: qmodem-voip/surface.js:171
+msgid "Call"
+msgstr ""
+
+#: view/qmodem-voip/call.js:97
+msgid "Call operation failed"
+msgstr ""
+
+#: qmodem-voip/surface.js:159
+#: view/qmodem-voip/call.js:51
+msgid "Call service"
+msgstr ""
+
+#: view/qmodem-voip/call.js:370
+msgid "Caller ID withheld."
+msgstr ""
+
+#: view/qmodem-voip/call.js:376
+msgid "Calling %s."
+msgstr ""
+
+#: view/qmodem-voip/call.js:52
+msgid "Changes are stored in UCI and take effect after Save & Apply."
+msgstr ""
+
+#: view/qmodem-voip/call.js:410
+msgid "Connected"
+msgstr ""
+
+#: view/qmodem-voip/call.js:377
+msgid "Connected with %s."
+msgstr ""
+
+#: view/qmodem-voip/call.js:392
+msgid "Credentials configured. Registration is not reported by v1 status."
+msgstr ""
+
+#: qmodem-voip/surface.js:184
+msgid "DTMF keypad"
+msgstr ""
+
+#: qmodem-voip/surface.js:121
+msgid "Destination"
+msgstr ""
+
+#: view/qmodem-voip/call.js:15
+msgid "Disabled"
+msgstr ""
+
+#: view/qmodem-voip/call.js:15
+msgid "Early media"
+msgstr ""
+
+#: view/qmodem-voip/call.js:56
+msgid "Enable experimental call service"
+msgstr ""
+
+#: qmodem-voip/reducer.js:182
+msgid "Enable the experimental call service first."
+msgstr ""
+
+#: view/qmodem-voip/call.js:15
+msgid "Ending call"
+msgstr ""
+
+#: qmodem-voip/surface.js:202
+msgid "Experimental QModem voice"
+msgstr ""
+
+#: view/qmodem-voip/call.js:15
+msgid "Fault"
+msgstr ""
+
+#: qmodem-voip/surface.js:127
+msgid "Hang up"
+msgstr ""
+
+#: qmodem-voip/surface.js:158
+msgid "Hardware support"
+msgstr ""
+
+#: qmodem-voip/surface.js:49
+#: view/qmodem-voip/call.js:15
+msgid "Incoming call"
+msgstr ""
+
+#: view/qmodem-voip/call.js:374
+msgid "Incoming call from %s."
+msgstr ""
+
+#: view/qmodem-voip/call.js:406
+msgid "Media backend is not ready. Browser audio remains inactive."
+msgstr ""
+
+#: view/qmodem-voip/call.js:412
+msgid "Microphone and playback are prepared."
+msgstr ""
+
+#: view/qmodem-voip/call.js:409
+msgid "Microphone permission is active."
+msgstr ""
+
+#: view/qmodem-voip/call.js:409
+msgid "Microphone permission was denied. Allow it in the browser and try again."
+msgstr ""
+
+#: qmodem-voip/surface.js:126
+#: view/qmodem-voip/call.js:202
+msgid "Mute"
+msgstr ""
+
+#: qmodem-voip/surface.js:105
+#: view/qmodem-voip/call.js:396
+msgid "No active call"
+msgstr ""
+
+#: view/qmodem-voip/call.js:372
+msgid "No active call."
+msgstr ""
+
+#: view/qmodem-voip/call.js:409
+msgid "No microphone permission has been requested."
+msgstr ""
+
+#: view/qmodem-voip/call.js:410
+msgid "Not connected"
+msgstr ""
+
+#: view/qmodem-voip/call.js:397
+msgid "Number unavailable"
+msgstr ""
+
+#: view/qmodem-voip/call.js:372
+msgid "Number unavailable."
+msgstr ""
+
+#: view/qmodem-voip/call.js:15
+msgid "Outgoing"
+msgstr ""
+
+#: qmodem-voip/surface.js:95
+msgid "Password"
+msgstr ""
+
+#: view/qmodem-voip/call.js:412
+msgid "Permission will be requested automatically when possible."
+msgstr ""
+
+#: qmodem-voip/surface.js:204
+msgid "Place and receive one modem call. Unsupported hardware remains disabled."
+msgstr ""
+
+#: view/qmodem-voip/call.js:386
+msgid "RM520N-GL passed the safety probe."
+msgstr ""
+
+#: view/qmodem-voip/call.js:15
+#: view/qmodem-voip/call.js:410
+msgid "Ready"
+msgstr ""
+
+#: view/qmodem-voip/call.js:15
+msgid "Recovering"
+msgstr ""
+
+#: qmodem-voip/surface.js:52
+msgid "Reject"
+msgstr ""
+
+#: qmodem-voip/surface.js:175
+msgid "Remote party"
+msgstr ""
+
+#: view/qmodem-voip/call.js:408
+msgid "Resume browser audio"
+msgstr ""
+
+#: view/qmodem-voip/call.js:408
+msgid "Retry browser audio"
+msgstr ""
+
+#: qmodem-voip/surface.js:97
+msgid "Rotate credentials"
+msgstr ""
+
+#: view/qmodem-voip/call.js:387
+msgid "Running"
+msgstr ""
+
+#: qmodem-voip/surface.js:166
+msgid "SIP account"
+msgstr ""
+
+#: view/qmodem-voip/call.js:392
+msgid "SIP account is not configured. Registration is not reported by v1 status."
+msgstr ""
+
+#: view/qmodem-voip/call.js:392
+msgid "SIP credential rotation is not ready in this backend."
+msgstr ""
+
+#: qmodem-voip/surface.js:139
+msgid "Send DTMF %s"
+msgstr ""
+
+#: qmodem-voip/surface.js:156
+msgid "Service status"
+msgstr ""
+
+#: view/qmodem-voip/call.js:59
+msgid "Starts modem voice preparation and browser media support."
+msgstr ""
+
+#: qmodem-voip/reducer.js:180
+msgid "State recovery is in progress. Refreshing the call snapshot."
+msgstr ""
+
+#: view/qmodem-voip/call.js:387
+msgid "Stopped"
+msgstr ""
+
+#: view/qmodem-voip/call.js:384
+msgid "Supported"
+msgstr ""
+
+#: qmodem-voip/reducer.js:148
+msgid "The SIP credentials were rejected."
+msgstr ""
+
+#: qmodem-voip/reducer.js:149
+msgid "The SIP service could not be activated."
+msgstr ""
+
+#: qmodem-voip/reducer.js:143
+msgid "The call changed state before this command completed."
+msgstr ""
+
+#: qmodem-voip/reducer.js:141
+msgid "The destination contains unsupported characters."
+msgstr ""
+
+#: qmodem-voip/reducer.js:144
+msgid "The modem call command failed."
+msgstr ""
+
+#: qmodem-voip/reducer.js:147
+msgid "The modem could not restore its baseline state."
+msgstr ""
+
+#: qmodem-voip/reducer.js:153
+msgid "The operation failed."
+msgstr ""
+
+#: view/qmodem-voip/call.js:386
+msgid "The read-only hardware probe did not pass. Call controls stay unavailable."
+msgstr ""
+
+#: view/qmodem-voip/call.js:389
+msgid "The runtime is ready for calls."
+msgstr ""
+
+#: qmodem-voip/reducer.js:145
+msgid "The selected DTMF key is not supported."
+msgstr ""
+
+#: qmodem-voip/reducer.js:140
+msgid "This call endpoint is not available."
+msgstr ""
+
+#: qmodem-voip/reducer.js:146
+msgid "This operation is not ready for the current capability state."
+msgstr ""
+
+#: view/qmodem-voip/call.js:383
+msgid "Unknown state"
+msgstr ""
+
+#: view/qmodem-voip/call.js:202
+msgid "Unmute"
+msgstr ""
+
+#: view/qmodem-voip/call.js:384
+msgid "Unsupported"
+msgstr ""
+
+#: qmodem-voip/reducer.js:178
+msgid "Unsupported hardware: call controls are unavailable."
+msgstr ""
+
+#: qmodem-voip/surface.js:121
+msgid "Use digits and the modem-supported call control characters."
+msgstr ""
+
+#: view/qmodem-voip/call.js:389
+msgid "Use the UCI switch below, then Save & Apply."
+msgstr ""
+
+#: qmodem-voip/surface.js:94
+msgid "Username"
+msgstr ""
+
+#: view/qmodem-voip/call.js:384
+msgid "Waiting"
+msgstr ""
+
+#: view/qmodem-voip/call.js:386
+msgid "Waiting for modem discovery and the read-only safety probe."
+msgstr ""
+
+#: qmodem-voip/reducer.js:176
+msgid "Waiting for modem discovery. Call controls will become available when the modem is ready."
+msgstr ""
+
+#: view/qmodem-voip/call.js:397
+msgid "Withheld number"
+msgstr ""
+
+#: qmodem-voip/surface.js:95
+msgid "Write-only. The password is cleared after each attempt."
+msgstr ""
