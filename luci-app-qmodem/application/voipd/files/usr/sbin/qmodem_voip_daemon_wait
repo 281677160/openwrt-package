@@ -1,0 +1,51 @@
+#!/bin/sh
+
+qmodem_voip_wait_interface_address()
+{
+	interface=$1
+	status=$(ubus -t 2 call "network.interface.$interface" status 2>/dev/null) || status=
+	device=$(printf '%s\n' "$status" | jsonfilter -e '@.l3_device' 2>/dev/null)
+	device=${device:-$interface}
+	ip -4 -o addr show dev "$device" scope global 2>/dev/null |
+		awk 'NR == 1 { sub(/\/.*/, "", $4); print $4 }'
+}
+
+media_interface=
+if [ "$1" = --media-interface ]; then
+	media_interface=$2
+	shift 2
+	case $media_interface in ''|*[!A-Za-z0-9_.:-]*)
+		logger -t qmodem_voip 'invalid media interface'
+		exit 1
+	;; esac
+fi
+
+start_enabled=0
+if [ "$7" = --start-enabled ]; then
+	start_enabled=$8
+fi
+case $start_enabled in 0|1) ;; *) exit 1 ;; esac
+[ "$start_enabled" = 0 ] || . /usr/lib/qmodem_voip/at_daemon_adapter.sh
+
+remaining=120
+while [ "$remaining" -gt 0 ]; do
+	media_address=
+	[ -z "$media_interface" ] || media_address=$(qmodem_voip_wait_interface_address "$media_interface")
+	modem_ready=1
+	if [ "$start_enabled" = 1 ]; then
+		at_device=$(qmodem_voip_adapter_endpoint 2>/dev/null) || at_device=
+		pcm_device=$(qmodem_voip_adapter_pcm_endpoint 2>/dev/null) || pcm_device=
+		[ -n "$at_device" ] && [ -n "$pcm_device" ] || modem_ready=0
+	fi
+	if [ "$modem_ready" = 1 ] &&
+	   { [ -z "$media_interface" ] || [ -n "$media_address" ]; }; then
+		if [ -n "$media_interface" ]; then
+			exec /usr/bin/qmodem_voip --media-address "$media_address" "$@"
+		fi
+		exec /usr/bin/qmodem_voip "$@"
+	fi
+	remaining=$((remaining - 1))
+	sleep 1
+done
+logger -t qmodem_voip 'media interface or enabled modem voice ports did not become ready'
+exit 1

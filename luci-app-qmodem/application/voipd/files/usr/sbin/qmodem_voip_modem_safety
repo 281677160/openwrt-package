@@ -1,0 +1,6 @@
+#!/bin/sh
+. /usr/lib/qmodem_voip/modem_safety.sh
+case ${1:-recover} in
+	probe) qmodem_voip_probe ;; enable) qmodem_voip_enable ;; disable) qmodem_voip_disable ;; verify) qmodem_voip_verify ;; arm) qmodem_voip_arm ;; recover) qmodem_voip_recover ;;
+	*) echo 'usage: qmodem_voip_modem_safety {probe|enable|disable|verify|arm|recover}' >&2; exit 64 ;;
+esac

@@ -1,0 +1,10 @@
+config main 'main'
+	option enabled '0'
+
+config sip 'sip'
+	option enabled '0'
+	option interface 'br-lan'
+	option rtp_start '40000'
+	option rtp_end '40031'
+	option media_socket_path '/var/run/qmodem_voip/media.sock'
+	option engine 'consumer'
