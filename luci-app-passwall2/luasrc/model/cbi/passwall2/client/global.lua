@@ -85,6 +85,16 @@ o.template = m:template_path("/cbi/nodes_listvalue")
 o:value("", translate("Close"))
 o.group = {""}
 
+o = s:taboption("Main", DummyValue, "_node", "")
+o.template = m:template_path("/cbi/hidevalue")
+o.value = "1"
+o:depends({ node = "",  ['!reverse'] = true })
+
+o = s:taboption("Main", DummyValue, "_is_singbox", "")
+o.template = m:template_path("/cbi/hidevalue")
+o.value = "1"
+o:depends("_hide", "1")
+
 current_node_id = m:get(s.section, "node")
 current_node = current_node_id and m:get(current_node_id) or {}
 
@@ -113,7 +123,7 @@ if (has_singbox or has_xray) and #nodes_table > 0 then
 		tips.cfgvalue = function(t, n)
 			return string.format('<a style="color: red">%s</a>', translate("There are no available nodes, please add or subscribe nodes first."))
 		end
-		tips:depends({ node = "", ["!reverse"] = true })
+		tips:depends("_node", "1")
 		for k, v in pairs(shunt_list) do
 			tips:depends("node", v.id)
 		end
@@ -157,10 +167,11 @@ end
 node_socks_port = s:taboption("Main", Value, "node_socks_port", translate("Node") .. " Socks " .. translate("Listen Port"))
 node_socks_port.default = 1070
 node_socks_port.datatype = "port"
+node_socks_port:depends("_node", "1")
 
 node_socks_bind_local = s:taboption("Main", Flag, "node_socks_bind_local", translate("Node") .. " Socks " .. translate("Bind Local"), translate("When selected, it can only be accessed localhost."))
 node_socks_bind_local.default = "1"
-node_socks_bind_local:depends({ node = "", ["!reverse"] = true })
+node_socks_bind_local:depends("_node", "1")
 
 s:tab("DNS", translate("DNS"))
 
@@ -190,10 +201,16 @@ o = s:taboption("DNS", ListValue, "remote_dns_protocol", translate("Remote DNS P
 o:value("tcp", "TCP")
 o:value("doh", "DoH")
 o:value("udp", "UDP")
-if current_node.type == "sing-box" then
-	o:value("tls", "TLS(DoT)")
-	o:value("quic", "QUIC(DoQ)")
-	o:value("http3", "HTTP3(DoH3)")
+if m.is_js_luci then
+	if current_node.type == "sing-box" then
+		o:value("tls", "TLS(DoT)")
+		o:value("quic", "QUIC(DoQ)")
+		o:value("http3", "HTTP3(DoH3)")
+	end
+else
+	o:value("tls", "TLS(DoT)", { _is_singbox = "1" })
+	o:value("quic", "QUIC(DoQ)", { _is_singbox = "1" })
+	o:value("http3", "HTTP3(DoH3)", { _is_singbox = "1" })
 end
 
 ---- DNS over TCP or UDP or TLS (DoT) or QUIC (DoQ)
@@ -250,11 +267,10 @@ o:value("UseIP")
 o:value("UseIPv4")
 o:value("UseIPv6")
 
-if current_node.type == "sing-box" then
-	o = s:taboption("DNS", Value, "remote_rewrite_ttl", translate("Remote DNS") .. " TTL")
-	o.datatype = "min(1)"
-	o.default = "30"
-end
+o = s:taboption("DNS", Value, "remote_rewrite_ttl", translate("Remote DNS") .. " TTL")
+o.datatype = "min(1)"
+o.default = "30"
+o:depends("_is_singbox", "1")
 
 o = s:taboption("DNS", TextValue, "dns_hosts", translate("Domain Override"))
 o.rows = 5
@@ -387,6 +403,9 @@ local o_socks = s2.fields["node"]
 for k, v in pairs(nodes_table) do
 	if #normal_list == 0 and #iface_list == 0 then
 		break
+	end
+	if v.type == "sing-box" then
+		s.fields["_is_singbox"]:depends({ node = v.id })
 	end
 	o_node:value(v.id, v["remark"])
 	o_node.group[#o_node.group+1] = (v.group and v.group ~= "") and v.group or translate("default")
