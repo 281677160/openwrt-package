@@ -1,0 +1,23 @@
+#!/bin/sh
+# Re-converge volatile audio state (QAUDMOD / QPCMV forwarding) after the
+# experimental modem re-enumerates. Audio mode is runtime state that does not
+# survive a USB reset, so a bind/add must reapply it when this daemon owns the
+# modem. Without an `enabled` journal we own nothing and must fail closed.
+warning_recover() {
+	logger -t qmodem_voip "audio reconvergence skipped for ${ACTION} slot $(basename "${DEVPATH:-unknown}")"
+	exit 0
+}
+
+[ -n "${DEVPATH}" ] || warning_recover
+[ "${ACTION}" = bind ] || [ "${ACTION}" = add ] || exit 0
+[ -r /var/lib/qmodem_voip/modem-safety.journal ] || exit 0
+grep -q '^phase=enabled$' /var/lib/qmodem_voip/modem-safety.journal || exit 0
+
+case $(basename "${DEVPATH}") in
+''|*[!A-Za-z0-9._-]*) warning_recover ;; esac
+logger -t qmodem_voip "usb_event ${ACTION} slot $(basename "${DEVPATH}")"
+
+# Run offline; the safety recover applies the model-selected QAUDMOD/QPCMV and
+# read-backs before returning, and drives the module into a clean state.
+( /usr/sbin/qmodem_voip_modem_safety recover >/dev/null 2>&1 ) &
+exit 0

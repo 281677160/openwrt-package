@@ -1,42 +1,25 @@
 #!/bin/sh
-# EDL 保护（hotplug 侧）
+# EDL 保护（hotplug 侧），详见 /usr/sbin/qfirehose-edl-guard
 #
-# 模块以 05c6:9008 (Qualcomm EDL) 枚举时，PBL 只发送一次 Sahara hello，
-# 任何往 ttyUSB0 发 AT 命令的探测进程都会让 PBL 进入错误状态，之后只能断电重来。
-# 开机时模块若已处于 EDL（例如上次烧录中断），qmodem 的 modem_scand 会在
-# 用户来得及点击烧录前就把 PBL 打坏。这里在 9008 出现的瞬间停掉探测服务，
-# 在 9008 消失（烧录完成、模块重启）时恢复。
-
-[ "$DEVTYPE" = "usb_device" ] || exit 0
+# 05c6:9008 设备的任何接口一旦被内核驱动（qcserial）绑定，立刻解绑，
+# 使系统中不存在对应的 /dev/ttyUSB*，任何用户态程序都无法向 PBL 发送数据。
+# qfirehose 通过 usbfs 直接访问设备，不受影响。
+# 文件名以 05 开头，保证在其他 hotplug 脚本（modem 探测等）之前执行。
 
 case "$PRODUCT" in
     5c6/9008/*) ;;
     *) exit 0 ;;
 esac
 
-LOG_DIR="/tmp/qfirehose_log"
-stopped_file="$LOG_DIR/stopped_services"
-EDL_GUARD_SERVICES="qmodem_init qmodem_monitor ubus-at-daemon"
-
-mkdir -p "$LOG_DIR"
-
-case "$ACTION" in
-    add)
-        for s in $EDL_GUARD_SERVICES; do
-            [ -x "/etc/init.d/$s" ] || continue
-            if /etc/init.d/"$s" stop >/dev/null 2>&1; then
-                grep -qx "$s" "$stopped_file" 2>/dev/null || echo "$s" >> "$stopped_file"
-            fi
-        done
-        killall modem_scand 2>/dev/null
-        logger -t qfirehose "EDL device detected, modem probing services stopped"
+case "$DEVTYPE:$ACTION" in
+    usb_interface:add|usb_interface:bind)
+        /usr/sbin/qfirehose-edl-guard detach "/sys$DEVPATH"
         ;;
-    remove)
-        [ -f "$stopped_file" ] || exit 0
-        for s in $(cat "$stopped_file"); do
-            /etc/init.d/"$s" start >/dev/null 2>&1
-        done
-        rm -f "$stopped_file"
-        logger -t qfirehose "EDL device removed, modem probing services restored"
+    usb_device:add)
+        /usr/sbin/qfirehose-edl-guard detach "/sys$DEVPATH"
+        /usr/sbin/qfirehose-edl-guard stop-services
+        ;;
+    usb_device:remove)
+        /usr/sbin/qfirehose-edl-guard restore-services "" force
         ;;
 esac

@@ -1,0 +1,200 @@
+.qvoip-page {
+	max-width: 1180px;
+}
+
+.qvoip-page > .cbi-map-descr {
+	margin-bottom: 1.25rem;
+}
+
+.qvoip-page .cbi-section {
+	min-width: 0;
+	margin: 0 0 1rem;
+}
+
+.qvoip-overview {
+	padding-bottom: 0;
+}
+
+.qvoip-status-grid {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	border-top: 1px solid var(--border-color-medium, #d8dde3);
+	border-bottom: 1px solid var(--border-color-medium, #d8dde3);
+}
+
+.qvoip-status-item {
+	min-width: 0;
+	padding: .875rem 1rem;
+	border-right: 1px solid var(--border-color-medium, #d8dde3);
+}
+
+.qvoip-status-item:first-child {
+	padding-left: 0;
+}
+
+.qvoip-status-item:last-child {
+	padding-right: 0;
+	border-right: 0;
+}
+
+.qvoip-status-label {
+	margin-bottom: .35rem;
+	font-size: .82rem;
+	font-weight: 600;
+	color: var(--text-color-medium, #5f6973);
+}
+
+.qvoip-status-detail {
+	margin-top: .4rem;
+	line-height: 1.4;
+}
+
+.qvoip-settings-grid,
+.qvoip-workspace-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 1rem;
+}
+
+.qvoip-workspace-grid {
+	grid-template-columns: minmax(0, 2.2fr) minmax(260px, 1fr);
+}
+
+.qvoip-service-map {
+	min-width: 0;
+}
+
+.qvoip-service-map > .cbi-section {
+	margin-bottom: 1rem;
+}
+
+.qvoip-section-heading,
+.qvoip-call-summary {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+}
+
+.qvoip-section-heading h3,
+.qvoip-call-panel h4 {
+	margin-top: 0;
+}
+
+.qvoip-section-heading .label,
+.qvoip-timer {
+	flex: 0 0 auto;
+	white-space: nowrap;
+}
+
+.qvoip-call-summary {
+	margin: .75rem 0;
+	padding: .8rem 0;
+	border-top: 1px solid var(--border-color-medium, #d8dde3);
+	border-bottom: 1px solid var(--border-color-medium, #d8dde3);
+}
+
+.qvoip-remote-party {
+	display: block;
+	overflow-wrap: anywhere;
+	font-size: 1.15rem;
+	line-height: 1.35;
+}
+
+.qvoip-timer {
+	font-variant-numeric: tabular-nums;
+	font-size: 1.1rem;
+}
+
+.qvoip-dial-form {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: end;
+	gap: .75rem;
+}
+
+.qvoip-dial-form > .cbi-value {
+	margin-bottom: 0;
+}
+
+.qvoip-dial-form > .cbi-button {
+	min-width: 5rem;
+	margin: 0 0 .5rem;
+}
+
+.qvoip-call-actions {
+	padding-top: .75rem;
+}
+
+.qvoip-dtmf {
+	margin-top: 1rem;
+}
+
+.qvoip-keypad {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(48px, 1fr));
+	gap: .5rem;
+	width: min(100%, 260px);
+	margin-top: .65rem;
+}
+
+.qvoip-keypad .cbi-button {
+	min-height: 48px;
+	margin: 0;
+	font-size: 1rem;
+}
+
+.qvoip-media-panel .cbi-page-actions {
+	padding-top: .75rem;
+}
+
+.qvoip-live {
+	min-height: 1.5em;
+}
+
+.qvoip-page .alert-message[hidden] {
+	display: none;
+}
+
+.qvoip-modal-party {
+	overflow-wrap: anywhere;
+	font-size: 1.1rem;
+	font-weight: 600;
+}
+
+.qvoip-incoming-modal .right {
+	margin-top: 1rem;
+}
+
+@media (max-width: 767px) {
+	.qvoip-settings-grid,
+	.qvoip-workspace-grid,
+	.qvoip-status-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.qvoip-status-item,
+	.qvoip-status-item:first-child,
+	.qvoip-status-item:last-child {
+		padding: .75rem 0;
+		border-right: 0;
+		border-bottom: 1px solid var(--border-color-medium, #d8dde3);
+	}
+
+	.qvoip-status-item:last-child {
+		border-bottom: 0;
+	}
+
+	.qvoip-dial-form {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.qvoip-dial-form > .cbi-button {
+		width: 100%;
+	}
+
+	.qvoip-page .cbi-value-title,
+	.qvoip-page .cbi-value-field {
+		width: 100%;
+	}
+}
