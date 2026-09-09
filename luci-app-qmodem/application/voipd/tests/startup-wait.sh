@@ -12,6 +12,14 @@ grep -q "qmodem_voip.main.enabled)\" = 1" \
 	"$ROOT/files/etc/qmodem_voip/firewall.include"
 grep -A1 "config main 'main'" "$ROOT/files/etc/config/qmodem_voip" |
 	grep -q "option enabled '0'"
+grep -q "option web_enabled '0'" "$ROOT/files/etc/config/qmodem_voip"
+grep -q 'qmodem_voip_web' "$ROOT/files/etc/init.d/qmodem_voip"
+grep -q 'qmodem_voip_https' "$ROOT/files/usr/sbin/qmodem_voip_web"
+grep -q 'case " $listeners " in' "$ROOT/files/usr/sbin/qmodem_voip_web"
+grep -q "web_enabled" "$ROOT/../../luci/luci-app-qmodem-voip/htdocs/luci-static/resources/view/qmodem-voip/call.js"
+grep -q 'revision = app->call.revision' "$ROOT/src/media_manager.c"
+grep -q 'strcmp(blobmsg_get_string(values\[0\]), "ring")' "$ROOT/src/sip_consumer.c"
+grep -q 'send_incoming_invite();' "$ROOT/src/sip_consumer.c"
 if grep -q '\[ -n "$lan_address" \] || return 0' "$ROOT/files/etc/init.d/qmodem_voip"; then
 	echo 'FAIL: daemon startup still exits when the interface address is late' >&2
 	exit 1
@@ -34,6 +42,10 @@ if grep -q 'qmodem_voip_recover_startup' "$ROOT/files/etc/init.d/qmodem_voip"; t
 fi
 grep -q 'MEDIA_GATE_INSTALL_SOURCE' "$ROOT/src/adb_unlock.c"
 grep -q '"shell", "sh"' "$ROOT/src/adb_unlock.c"
+grep -q 'ADB_COMMAND_TIMEOUT_SECONDS 8U' "$ROOT/src/adb_unlock.c"
+grep -q 'MEDIA_GATE_INSTALL_ATTEMPTS 10U' "$ROOT/src/adb_unlock.c"
+grep -q 'alarm(timeout_seconds)' "$ROOT/src/adb_unlock.c"
+grep -q 'sleep(MEDIA_GATE_RETRY_SECONDS)' "$ROOT/src/adb_unlock.c"
 grep -q '/proc/\$pid/environ' \
 	"$ROOT/files/usr/share/qmodem_voip/module/install_media_gate.sh"
 count=$(grep -c 'qmodem_voip_prepare_media_gate(&app->media.profile)' \

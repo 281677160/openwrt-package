@@ -58,7 +58,9 @@ function copySnapshot(input) {
 		media: String(input.media || ''),
 		media_engine: String(input.media_engine || ''),
 		browser_media: String(input.browser_media || ''),
-		media_url: String(input.media_url || '')
+		media_url: String(input.media_url || ''),
+		sip_configured: asBoolean(input.sip_configured),
+		sip_username: String(input.sip_username || '')
 	};
 }
 
@@ -86,6 +88,8 @@ function applySnapshot(state, input, source, eventName) {
 
 	return Object.assign({}, state, {
 		snapshot,
+		credentialStatus: snapshot.sip_configured ? 'configured' : state.credentialStatus,
+		credentialUsername: snapshot.sip_username || state.credentialUsername,
 		error: null,
 		mediaStatus: snapshot.media || snapshot.media_engine || state.mediaStatus,
 		mediaUrl: snapshot.media_url,
@@ -146,7 +150,8 @@ function errorMessage(error) {
 		unsupported: _('This operation is not ready for the current capability state.'),
 		restore_failed: _('The modem could not restore its baseline state.'),
 		invalid_credentials: _('The SIP credentials were rejected.'),
-		activation_failed: _('The SIP service could not be activated.')
+		activation_failed: _('The SIP service could not be activated.'),
+		history_unavailable: _('Call history is temporarily unavailable.')
 	};
 	if (!error)
 		return '';

@@ -25,22 +25,30 @@ void qmodem_voip_media_sync(void)
 	int call_media_state = app->call.state == QMODEM_VOIP_OUTGOING_SETUP ||
 		app->call.state == QMODEM_VOIP_EARLY_MEDIA ||
 		app->call.state == QMODEM_VOIP_ACTIVE;
-	int should_run = call_media_state && app->media.ready &&
+	int listener_should_run = app->media.ready && app->browser.engine == &app->media;
+	int call_should_run = call_media_state &&
 		(app->call.origin == QMODEM_VOIP_ENDPOINT_BROWSER ||
-		 app->call.answer_owner == QMODEM_VOIP_ENDPOINT_BROWSER) &&
-		app->browser.engine == &app->media;
-	if (!should_run) {
+		 app->call.answer_owner == QMODEM_VOIP_ENDPOINT_BROWSER);
+	/* Keep the local WebSocket listener stable while the media engine is
+	 * available. Calls select an authenticated revision; they do not create
+	 * or destroy the uhttpd proxy target. */
+	if (!listener_should_run) {
 		if (app->browser.ready)
 			qmodem_voip_browser_media_stop(&app->browser);
 		return;
 	}
-	if (app->browser.ready && app->browser.call_revision != app->call.revision)
+	if (!app->browser.ready && qmodem_voip_browser_media_start(&app->browser) != 0)
+		return;
+	if (!call_should_run) {
+		if (app->browser.call_revision || app->browser.attached || app->browser.client)
+			qmodem_voip_browser_media_reset_call(&app->browser);
+		return;
+	}
+	if (app->browser.call_revision != app->call.revision)
 		/* Keep the same authenticated context while this call advances through
 		 * setup, early media, and active.  Pending tokens remain valid for this
 		 * context; the context is still cleared when the call leaves these states. */
 		app->browser.call_revision = app->call.revision;
-	if (!app->browser.ready)
-		(void)qmodem_voip_browser_media_start(&app->browser, app->call.revision);
 }
 
 void qmodem_voip_browser_timer(struct uloop_timeout *timeout)
@@ -58,6 +66,7 @@ void qmodem_voip_browser_timer(struct uloop_timeout *timeout)
 		app->call.state == QMODEM_VOIP_ACTIVE &&
 		qmodem_voip_media_socket_attached(&app->media_sock);
 	(void)timeout;
+	qmodem_voip_media_sync();
 	if (app->media.ready && !app->media_sock.ready)
 		(void)qmodem_voip_media_socket_start(&app->media_sock, &app->media,
 			app, app->media_socket_path[0] ? app->media_socket_path :
@@ -112,6 +121,10 @@ void qmodem_voip_media_status(struct blob_buf *buffer)
 	blobmsg_add_u64(buffer, "browser_uplink_non_silent_frames",
 		app->browser.uplink_non_silent_frames);
 	blobmsg_add_u32(buffer, "browser_uplink_peak", app->browser.uplink_peak);
+	blobmsg_add_u64(buffer, "browser_downlink_frames", app->browser.downlink_frames);
+	blobmsg_add_u64(buffer, "browser_downlink_empty", app->browser.downlink_empty);
+	blobmsg_add_u64(buffer, "browser_downlink_write_errors",
+		app->browser.downlink_write_errors);
 	blobmsg_add_u64(buffer, "serial_capture_frames",
 		atomic_load(&app->media.serial.captured_frames));
 	blobmsg_add_u64(buffer, "serial_poll_wakeups",
@@ -177,8 +190,13 @@ int qmodem_voip_media_token_method(struct ubus_context *ubus,
 	/* Call notifications advance the revision during setup/answer.  A token
 	 * request carrying the immediately previous revision is still for this
 	 * authenticated call; bind it to the current revision before issuing it. */
-	if (revision > app->call.revision || !qmodem_voip_session_is_authorized(session_id) ||
-	    qmodem_voip_browser_token_issue(&app->browser.tokens, session_id, revision,
+	if ((revision != app->call.revision &&
+	     (!app->call.revision || revision != app->call.revision - 1U)) ||
+	    !qmodem_voip_session_is_authorized(session_id))
+		return qmodem_voip_reply_status(ubus, request, UBUS_STATUS_INVALID_ARGUMENT,
+			"invalid_session", "session, revision, or origin is invalid");
+	revision = app->call.revision;
+	if (qmodem_voip_browser_token_issue(&app->browser.tokens, session_id, revision,
 		origin, NULL, (uint64_t)time(NULL), token) != 0)
 		return qmodem_voip_reply_status(ubus, request, UBUS_STATUS_INVALID_ARGUMENT,
 			"invalid_session", "session, revision, or origin is invalid");
@@ -278,7 +296,7 @@ int qmodem_voip_rtp_attach_method(struct ubus_context *ubus,
 		payload_type != QMODEM_VOIP_MEDIA_PCMU))
 		return qmodem_voip_reply_status(ubus, request, UBUS_STATUS_NOT_SUPPORTED,
 			"media_not_ready", "call or negotiated RTP media is not ready");
-	if (app->browser.ready || app->browser.attached)
+	if (app->browser.attached)
 		return qmodem_voip_reply_status(ubus, request, UBUS_STATUS_NOT_SUPPORTED,
 			"media_busy", "another media owner is active");
 	if (qmodem_voip_rtp_attach(&app->rtp, &app->media, address.s_addr,

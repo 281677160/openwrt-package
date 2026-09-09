@@ -22,7 +22,6 @@ qmodem_voip_start_registrar()
 	media_socket_path=$2
 	[ "$(uci -q get qmodem_voip.main.enabled)" = 1 ] || return 0
 	[ "$(uci -q get qmodem_voip.sip.enabled)" = 1 ] || return 0
-	[ -r /etc/qmodem_voip/sip.conf ] || return 0
 	case "$engine" in
 	consumer|registrar) ;;
 	*)
@@ -50,6 +49,7 @@ start_service()
 {
 	mkdir -p -m 700 /etc/qmodem_voip
 	mkdir -p -m 700 /var/run/qmodem_voip
+	mkdir -p -m 700 /var/lib/qmodem_voip
 	interface=$(uci -q get qmodem_voip.sip.interface)
 	interface=${interface:-br-lan}
 	case $interface in ''|*[!A-Za-z0-9_.:-]*) return 1 ;; esac
@@ -69,12 +69,14 @@ start_service()
 	procd_close_instance
 
 	[ -n "$lan_address" ] && qmodem_voip_start_registrar "$lan_address" "$media_socket_path"
+	/usr/sbin/qmodem_voip_web
 }
 
 reload_service()
 {
 	stop
 	start
+	/usr/sbin/qmodem_voip_web
 }
 
 service_triggers()

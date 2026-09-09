@@ -47,11 +47,33 @@ struct qmodem_voip_call {
 	uint64_t drop_count;
 	uint64_t revision;
 	uint64_t active_since_msec;
+	uint64_t started_at;
+	int was_active;
 	uint64_t reconcile_command_id;
 	int reconcile_pending;
 	int reconcile_saw_data;
 	unsigned reconcile_voice_misses;
 	enum qmodem_voip_endpoint answer_owner;
+	struct {
+		uint64_t started_at;
+		uint64_t ended_at;
+		uint64_t duration_seconds;
+		enum qmodem_voip_endpoint origin;
+		char number[QMODEM_VOIP_NUMBER_SIZE];
+		int caller_id_withheld;
+		int was_active;
+		int pending;
+	} completed;
+};
+
+struct qmodem_voip_completed_call {
+	uint64_t started_at;
+	uint64_t ended_at;
+	uint64_t duration_seconds;
+	enum qmodem_voip_endpoint origin;
+	char number[QMODEM_VOIP_NUMBER_SIZE];
+	int caller_id_withheld;
+	int was_active;
 };
 
 typedef void (*qmodem_voip_command_fn)(const char *command, void *opaque);
@@ -86,6 +108,9 @@ int qmodem_voip_send_dtmf(struct qmodem_voip_call *call,
 			  enum qmodem_voip_endpoint endpoint, char digit,
 			  qmodem_voip_command_fn command, void *opaque);
 uint64_t qmodem_voip_call_duration_seconds(const struct qmodem_voip_call *call);
+int qmodem_voip_call_get_completed(const struct qmodem_voip_call *call,
+				    struct qmodem_voip_completed_call *completed);
+void qmodem_voip_call_ack_completed(struct qmodem_voip_call *call);
 int qmodem_voip_start_recovery(struct qmodem_voip_call *call,
 			       qmodem_voip_command_fn command, void *opaque);
 int qmodem_voip_poll_active(struct qmodem_voip_call *call,
