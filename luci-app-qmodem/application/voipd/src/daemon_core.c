@@ -1,9 +1,11 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "daemon_core.h"
+#include "call_history.h"
 #include "media_serial.h"
 #include "sip_activation.h"
 #include "sip_gateway.h"
+#include "sip_credentials.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -22,7 +24,6 @@
 #define AT_ADAPTER "/usr/lib/qmodem_voip/at_daemon_adapter.sh"
 #define SAFETY_HELPER "/usr/sbin/qmodem_voip_modem_safety"
 #define SAFETY_JOURNAL "/var/lib/qmodem_voip/modem-safety.journal"
-#define SIP_CONFIG QMODEM_VOIP_SIP_CONFIG
 #define REGISTRAR_PIDFILE "/var/run/qmodem_voip_registrar.pid"
 #define UCI_PROGRAM "/sbin/uci"
 #define INIT_PROGRAM "/etc/init.d/qmodem_voip"
@@ -37,14 +38,12 @@ enum {
 	PARAM_NUMBER,
 	PARAM_ORIGIN,
 	PARAM_USERNAME,
-	PARAM_PASSWORD,
 	PARAM_DIGIT,
 	PARAM_MAX
 };
 
 enum {
 	PARAM_CREDENTIAL_USERNAME,
-	PARAM_CREDENTIAL_PASSWORD,
 	PARAM_CREDENTIAL_MAX
 };
 
@@ -53,13 +52,11 @@ static const struct blobmsg_policy action_policy[PARAM_MAX] = {
 	[PARAM_NUMBER] = { .name = "number", .type = BLOBMSG_TYPE_STRING },
 	[PARAM_ORIGIN] = { .name = "origin", .type = BLOBMSG_TYPE_STRING },
 	[PARAM_USERNAME] = { .name = "username", .type = BLOBMSG_TYPE_STRING },
-	[PARAM_PASSWORD] = { .name = "password", .type = BLOBMSG_TYPE_STRING },
 	[PARAM_DIGIT] = { .name = "digit", .type = BLOBMSG_TYPE_STRING }
 };
 
 static const struct blobmsg_policy credential_policy[PARAM_CREDENTIAL_MAX] = {
-	[PARAM_CREDENTIAL_USERNAME] = { .name = "username", .type = BLOBMSG_TYPE_STRING },
-	[PARAM_CREDENTIAL_PASSWORD] = { .name = "password", .type = BLOBMSG_TYPE_STRING }
+	[PARAM_CREDENTIAL_USERNAME] = { .name = "username", .type = BLOBMSG_TYPE_STRING }
 };
 
 const struct blobmsg_policy qmodem_voip_media_token_policy[QMODEM_VOIP_MEDIA_TOKEN_MAX] = {
@@ -438,9 +435,35 @@ static void disable_sip(void)
 
 static int schedule_registrar_start(void *opaque)
 {
-	char *const arguments[] = { "qmodem_voip", "reload", NULL };
+	pid_t child;
+	int status;
 	(void)opaque;
-	return qmodem_voip_sip_run_program(INIT_PROGRAM, arguments);
+	child = fork();
+	if (child < 0)
+		return -1;
+	if (child == 0) {
+		pid_t worker = fork();
+		int null_fd;
+		if (worker < 0)
+			_exit(127);
+		if (worker > 0)
+			_exit(0);
+		(void)setsid();
+		sleep(1);
+		null_fd = open("/dev/null", O_RDWR);
+		if (null_fd < 0 || dup2(null_fd, STDIN_FILENO) < 0 ||
+		    dup2(null_fd, STDOUT_FILENO) < 0 || dup2(null_fd, STDERR_FILENO) < 0)
+			_exit(127);
+		if (null_fd > STDERR_FILENO)
+			close(null_fd);
+		execl(INIT_PROGRAM, "qmodem_voip", "reload", (char *)NULL);
+		_exit(127);
+	}
+	while (waitpid(child, &status, 0) < 0) {
+		if (errno != EINTR)
+			return -1;
+	}
+	return WIFEXITED(status) && WEXITSTATUS(status) == 0 ? 0 : -1;
 }
 
 void qmodem_voip_issue_at(const char *command, void *opaque)
@@ -485,6 +508,9 @@ void qmodem_voip_add_redacted_status(struct blob_buf *buffer,
 	blobmsg_add_u8(buffer, "reconcile_pending", call->reconcile_pending);
 	blobmsg_add_string(buffer, "answer_owner",
 			   qmodem_voip_endpoint_name(call->answer_owner));
+	blobmsg_add_u8(buffer, "sip_configured", qmodem_voip_ctxt.sip_configured);
+	blobmsg_add_string(buffer, "sip_username", qmodem_voip_ctxt.sip_configured ?
+		qmodem_voip_ctxt.sip_username : "");
 }
 
 int qmodem_voip_reply_status(struct ubus_context *ubus,
@@ -899,27 +925,29 @@ int qmodem_voip_session_is_authorized(const char *session_id)
 	return allowed;
 }
 
-static int set_sip_credentials_method(struct ubus_context *ubus,
+static int generate_sip_credentials_method(struct ubus_context *ubus,
 				      struct ubus_object *object,
 				      struct ubus_request_data *request,
 				      const char *method, struct blob_attr *message)
 {
 	struct blob_attr *parameters[PARAM_CREDENTIAL_MAX] = { 0 };
 	const char *username;
-	const char *password;
+	char password[QMODEM_VOIP_SIP_PASSWORD_SIZE] = { 0 };
 	struct blob_buf buffer = { 0 };
 	(void)object;
 	(void)method;
 	blobmsg_parse(credential_policy, PARAM_CREDENTIAL_MAX, parameters,
 		      blob_data(message), blob_len(message));
-	if (!parameters[PARAM_CREDENTIAL_USERNAME] || !parameters[PARAM_CREDENTIAL_PASSWORD])
+	if (!parameters[PARAM_CREDENTIAL_USERNAME])
 		return qmodem_voip_reply_status(ubus, request, UBUS_STATUS_INVALID_ARGUMENT,
-				    "invalid_credentials", "username and password are required");
+				    "invalid_credentials", "username is required");
 	username = blobmsg_get_string(parameters[PARAM_CREDENTIAL_USERNAME]);
-	password = blobmsg_get_string(parameters[PARAM_CREDENTIAL_PASSWORD]);
-	if (qmodem_voip_sip_write_credentials(SIP_CONFIG, username, password) != 0)
+	if (qmodem_voip_sip_credentials_generate(username, password) != 0)
 		return qmodem_voip_reply_status(ubus, request, UBUS_STATUS_INVALID_ARGUMENT,
-				    "invalid_credentials", "invalid SIP credentials");
+				    "invalid_credentials", "SIP credentials could not be generated");
+	qmodem_voip_ctxt.sip_configured = 1;
+	(void)snprintf(qmodem_voip_ctxt.sip_username,
+		sizeof(qmodem_voip_ctxt.sip_username), "%s", username);
 	{
 		const struct qmodem_voip_sip_activation_ops activation = {
 			.enable = enable_sip,
@@ -927,19 +955,56 @@ static int set_sip_credentials_method(struct ubus_context *ubus,
 			.schedule_start = schedule_registrar_start
 		};
 		int live = registrar_live(NULL);
-		if (qmodem_voip_sip_activate(&activation, NULL, live) < 0) {
-			if (!live)
-				disable_sip();
-			return qmodem_voip_reply_status(ubus, request, UBUS_STATUS_UNKNOWN_ERROR,
+			if (qmodem_voip_sip_activate(&activation, NULL, live) < 0) {
+				if (!live)
+					disable_sip();
+				memset(password, 0, sizeof(password));
+				return qmodem_voip_reply_status(ubus, request, UBUS_STATUS_UNKNOWN_ERROR,
 					    "activation_failed", "SIP activation could not be scheduled");
 		}
 	}
 	blob_buf_init(&buffer, 0);
 	blobmsg_add_u8(&buffer, "configured", 1);
 	blobmsg_add_string(&buffer, "username", username);
+	blobmsg_add_string(&buffer, "password", password);
 	blobmsg_add_u8(&buffer, "updated", 1);
 	(void)ubus_send_reply(ubus, request, buffer.head);
 	blob_buf_free(&buffer);
+	memset(password, 0, sizeof(password));
+	return UBUS_STATUS_OK;
+}
+
+static int call_history_method(struct ubus_context *ubus,
+	struct ubus_object *object, struct ubus_request_data *request,
+	const char *method, struct blob_attr *message)
+{
+	struct json_object *history;
+	struct json_object *reply;
+	struct blob_buf buffer = { 0 };
+	(void)object;
+	(void)method;
+	(void)message;
+	history = qmodem_voip_call_history_load(QMODEM_VOIP_CALL_HISTORY_PATH);
+	if (!history)
+		return qmodem_voip_reply_status(ubus, request,
+			UBUS_STATUS_UNKNOWN_ERROR, "history_unavailable",
+			"call history could not be read");
+	reply = json_object_new_object();
+	if (!reply) {
+		json_object_put(history);
+		return UBUS_STATUS_UNKNOWN_ERROR;
+	}
+	json_object_object_add(reply, "calls", history);
+	blob_buf_init(&buffer, 0);
+	if (!blobmsg_add_json_from_string(&buffer,
+		json_object_to_json_string_ext(reply, JSON_C_TO_STRING_PLAIN))) {
+		blob_buf_free(&buffer);
+		json_object_put(reply);
+		return UBUS_STATUS_UNKNOWN_ERROR;
+	}
+	(void)ubus_send_reply(ubus, request, buffer.head);
+	blob_buf_free(&buffer);
+	json_object_put(reply);
 	return UBUS_STATUS_OK;
 }
 
@@ -947,8 +1012,15 @@ void qmodem_voip_publish_event(const struct qmodem_voip_call *call,
 			       const char *event, void *opaque)
 {
 	struct qmodem_voip_context *app = opaque;
+	struct qmodem_voip_completed_call completed;
 	struct blob_buf buffer = { 0 };
-	(void)app;
+	if (qmodem_voip_call_get_completed(&app->call, &completed)) {
+		if (qmodem_voip_call_history_append(QMODEM_VOIP_CALL_HISTORY_PATH,
+			&completed) == 0)
+			qmodem_voip_call_ack_completed(&app->call);
+		else
+			syslog(LOG_ERR, "unable to persist completed call history");
+	}
 	if (call->state == QMODEM_VOIP_ACTIVE &&
 	    app->media.backend == QMODEM_VOIP_MEDIA_BACKEND_SERIAL &&
 	    app->serial_active_arm_attempts == 0) {
@@ -1109,7 +1181,8 @@ static const struct ubus_method methods[] = {
 	UBUS_METHOD("reject", action_method, action_policy),
 	UBUS_METHOD("hangup", action_method, action_policy),
 	UBUS_METHOD("send_dtmf", action_method, action_policy),
-	UBUS_METHOD("set_sip_credentials", set_sip_credentials_method, credential_policy),
+	UBUS_METHOD("generate_sip_credentials", generate_sip_credentials_method, credential_policy),
+	UBUS_METHOD_NOARG("call_history", call_history_method),
 	UBUS_METHOD("issue_media_token", qmodem_voip_media_token_method, qmodem_voip_media_token_policy),
 	UBUS_METHOD("issue_socket_session", qmodem_voip_socket_session_method, qmodem_voip_socket_session_policy),
 	UBUS_METHOD("attach_rtp", qmodem_voip_rtp_attach_method, qmodem_voip_rtp_policy),

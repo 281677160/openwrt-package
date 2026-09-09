@@ -20,8 +20,35 @@ function createMediaClient(dependencies) {
 	let captureSamples = [];
 	let captureSequence = 0;
 	let muted = false;
+	let connectionAttempt = null;
+	let connectionKey = null;
+
+	function cancelConnectionAttempt() {
+		const attempt = connectionAttempt;
+		if (!attempt)
+			return;
+		connectionAttempt = null;
+		attempt.cancelled = true;
+		if (attempt.timeout)
+			clearTimeout(attempt.timeout);
+		if (attempt.reject) {
+			const reject = attempt.reject;
+			attempt.reject = null;
+			reject(mediaError('cancelled', 'browser media connection cancelled'));
+		}
+		/* Closing a CONNECTING WebSocket makes browsers report the misleading
+		 * "closed before established" error. Let the handshake settle, then
+		 * close it before it can become the active transport. */
+		if (attempt.socket && attempt.socket.readyState === 0) {
+			const candidate = attempt.socket;
+			candidate.onopen = () => candidate.close();
+			candidate.onerror = null;
+			candidate.onclose = null;
+		}
+	}
 
 	function closeSocket() {
+		cancelConnectionAttempt();
 		if (socket) {
 			socket.onopen = null;
 			socket.onmessage = null;
@@ -31,6 +58,7 @@ function createMediaClient(dependencies) {
 		}
 		socket = null;
 		token = null;
+		connectionKey = null;
 	}
 
 	function close() {
@@ -98,77 +126,111 @@ function createMediaClient(dependencies) {
 	async function connect(options) {
 		if (options.media !== 'ready')
 			throw mediaError('not_ready', 'not_ready');
-		if (!options.url || !String(options.url).startsWith('wss:'))
+		if (!options.url || !options.httpsOrigin ||
+			!String(options.httpsOrigin).startsWith('https://'))
 			throw mediaError('not_ready', 'media endpoint not supplied');
-		/* Replace only an old transport.  The caller may have already attached
-		 * the Web Audio node so early downlink frames cannot be lost. */
+		/* A call advances revision while moving through setup, early media, and
+		 * active. Keep one transport for the authenticated LuCI session; idle
+		 * call cleanup on both peers is the boundary between calls. */
+		const requestedKey = options.sessionId;
+		if (socket && socket.readyState === 1 && connectionKey === requestedKey)
+			return socket;
+		if (connectionAttempt && connectionAttempt.key === requestedKey)
+			return connectionAttempt.promise;
 		closeSocket();
 
-		const response = await deps.issueToken(options.sessionId, options.callRevision, options.httpsOrigin);
-		if (!response || response.status === 'error' || !response.token)
-			throw mediaError(response?.error || 'not_ready', response?.message || 'not_ready');
+		const attempt = { cancelled: false, key: requestedKey, reject: null, socket: null, timeout: null };
+		connectionAttempt = attempt;
+		attempt.promise = (async () => {
+			const response = await deps.issueToken(options.sessionId, options.callRevision, options.httpsOrigin);
+			if (attempt.cancelled)
+				throw mediaError('cancelled', 'browser media connection cancelled');
+			if (!response || response.status === 'error' || !response.token)
+				throw mediaError(response?.error || 'not_ready', response?.message || 'not_ready');
 
-		const WebSocketCtor = deps.webSocketFactory || globalThis.WebSocket;
-		if (!WebSocketCtor)
-			throw mediaError('unsupported', 'WebSocket is unavailable');
-		token = response.token;
-		/* WebKit 26 and later can abort a same-origin WebSocket upgrade while
-		 * the preceding HTTP request is still leaving its connection pool. */
-		const socketOpenDelay = deps.socketOpenDelay == null ? 100 : deps.socketOpenDelay;
-		if (socketOpenDelay > 0)
-			await new Promise((resolve) => setTimeout(resolve, socketOpenDelay));
-		const endpoint = new URL(options.url, globalThis.location?.href);
-		endpoint.searchParams.set('token', token);
-		endpoint.searchParams.set('session_id', options.sessionId);
-		/* Match the subprotocol registered by the libwebsockets backend. */
-		socket = new WebSocketCtor(endpoint.toString(), 'qmodem-voip');
-		socket.binaryType = 'arraybuffer';
-		const connectingSocket = socket;
-		let opened = false;
-		await new Promise((resolve, reject) => {
-			const timeout = setTimeout(() => {
-				if (socket === connectingSocket)
-					closeSocket();
-				reject(mediaError('not_ready', 'browser media connection timed out'));
-			}, 5000);
-			connectingSocket.onopen = () => {
-				clearTimeout(timeout);
-				opened = true;
-				token = null;
-				resolve();
-			};
-			connectingSocket.onerror = () => {
-				clearTimeout(timeout);
-				if (socket === connectingSocket)
-					closeSocket();
-				reject(mediaError('not_ready', 'browser media connection failed'));
-			};
-			connectingSocket.onclose = () => {
-				clearTimeout(timeout);
-				if (socket === connectingSocket)
-					socket = null;
-				if (!opened)
+			const WebSocketCtor = deps.webSocketFactory || globalThis.WebSocket;
+			if (!WebSocketCtor)
+				throw mediaError('unsupported', 'WebSocket is unavailable');
+			token = response.token;
+			const socketOpenDelay = deps.socketOpenDelay == null ? 100 : deps.socketOpenDelay;
+			if (socketOpenDelay > 0)
+				await new Promise((resolve) => setTimeout(resolve, socketOpenDelay));
+			if (attempt.cancelled)
+				throw mediaError('cancelled', 'browser media connection cancelled');
+			const advertisedEndpoint = new URL(options.url, options.httpsOrigin);
+			if (advertisedEndpoint.protocol !== 'wss:')
+				throw mediaError('not_ready', 'media endpoint must use WSS');
+			/* uhttpd terminates WSS on every management address. Preserve the
+			 * advertised path but force the authenticated HTTPS page origin so a
+			 * LAN address cannot break a WAN management session or redirect media. */
+			const endpoint = new URL(advertisedEndpoint.pathname, options.httpsOrigin);
+			endpoint.protocol = 'wss:';
+			endpoint.searchParams.set('session_id', options.sessionId);
+			const connectingSocket = new WebSocketCtor(endpoint.toString(),
+				[ 'qmodem-voip', `qmodem-voip-token.${token}` ]);
+			attempt.socket = connectingSocket;
+			connectingSocket.binaryType = 'arraybuffer';
+			await new Promise((resolve, reject) => {
+				attempt.reject = reject;
+				attempt.timeout = setTimeout(() => {
+					attempt.timeout = null;
+					attempt.cancelled = true;
+					attempt.reject = null;
+					reject(mediaError('not_ready', 'browser media connection timed out'));
+				}, 5000);
+				connectingSocket.onopen = () => {
+					if (attempt.timeout)
+						clearTimeout(attempt.timeout);
+					attempt.timeout = null;
+					attempt.reject = null;
+					if (attempt.cancelled) {
+						connectingSocket.close();
+						return;
+					}
+					socket = connectingSocket;
+					connectionKey = requestedKey;
+					token = null;
+					resolve();
+				};
+				connectingSocket.onerror = () => {
+					if (attempt.timeout)
+						clearTimeout(attempt.timeout);
+					attempt.timeout = null;
+					attempt.reject = null;
+					reject(mediaError('not_ready', 'browser media connection failed'));
+				};
+				connectingSocket.onclose = () => {
+					if (attempt.timeout)
+						clearTimeout(attempt.timeout);
+					attempt.timeout = null;
+					attempt.reject = null;
 					reject(mediaError('not_ready', 'browser media connection closed'));
+				};
+			});
+			connectingSocket.onerror = null;
+			connectingSocket.onclose = (event) => {
+				if (socket !== connectingSocket)
+					return;
+				socket = null;
+				token = null;
+				connectionKey = null;
+				if (typeof deps.onDisconnect === 'function')
+					deps.onDisconnect(event);
 			};
+			connectingSocket.onmessage = (event) => {
+				if (!(event.data instanceof ArrayBuffer))
+					return;
+				if (audioNode)
+					audioNode.port.postMessage({ type: 'pcm', frame: event.data }, [ event.data ]);
+				else
+					enqueuePlayback(event.data);
+			};
+			return connectingSocket;
+		})().finally(() => {
+			if (connectionAttempt === attempt)
+				connectionAttempt = null;
 		});
-		connectingSocket.onerror = null;
-		connectingSocket.onclose = (event) => {
-			if (socket !== connectingSocket)
-				return;
-			socket = null;
-			token = null;
-			if (typeof deps.onDisconnect === 'function')
-				deps.onDisconnect(event);
-		};
-		connectingSocket.onmessage = (event) => {
-			if (!(event.data instanceof ArrayBuffer))
-				return;
-			if (audioNode)
-				audioNode.port.postMessage({ type: 'pcm', frame: event.data }, [ event.data ]);
-			else
-				enqueuePlayback(event.data);
-		};
-		return connectingSocket;
+		return attempt.promise;
 	}
 
 	async function attachAudio(stream, workletUrl, AudioContextCtor) {

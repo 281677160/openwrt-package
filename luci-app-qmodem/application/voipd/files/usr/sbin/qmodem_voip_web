@@ -1,0 +1,34 @@
+#!/bin/sh
+set -u
+
+enabled=$(uci -q get qmodem_voip.main.web_enabled 2>/dev/null || printf '0')
+changed=0
+case "$enabled" in
+	1)
+		for listener in '0.0.0.0:443' '[::]:443'; do
+			listeners=$(uci -q get uhttpd.main.listen_https 2>/dev/null || :)
+			case " $listeners " in
+			*" $listener "*) ;;
+			*)
+				uci -q add_list uhttpd.main.listen_https="$listener"
+				changed=1
+				;;
+			esac
+		done
+		if [ "$(uci -q get uhttpd.main.qmodem_voip_https 2>/dev/null || printf 0)" != 1 ]; then
+			uci -q set uhttpd.main.qmodem_voip_https=1
+			changed=1
+		fi
+	;;
+	0)
+		if [ "$(uci -q get uhttpd.main.qmodem_voip_https 2>/dev/null || printf 0)" = 1 ]; then
+			uci -q del_list uhttpd.main.listen_https='0.0.0.0:443' || :
+			uci -q del_list uhttpd.main.listen_https='[::]:443' || :
+			uci -q delete uhttpd.main.qmodem_voip_https
+			changed=1
+		fi
+	;;
+esac
+[ "$changed" = 1 ] || exit 0
+uci -q commit uhttpd || exit 1
+/etc/init.d/uhttpd reload >/dev/null 2>&1 || exit 1

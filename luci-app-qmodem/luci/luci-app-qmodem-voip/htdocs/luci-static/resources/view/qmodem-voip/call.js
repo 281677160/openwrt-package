@@ -35,8 +35,11 @@ return view.extend({
 		});
 		return Promise.all([
 			L.resolveDefault(rpc.capabilities(), {}),
-			L.resolveDefault(rpc.status(), {})
+			L.resolveDefault(rpc.status(), {}),
+			L.resolveDefault(rpc.callHistory(), { calls: [] })
 		]).then((results) => {
+			this.history = Array.isArray(results[2]?.calls) ? results[2].calls : [];
+			this.historyFilter = 'all';
 			this.capabilityPending = !results[0] || Object.keys(results[0]).length === 0;
 			this.capabilityRetryAt = 0;
 			this.dispatch({ type: 'CAPABILITIES', value: results[0] });
@@ -57,6 +60,11 @@ return view.extend({
 		enabled.default = '0';
 		enabled.rmempty = false;
 		enabled.description = _('Starts modem voice preparation and browser media support.');
+		const webEnabled = section.option(form.Flag, 'web_enabled',
+			_('Enable HTTPS and WebSocket media access'));
+		webEnabled.default = '0';
+		webEnabled.rmempty = false;
+		webEnabled.description = _('Enables the uhttpd HTTPS listener used by browser WSS media.');
 		this.serviceMap = map;
 		this.serviceOption = enabled;
 		return map;
@@ -86,9 +94,40 @@ return view.extend({
 			this.statusRequest = null;
 		if (snapshot) {
 			this.dispatch({ type: 'SNAPSHOT', value: snapshot });
-			await this.syncMedia(snapshot);
+			await this.syncMedia();
 		}
-		return snapshot;
+		return this.state.snapshot;
+	},
+
+	async refreshHistory() {
+		const response = await L.resolveDefault(rpc.callHistory(), null);
+		if (!response) {
+			this.showError({ error: 'history_unavailable' });
+			return;
+		}
+		this.history = Array.isArray(response.calls) ? response.calls : [];
+		this.updateHistory();
+	},
+
+	setHistoryFilter(filter) {
+		this.historyFilter = filter === 'missed' ? 'missed' : 'all';
+		this.updateHistory();
+	},
+
+	updateHistory() {
+		if (!this.refs?.historyBody)
+			return;
+		const calls = (this.history || []).filter((call) => this.historyFilter !== 'missed' || call.missed);
+		this.refs.historyBody.replaceChildren(...calls.map((call) => E('tr', {}, [
+			E('td', {}, [ new Date(Number(call.started_at) * 1000).toLocaleString() ]),
+			E('td', {}, [ call.direction === 'incoming' ? _('Incoming') : _('Outgoing') ]),
+			E('td', {}, [ call.caller_id_withheld ? _('Withheld number') : (call.remote_number || _('Number unavailable')) ]),
+			E('td', {}, [ call.result === 'missed' ? _('Missed') : (call.result === 'failed' ? _('Failed') : _('Completed')) ]),
+			E('td', {}, [ `${Math.max(0, Number(call.duration_seconds) || 0)} s` ])
+		])));
+		this.refs.historyEmpty.hidden = calls.length !== 0;
+		this.refs.historyAll.setAttribute('aria-pressed', this.historyFilter === 'all' ? 'true' : 'false');
+		this.refs.historyMissed.setAttribute('aria-pressed', this.historyFilter === 'missed' ? 'true' : 'false');
 	},
 
 	showError(error) {
@@ -102,14 +141,14 @@ return view.extend({
 		try {
 			const response = await rpc[action](...(Array.isArray(payload) ? payload : []));
 			if (response?.status === 'error') {
-				if (action === 'setSipCredentials')
+				if (action === 'generateSipCredentials')
 					this.dispatch({ type: 'CREDENTIAL_RESULT', value: response });
 				if (action === 'issueMediaToken')
 					this.dispatch({ type: 'MEDIA_RESULT', value: response });
 				this.showError(response);
 				return null;
 			}
-			if (response && action === 'setSipCredentials')
+			if (response && action === 'generateSipCredentials')
 				this.dispatch({ type: 'CREDENTIAL_RESULT', value: response });
 			else if (response && action === 'issueMediaToken')
 				this.dispatch({ type: 'MEDIA_RESULT', value: response });
@@ -125,13 +164,15 @@ return view.extend({
 		}
 	},
 
-	async saveCredentials(event) {
+	async generateCredentials(event) {
 		event.preventDefault();
-		const password = this.refs.sipPassword.value;
-		if (!this.refs.sipUser.value.trim() || !password)
+		if (!this.refs.sipUser.value.trim())
 			return;
-		await this.run('setSipCredentials', [ this.refs.sipUser.value.trim(), password ], () => { this.refs.sipPassword.value = ''; });
-		this.refs.sipPassword.value = '';
+		await this.run('generateSipCredentials', [ this.refs.sipUser.value.trim() ], (response) => {
+			this.refs.generatedUsername.textContent = response.username || '';
+			this.refs.generatedPassword.textContent = response.password || '';
+			this.refs.generatedCredentials.hidden = false;
+		});
 	},
 
 	async originate(event) {
@@ -157,7 +198,7 @@ return view.extend({
 			return;
 		}
 		this.refs.dial.value = '';
-		await this.syncMedia(response);
+		await this.syncMedia();
 	},
 
 	async answer() {
@@ -172,7 +213,7 @@ return view.extend({
 		if (!response)
 			this.releasePendingMedia();
 		else
-			await this.syncMedia(response);
+			await this.syncMedia();
 		return response;
 	},
 
@@ -263,7 +304,11 @@ return view.extend({
 			this.updateView();
 	},
 
-	async syncMedia(snapshot) {
+	async syncMedia() {
+		/* Only reducer-accepted state may own media. A delayed poll can return
+		 * an old idle snapshot after originate; acting on that raw response
+		 * would cancel the new WebSocket while it is still CONNECTING. */
+		let snapshot = this.state.snapshot;
 		if (snapshot?.state === 'idle') {
 			this.disconnectMedia();
 			this.mediaRetryAt = 0;
@@ -278,12 +323,14 @@ return view.extend({
 			this.mediaConnecting || !this.state.mediaUrl || Date.now() < (this.mediaRetryAt || 0))
 			return;
 		this.mediaConnecting = true;
-		const pollingPaused = poll.active() ? poll.stop() : false;
 		try {
-			/* Safari may reject a same-origin WebSocket when a status RPC is still
-			 * in flight.  Drain it and keep polling stopped through the upgrade. */
+			/* Drain the one older request already in flight. Its response is reduced
+			 * before use and therefore cannot supersede this call generation. */
 			if (this.statusRequest)
 				await this.statusRequest;
+			snapshot = this.state.snapshot;
+			if ([ 'outgoing_setup', 'early_media', 'active' ].indexOf(snapshot?.state) === -1)
+				return;
 			if (!this.media.hasAudio())
 				await this.media.attachAudio(this.pendingMediaStream, WORKLET_URL);
 			await this.media.resume();
@@ -305,8 +352,6 @@ return view.extend({
 		}
 		finally {
 			this.mediaConnecting = false;
-			if (pollingPaused)
-				poll.start();
 		}
 	},
 
@@ -321,9 +366,7 @@ return view.extend({
 				/* Permission prompts can outlast a call-state transition.  Refresh
 				 * before minting the token so the WebSocket is opened against the
 				 * current call revision as soon as audio permission is granted. */
-				const snapshot = await this.refresh();
-				if (snapshot)
-					await this.syncMedia(snapshot);
+				await this.refresh();
 			}
 			catch (error) {
 				this.handleMediaError(error);
@@ -352,8 +395,12 @@ return view.extend({
 	},
 
 	handleEvent(event) {
-		if (event?.event)
+		if (event?.event) {
 			this.dispatch({ type: 'EVENT', value: event });
+			void this.syncMedia();
+			if (event.state === 'idle' || event.state === 'disabled')
+				void this.refreshHistory();
+		}
 	},
 
 	updateTimer(seconds) {
@@ -390,6 +437,8 @@ return view.extend({
 		if (this.refs.serviceSwitch)
 			this.refs.serviceSwitch.disabled = model.capabilityPending || (!model.supported && !this.refs.serviceSwitch.checked);
 		this.refs.sipStatus.textContent = this.state.credentialStatus === 'not_ready' ? _('SIP credential rotation is not ready in this backend.') : (model.registration === 'configured' ? _('Credentials configured. Registration is not reported by v1 status.') : _('SIP account is not configured. Registration is not reported by v1 status.'));
+		if (!this.refs.sipUser.value && this.state.credentialUsername)
+			this.refs.sipUser.value = this.state.credentialUsername;
 		this.refs.callStatus.textContent = statusText;
 		this.refs.callStatus.className = `label ${STATE_STYLES[model.state] || ''}`.trim();
 		const callVisible = model.callTimerVisible || model.canAnswer;
@@ -424,6 +473,7 @@ return view.extend({
 		const serviceForm = await this.createServiceMap().render();
 		surface.build(this, serviceForm);
 		this.updateView();
+		this.updateHistory();
 		this.pollFn = () => this.refresh();
 		poll.add(this.pollFn, POLL_SECONDS);
 		return this.root;

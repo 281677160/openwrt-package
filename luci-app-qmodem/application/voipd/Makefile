@@ -17,7 +17,7 @@ define Package/$(PKG_NAME)
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=QModem VoIP daemon (experimental)
-  DEPENDS:=+libubus +libubox +libblobmsg-json +libjson-c +uci +jsonfilter +jshn +adb \
+  DEPENDS:=+libubus +libubox +libblobmsg-json +libjson-c +libuci +uci +jsonfilter +jshn +adb \
 	+alsa-lib +libspandsp3 +libsoxr +libwebsockets-mbedtls +px5g-mbedtls \
 	+libpj +libpjlib-util +libpjsip \
 	+kmod-usb-serial +kmod-usb-serial-option
@@ -72,7 +72,8 @@ define Build/Compile
 		$(PKG_BUILD_DIR)/main.c $(PKG_BUILD_DIR)/daemon_core.c \
 		$(PKG_BUILD_DIR)/media_manager.c $(PKG_BUILD_DIR)/call_state.c \
 		$(PKG_BUILD_DIR)/modem_profile.c $(PKG_BUILD_DIR)/sip_gateway.c \
-		$(PKG_BUILD_DIR)/sip_activation.c \
+		$(PKG_BUILD_DIR)/sip_activation.c $(PKG_BUILD_DIR)/sip_credentials.c \
+		$(PKG_BUILD_DIR)/call_history.c \
 		$(PKG_BUILD_DIR)/media_core.c $(PKG_BUILD_DIR)/media_alsa.c \
 		$(PKG_BUILD_DIR)/media_serial.c $(PKG_BUILD_DIR)/browser_media.c \
 		$(PKG_BUILD_DIR)/media_socket.c \
@@ -80,7 +81,7 @@ define Build/Compile
 		$(TARGET_LDFLAGS) \
 		-L$(STAGING_DIR)/usr/lib/spandsp3/lib \
 		-lspandsp -lubus -lubox -lblobmsg_json -ljson-c -lsoxr -lasound \
-		-lwebsockets -lm -lpthread
+		-lwebsockets -luci -lm -lpthread
 endef
 
 define Package/$(PKG_NAME)/install
@@ -103,6 +104,7 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_BIN) ./files/usr/sbin/qmodem_voip_daemon_wait $(1)/usr/sbin/
 	$(INSTALL_BIN) ./files/usr/sbin/qmodem_voip_consumer_wait $(1)/usr/sbin/
 	$(INSTALL_BIN) ./files/usr/sbin/qmodem_voip_registrar_wait $(1)/usr/sbin/
+	$(INSTALL_BIN) ./files/usr/sbin/qmodem_voip_web $(1)/usr/sbin/
 	$(INSTALL_BIN) ./files/etc/init.d/qmodem_voip $(1)/etc/init.d/
 	$(INSTALL_CONF) ./files/etc/config/qmodem_voip $(1)/etc/config/
 	$(INSTALL_BIN) ./files/etc/qmodem_voip/firewall.include $(1)/etc/qmodem_voip/

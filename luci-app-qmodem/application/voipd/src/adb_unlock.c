@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <syslog.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -19,9 +20,23 @@
 #define MEDIA_GATE_INSTALL_TEMP "/tmp/install_qmodem_voip_media_gate.sh"
 #define VOICE_SERVER_SHA256 "dc9d154d58942e83e3582cfc58ae59c88863052b345279c3bb8f4e5b25f28b33"
 #define MAX_OUTPUT 512
+#define ADB_COMMAND_TIMEOUT_SECONDS 8U
+#define MEDIA_GATE_INSTALL_ATTEMPTS 10U
+#define MEDIA_GATE_RETRY_SECONDS 2U
 
-static int run_capture(const char *program, char *const argv[], char *output,
-		       size_t output_size)
+static int valid_sha256_output(const char *output)
+{
+	size_t i;
+	if (!output)
+		return 0;
+	for (i = 0; i < 64U; i++)
+		if (!isxdigit((unsigned char)output[i]))
+			return 0;
+	return isspace((unsigned char)output[64]);
+}
+
+static int run_capture_timeout(const char *program, char *const argv[], char *output,
+			       size_t output_size, unsigned timeout_seconds)
 {
 	int pipe_fd[2];
 	pid_t child;
@@ -42,6 +57,8 @@ static int run_capture(const char *program, char *const argv[], char *output,
 		if (dup2(pipe_fd[1], STDOUT_FILENO) < 0)
 			_exit(127);
 		close(pipe_fd[1]);
+		if (timeout_seconds)
+			alarm(timeout_seconds);
 		execv(program, argv);
 		_exit(127);
 	}
@@ -66,13 +83,20 @@ static int run_capture(const char *program, char *const argv[], char *output,
 	return WIFEXITED(status) && WEXITSTATUS(status) == 0 ? 0 : -1;
 }
 
+static int run_capture(const char *program, char *const argv[], char *output,
+		       size_t output_size)
+{
+	return run_capture_timeout(program, argv, output, output_size, 0);
+}
+
 static int adapter_at(const char *command, char *output, size_t output_size)
 {
 	char *const argv[] = { (char *)AT_ADAPTER, "at", (char *)command, NULL };
 	return run_capture(AT_ADAPTER, argv, output, output_size);
 }
 
-static int run_program(const char *program, char *const argv[])
+static int run_program_timeout(const char *program, char *const argv[],
+			       unsigned timeout_seconds)
 {
 	pid_t child = fork();
 	int status;
@@ -80,6 +104,8 @@ static int run_program(const char *program, char *const argv[])
 	if (child < 0)
 		return -1;
 	if (child == 0) {
+		if (timeout_seconds)
+			alarm(timeout_seconds);
 		execv(program, argv);
 		_exit(127);
 	}
@@ -93,6 +119,7 @@ static int run_program(const char *program, char *const argv[])
 static int install_media_gate(void)
 {
 	char output[MAX_OUTPUT];
+	unsigned attempt;
 	char *const hash_argv[] = { (char *)ADB_PROGRAM, "shell", "sha256sum",
 		"/usr/bin/quectel_voice_server", NULL };
 	char *const push_argv[] = { (char *)ADB_PROGRAM, "push",
@@ -102,16 +129,46 @@ static int install_media_gate(void)
 	char *const install_argv[] = { (char *)ADB_PROGRAM, "shell", "sh",
 		(char *)MEDIA_GATE_INSTALL_TEMP, NULL };
 
-	if (access(MEDIA_GATE_SOURCE, R_OK) != 0 || access(MEDIA_GATE_INSTALL_SOURCE, R_OK) != 0 ||
-	    run_capture(ADB_PROGRAM, hash_argv, output, sizeof(output)) != 0 ||
-	    strncmp(output, VOICE_SERVER_SHA256, sizeof(VOICE_SERVER_SHA256) - 1U) != 0 ||
-	    !isspace((unsigned char)output[sizeof(VOICE_SERVER_SHA256) - 1U]))
+	if (access(MEDIA_GATE_SOURCE, R_OK) != 0 ||
+	    access(MEDIA_GATE_INSTALL_SOURCE, R_OK) != 0) {
+		syslog(LOG_ERR, "media gate source files are unavailable");
 		return -1;
-	if (run_program(ADB_PROGRAM, push_argv) != 0)
-		return -1;
-	if (run_program(ADB_PROGRAM, push_install_argv) != 0)
-		return -1;
-	return run_program(ADB_PROGRAM, install_argv);
+	}
+	for (attempt = 0; attempt < MEDIA_GATE_INSTALL_ATTEMPTS; attempt++) {
+		if (run_capture_timeout(ADB_PROGRAM, hash_argv, output, sizeof(output),
+			ADB_COMMAND_TIMEOUT_SECONDS) == 0) {
+			if (valid_sha256_output(output) &&
+			    strncmp(output, VOICE_SERVER_SHA256,
+				sizeof(VOICE_SERVER_SHA256) - 1U) != 0) {
+				syslog(LOG_ERR, "voice-server hash is unsupported");
+				return -1;
+			}
+			if (!valid_sha256_output(output)) {
+				syslog(LOG_WARNING,
+					"ADB voice-server hash unavailable (attempt %u/%u)",
+					attempt + 1U, MEDIA_GATE_INSTALL_ATTEMPTS);
+				goto retry;
+			}
+			if (run_program_timeout(ADB_PROGRAM, push_argv,
+				ADB_COMMAND_TIMEOUT_SECONDS) == 0 &&
+			    run_program_timeout(ADB_PROGRAM, push_install_argv,
+				ADB_COMMAND_TIMEOUT_SECONDS) == 0 &&
+			    run_program_timeout(ADB_PROGRAM, install_argv,
+				ADB_COMMAND_TIMEOUT_SECONDS) == 0)
+				return 0;
+			syslog(LOG_WARNING,
+				"ADB media gate deployment failed (attempt %u/%u)",
+				attempt + 1U, MEDIA_GATE_INSTALL_ATTEMPTS);
+		} else {
+			syslog(LOG_WARNING,
+				"ADB voice-server query failed (attempt %u/%u)",
+				attempt + 1U, MEDIA_GATE_INSTALL_ATTEMPTS);
+		}
+	retry:
+		if (attempt + 1U < MEDIA_GATE_INSTALL_ATTEMPTS)
+			sleep(MEDIA_GATE_RETRY_SECONDS);
+	}
+	return -1;
 }
 
 static int adb_key(const char *response, char *key, size_t key_size)
@@ -229,6 +286,7 @@ int main(int argc, char **argv)
 	char configuration[MAX_OUTPUT];
 	char command[MAX_OUTPUT + 32];
 
+	openlog("qmodem_voip_adb", LOG_PID, LOG_DAEMON);
 	if (argc != 2)
 		return 64;
 	if (strcmp(argv[1], "install-media-gate") == 0)

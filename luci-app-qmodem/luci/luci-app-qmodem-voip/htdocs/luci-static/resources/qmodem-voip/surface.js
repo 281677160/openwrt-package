@@ -83,20 +83,22 @@ function build(context, serviceForm) {
 	const sipUser = textfield(context, 'sipUser', {
 		id: 'qvoip-sip-user', name: 'username', optional: false
 	});
-	const sipPassword = textfield(context, 'sipPassword', {
-		id: 'qvoip-sip-password', name: 'password', password: true, optional: false
-	});
 	context.refs.sipUser.setAttribute('autocomplete', 'username');
 	context.refs.sipUser.required = true;
-	context.refs.sipPassword.setAttribute('autocomplete', 'new-password');
-	context.refs.sipPassword.required = true;
-	context.refs.sipForm.addEventListener('submit', (event) => context.saveCredentials(event));
+	context.refs.sipForm.addEventListener('submit', (event) => context.generateCredentials(event));
+	context.refs.generatedCredentials = node('div', { class: 'qvoip-generated-credentials', hidden: true });
+	context.refs.generatedUsername = node('code');
+	context.refs.generatedPassword = node('code');
+	context.refs.generatedCredentials.append(
+		field(_('Username'), context.refs.generatedUsername),
+		field(_('Generated password'), context.refs.generatedPassword)
+	);
 	context.refs.sipForm.append(
 		field(_('Username'), sipUser),
-		field(_('Password'), sipPassword, _('Write-only. The password is cleared after each attempt.')),
 		node('div', { class: 'cbi-page-actions' }, [
-			button(_('Rotate credentials'), 'apply', null, 'submit')
-		])
+			button(_('Generate credentials'), 'apply', null, 'submit')
+		]),
+		context.refs.generatedCredentials
 	);
 
 	context.refs.callStatus = node('span', { class: 'label' });
@@ -197,6 +199,30 @@ function build(context, serviceForm) {
 		node('div', { class: 'cbi-page-actions' }, [ context.refs.mediaAction ])
 	]);
 
+	context.refs.historyBody = node('tbody');
+	context.refs.historyEmpty = node('div', { class: 'cbi-section-descr' }, [ _('No call records.') ]);
+	context.refs.historyAll = button(_('All calls'), 'neutral', ui.createHandlerFn(context, () => context.setHistoryFilter('all')));
+	context.refs.historyMissed = button(_('Missed'), 'neutral', ui.createHandlerFn(context, () => context.setHistoryFilter('missed')));
+	context.refs.historyRefresh = button(_('Refresh'), 'neutral', ui.createHandlerFn(context, () => context.refreshHistory()));
+	const historyPanel = node('div', { class: 'cbi-section qvoip-history-panel' }, [
+		node('div', { class: 'qvoip-section-heading' }, [
+			node('h3', {}, [ _('Call history') ]),
+			node('div', { class: 'qvoip-history-tools' }, [
+				context.refs.historyAll, ' ', context.refs.historyMissed, ' ', context.refs.historyRefresh
+			])
+		]),
+		context.refs.historyEmpty,
+		node('div', { class: 'table cbi-section-table qvoip-history-table' }, [
+			node('table', {}, [
+				node('thead', {}, [ node('tr', {}, [
+					node('th', {}, [ _('Time') ]), node('th', {}, [ _('Direction') ]),
+					node('th', {}, [ _('Remote party') ]), node('th', {}, [ _('Result') ]),
+					node('th', {}, [ _('Duration') ])
+				]) ]), context.refs.historyBody
+			])
+		])
+	]);
+
 	context.root = node('div', {
 		class: 'qvoip-page', 'data-event-topic': context.rpc.eventTopic
 	}, [
@@ -207,6 +233,7 @@ function build(context, serviceForm) {
 		overview,
 		node('div', { class: 'qvoip-settings-grid' }, [ serviceForm, sipPanel ]),
 		node('div', { class: 'qvoip-workspace-grid' }, [ callPanel, mediaPanel ]),
+		historyPanel,
 		context.refs.error,
 		context.refs.live
 	]);

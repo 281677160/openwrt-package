@@ -363,3 +363,54 @@ msgstr ""
 #: qmodem-voip/surface.js:95
 msgid "Write-only. The password is cleared after each attempt."
 msgstr ""
+
+msgid "All calls"
+msgstr ""
+
+msgid "Call history"
+msgstr ""
+
+msgid "Call history is temporarily unavailable."
+msgstr ""
+
+msgid "Completed"
+msgstr ""
+
+msgid "Direction"
+msgstr ""
+
+msgid "Duration"
+msgstr ""
+
+msgid "Enable HTTPS and WebSocket media access"
+msgstr ""
+
+msgid "Enables the uhttpd HTTPS listener used by browser WSS media."
+msgstr ""
+
+msgid "Failed"
+msgstr ""
+
+msgid "Generate credentials"
+msgstr ""
+
+msgid "Generated password"
+msgstr ""
+
+msgid "Incoming"
+msgstr ""
+
+msgid "Missed"
+msgstr ""
+
+msgid "No call records."
+msgstr ""
+
+msgid "Refresh"
+msgstr ""
+
+msgid "Result"
+msgstr ""
+
+msgid "Time"
+msgstr ""

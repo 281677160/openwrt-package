@@ -280,6 +280,32 @@ static int query_value(const char *query, const char *key, char *value, size_t s
 	return -1;
 }
 
+static int protocol_token(const char *protocols, char token[23])
+{
+	static const char prefix[] = "qmodem-voip-token.";
+	const char *position = protocols;
+	if (!protocols || !token)
+		return -1;
+	while (*position) {
+		const char *end = strchr(position, ',');
+		size_t length = end ? (size_t)(end - position) : strlen(position);
+		while (length && (*position == ' ' || *position == '\t')) {
+			position++;
+			length--;
+		}
+		while (length && (position[length - 1U] == ' ' || position[length - 1U] == '\t'))
+			length--;
+		if (length == sizeof(prefix) - 1U + QMODEM_VOIP_BROWSER_TOKEN_TEXT &&
+		    !strncmp(position, prefix, sizeof(prefix) - 1U)) {
+			memcpy(token, position + sizeof(prefix) - 1U, QMODEM_VOIP_BROWSER_TOKEN_TEXT);
+			token[QMODEM_VOIP_BROWSER_TOKEN_TEXT] = '\0';
+			return 0;
+		}
+		position = end ? end + 1 : position + length;
+	}
+	return -1;
+}
+
 static void write_le32(uint8_t *value, uint32_t number)
 {
 	value[0] = (uint8_t)number;
@@ -299,10 +325,11 @@ static int browser_callback(struct lws *wsi, enum lws_callback_reasons reason,
 		char uri[512] = { 0 };
 		char query[512] = { 0 };
 		char origin[193] = { 0 };
+		char protocols[128] = { 0 };
 		char token[23] = { 0 };
 		char requested_session[65] = { 0 };
 		char peer_address[64] = { 0 };
-		if (browser->client) {
+		if (browser->client || browser->pending_client) {
 			syslog(LOG_WARNING, "browser websocket rejected: client already attached");
 			return -1;
 		}
@@ -315,15 +342,22 @@ static int browser_callback(struct lws *wsi, enum lws_callback_reasons reason,
 			return -1;
 		}
 		if (lws_hdr_copy(wsi, query, sizeof(query), WSI_TOKEN_HTTP_URI_ARGS) <= 0 ||
-		    query_value(query, "token", token, sizeof(token)) ||
 		    query_value(query, "session_id", requested_session, sizeof(requested_session))) {
 			syslog(LOG_WARNING, "browser websocket rejected: invalid query");
 			return -1;
 		}
-		if (!lws_get_peer_simple(wsi, peer_address, sizeof(peer_address))) {
-			syslog(LOG_WARNING, "browser websocket rejected: peer unavailable");
+		if (lws_hdr_copy(wsi, protocols, sizeof(protocols), WSI_TOKEN_PROTOCOL) <= 0 ||
+		    protocol_token(protocols, token)) {
+			syslog(LOG_WARNING, "browser websocket rejected: missing token protocol");
 			return -1;
 		}
+		/* The public peer terminates at uhttpd. The backend connection is an
+		 * AF_UNIX socket, for which libwebsockets may not expose an IP address.
+		 * Give that trusted local hop a stable identity; the single-use token,
+		 * LuCI session, origin, and call revision remain authoritative. */
+		if (!lws_get_peer_simple(wsi, peer_address, sizeof(peer_address)) &&
+		    copy_string(peer_address, sizeof(peer_address), "uhttpd-unix"))
+			return -1;
 		if (qmodem_voip_browser_token_consume(&browser->tokens, token, requested_session,
 			browser->call_revision, origin, peer_address, (uint64_t)time(NULL)) != 0) {
 			syslog(LOG_WARNING, "browser websocket rejected: token validation failed at revision %llu",
@@ -333,15 +367,18 @@ static int browser_callback(struct lws *wsi, enum lws_callback_reasons reason,
 		syslog(LOG_INFO, "browser websocket authenticated at revision %llu",
 			(unsigned long long)browser->call_revision);
 		(void)copy_string(browser->origin, sizeof(browser->origin), origin);
+		browser->pending_client = wsi;
 		return 0;
 	}
 	if (reason == LWS_CALLBACK_ESTABLISHED) {
-		if (browser->client || qmodem_voip_browser_media_attach(browser,
+		if (browser->client || browser->pending_client != wsi ||
+		    qmodem_voip_browser_media_attach(browser,
 			browser->call_revision) != 0) {
 			syslog(LOG_WARNING, "browser websocket attach failed at revision %llu",
 				(unsigned long long)browser->call_revision);
 			return -1;
 		}
+		browser->pending_client = NULL;
 		browser->client = wsi;
 		syslog(LOG_INFO, "browser websocket established at revision %llu",
 			(unsigned long long)browser->call_revision);
@@ -385,8 +422,11 @@ static int browser_callback(struct lws *wsi, enum lws_callback_reasons reason,
 		size_t sample_count = 0;
 		int written;
 		if (!connection->downlink_samples) {
-			if (qmodem_voip_media_queue_pop(&browser->engine->modem_to_canonical, &frame) != 0 ||
-			    qmodem_voip_media_resample(frame.samples, QMODEM_VOIP_MEDIA_SAMPLES,
+			if (qmodem_voip_media_queue_pop(&browser->engine->modem_to_canonical, &frame) != 0) {
+				browser->downlink_empty++;
+				return 0;
+			}
+			if (qmodem_voip_media_resample(frame.samples, QMODEM_VOIP_MEDIA_SAMPLES,
 				QMODEM_VOIP_MEDIA_RATE, connection->downlink_pcm,
 				QMODEM_VOIP_BROWSER_SAMPLES,
 				QMODEM_VOIP_BROWSER_RATE, &sample_count) != 0 ||
@@ -415,12 +455,14 @@ static int browser_callback(struct lws *wsi, enum lws_callback_reasons reason,
 		written = lws_write(wsi, connection->downlink + LWS_PRE,
 			QMODEM_VOIP_BROWSER_FRAME_SIZE, LWS_WRITE_BINARY);
 		if (written != QMODEM_VOIP_BROWSER_FRAME_SIZE) {
+			browser->downlink_write_errors++;
 			syslog(LOG_WARNING,
 				"browser websocket write failed: written=%d expected=%u errno=%d revision=%llu",
 				written, QMODEM_VOIP_BROWSER_FRAME_SIZE, errno,
 				(unsigned long long)browser->call_revision);
 			return -1;
 		}
+		browser->downlink_frames++;
 		secure_zero(connection->downlink, sizeof(connection->downlink));
 		connection->downlink_offset += QMODEM_VOIP_BROWSER_FRAME_SAMPLES;
 		connection->downlink_samples -= QMODEM_VOIP_BROWSER_FRAME_SAMPLES;
@@ -433,6 +475,8 @@ static int browser_callback(struct lws *wsi, enum lws_callback_reasons reason,
 		return 0;
 	}
 	if (reason == LWS_CALLBACK_CLOSED) {
+		if (browser->pending_client == wsi)
+			browser->pending_client = NULL;
 		if (browser->client == wsi) {
 			syslog(LOG_INFO, "browser websocket closed at revision %llu",
 				(unsigned long long)browser->call_revision);
@@ -452,10 +496,9 @@ static const struct lws_protocols browser_protocols[] = {
 };
 #endif
 
-int qmodem_voip_browser_media_start(struct qmodem_voip_browser_media *browser,
-				    uint64_t call_revision)
+int qmodem_voip_browser_media_start(struct qmodem_voip_browser_media *browser)
 {
-	if (!browser || !browser->engine || !browser->engine->ready || !call_revision || browser->ready)
+	if (!browser || !browser->engine || !browser->engine->ready || browser->ready)
 		return -1;
 #ifdef QMODEM_VOIP_HOST_TEST
 	return -1;
@@ -474,24 +517,32 @@ int qmodem_voip_browser_media_start(struct qmodem_voip_browser_media *browser,
 	}
 	if (!browser->context)
 		return -1;
-	browser->call_revision = call_revision;
+	browser->call_revision = 0;
 	browser->ready = 1;
 	return 0;
 #endif
 }
 
-void qmodem_voip_browser_media_stop(struct qmodem_voip_browser_media *browser)
+void qmodem_voip_browser_media_reset_call(struct qmodem_voip_browser_media *browser)
 {
 	if (!browser)
 		return;
 #ifndef QMODEM_VOIP_HOST_TEST
-	if (browser->context)
-		lws_context_destroy(browser->context);
-#endif
-	browser->context = NULL;
+	if (browser->client) {
+		lws_wsi_close(browser->client, LWS_TO_KILL_ASYNC);
+		(void)lws_service_tsi(browser->context, -1, 0);
+	}
+	if (browser->pending_client) {
+		lws_wsi_close(browser->pending_client, LWS_TO_KILL_ASYNC);
+		(void)lws_service_tsi(browser->context, -1, 0);
+	}
+#else
 	browser->client = NULL;
+	browser->pending_client = NULL;
+#endif
+	browser->client = NULL;
+	browser->pending_client = NULL;
 	browser->attached = 0;
-	browser->ready = 0;
 	browser->call_revision = 0;
 	browser->expected_sequence = 0;
 	browser->last_timestamp_ms = 0;
@@ -500,10 +551,25 @@ void qmodem_voip_browser_media_stop(struct qmodem_voip_browser_media *browser)
 	secure_zero(browser->uplink, sizeof(browser->uplink));
 	qmodem_voip_browser_tokens_clear(&browser->tokens);
 	if (browser->engine) {
+		if (browser->engine->attachment == QMODEM_VOIP_MEDIA_ATTACH_BROWSER)
+			qmodem_voip_media_detach(browser->engine);
 		qmodem_voip_media_queue_clear(&browser->engine->modem_to_canonical);
 		qmodem_voip_media_queue_clear(&browser->engine->canonical_to_modem);
 		browser->engine->browser_media_ready = 0;
 	}
+}
+
+void qmodem_voip_browser_media_stop(struct qmodem_voip_browser_media *browser)
+{
+	if (!browser)
+		return;
+	qmodem_voip_browser_media_reset_call(browser);
+#ifndef QMODEM_VOIP_HOST_TEST
+	if (browser->context)
+		lws_context_destroy(browser->context);
+#endif
+	browser->context = NULL;
+	browser->ready = 0;
 }
 
 void qmodem_voip_browser_media_release(struct qmodem_voip_browser_media *browser)
@@ -563,7 +629,9 @@ int qmodem_voip_browser_media_attach(struct qmodem_voip_browser_media *browser,
 				     uint64_t call_revision)
 {
 	if (!browser || !browser->ready || !browser->engine || !browser->engine->ready ||
-	    browser->attached || browser->call_revision != call_revision)
+	    browser->attached || browser->call_revision != call_revision ||
+	    qmodem_voip_media_attach(browser->engine, QMODEM_VOIP_MEDIA_ATTACH_BROWSER,
+		call_revision) != 0)
 		return -1;
 	browser->attached = 1;
 	browser->engine->browser_media_ready = 1;

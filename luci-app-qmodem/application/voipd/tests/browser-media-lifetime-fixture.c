@@ -62,10 +62,19 @@ int main(int argc, char **argv)
 	frame[25] = 0x03;
 	browser.ready = 1;
 	browser.attached = 1;
+	browser.call_revision = 9;
+	browser.client = &browser;
 	assert(qmodem_voip_browser_media_receive(&browser, frame, sizeof(frame)) == 0);
 	assert(browser.uplink_frames == 1);
 	assert(browser.uplink_non_silent_frames == 1);
 	assert(browser.uplink_peak == 1000);
+
+	qmodem_voip_browser_media_reset_call(&browser);
+	assert(browser.ready == 1);
+	assert(browser.attached == 0);
+	assert(browser.client == NULL);
+	assert(browser.call_revision == 0);
+	assert(engine.browser_media_ready == 0);
 
 	qmodem_voip_browser_media_stop(&browser);
 	assert(browser.certificate_length == certificate_length);
