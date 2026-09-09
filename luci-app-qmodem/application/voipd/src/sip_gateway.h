@@ -8,7 +8,7 @@
 #define QMODEM_VOIP_SIP_USERNAME_SIZE 64
 #define QMODEM_VOIP_SIP_HA1_SIZE 33
 #ifndef QMODEM_VOIP_SIP_CONFIG
-#define QMODEM_VOIP_SIP_CONFIG "/etc/qmodem_voip/sip.conf"
+#define QMODEM_VOIP_SIP_CONFIG "/var/run/qmodem_voip/sip.conf"
 #endif
 #define QMODEM_VOIP_SIP_NONCE_SIZE 33
 #define QMODEM_VOIP_SIP_NONCE_SLOTS 32

@@ -13,7 +13,8 @@ const METHODS = Object.freeze({
 	reject: 'reject',
 	hangup: 'hangup',
 	sendDtmf: 'send_dtmf',
-	setSipCredentials: 'set_sip_credentials',
+	generateSipCredentials: 'generate_sip_credentials',
+	callHistory: 'call_history',
 	issueMediaToken: 'issue_media_token'
 });
 
@@ -27,7 +28,8 @@ const PARAMS = Object.freeze({
 	reject: [ 'endpoint' ],
 	hangup: [ 'endpoint' ],
 	sendDtmf: [ 'endpoint', 'digit' ],
-	setSipCredentials: [ 'username', 'password' ],
+	generateSipCredentials: [ 'username' ],
+	callHistory: [],
 	issueMediaToken: [ 'session_id', 'call_revision', 'https_origin' ]
 });
 
@@ -36,13 +38,15 @@ const SNAPSHOT_FIELDS = Object.freeze([
 	'number_present', 'caller_id_withheld', 'remote_number',
 	'call_duration_seconds', 'revision', 'restart_epoch',
 	'sequence', 'drop_count', 'reconcile_pending', 'media', 'media_engine',
-	'browser_media', 'media_url'
+	'browser_media', 'media_url', 'browser_downlink_frames',
+	'browser_downlink_empty', 'browser_downlink_write_errors',
+	'sip_configured', 'sip_username'
 ]);
 
 const ERROR_CODES = Object.freeze([
 	'invalid_endpoint', 'invalid_number', 'busy', 'invalid_state',
 	'at_failed', 'invalid_dtmf', 'unsupported', 'restore_failed', 'invalid_credentials',
-	'activation_failed'
+	'activation_failed', 'history_unavailable'
 ]);
 
 const api = Object.freeze({ OBJECT, EVENT_TOPIC, METHODS, PARAMS, SNAPSHOT_FIELDS, ERROR_CODES });

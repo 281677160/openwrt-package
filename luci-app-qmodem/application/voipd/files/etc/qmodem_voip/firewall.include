@@ -1,6 +1,6 @@
 #!/bin/sh
 
-config=${QMODEM_VOIP_SIP_CONFIG:-/etc/qmodem_voip/sip.conf}
+config=${QMODEM_VOIP_SIP_CONFIG:-/var/run/qmodem_voip/sip.conf}
 
 handles=$(nft -a list chain inet fw4 input 2>/dev/null |
 	awk '/comment "?qmodem_voip"?/ { print $NF }')

@@ -166,6 +166,32 @@
 	margin-top: 1rem;
 }
 
+.qvoip-generated-credentials code {
+	display: block;
+	overflow-wrap: anywhere;
+	font-size: .95rem;
+}
+
+.qvoip-history-tools {
+	display: flex;
+	flex-wrap: wrap;
+	gap: .4rem;
+}
+
+.qvoip-history-tools .cbi-button[aria-pressed="true"] {
+	font-weight: 700;
+	border-color: var(--primary-color-medium, #3478bf);
+}
+
+.qvoip-history-table {
+	overflow-x: auto;
+}
+
+.qvoip-history-table table {
+	width: 100%;
+	min-width: 620px;
+}
+
 @media (max-width: 767px) {
 	.qvoip-settings-grid,
 	.qvoip-workspace-grid,

@@ -479,7 +479,21 @@ function add_node()
 		uci_set(uid, "group", group)
 	end
 
-	uci_set(uid, "type", "Socks")
+	if api.is_finded("ipt2socks") then
+		uci_set(uid, "type", "Socks")
+	elseif api.finded_com("sing-box") then
+		uci_set(uid, "type", "sing-box")
+	elseif api.finded_com("xray") then
+		uci_set(uid, "type", "Xray")
+	elseif api.is_finded("sslocal") then
+		uci_set(uid, "type", "SS-Rust")
+	elseif api.is_finded("ssr-local") then
+		uci_set(uid, "type", "SSR")
+	elseif api.finded_com("hysteria") then
+		uci_set(uid, "type", "Hysteria2")
+	elseif api.is_finded("naive") then
+		uci_set(uid, "type", "Naiveproxy")
+	end
 
 	if redirect == "1" then
 		uci_save()
@@ -852,9 +866,13 @@ local backup_files = {
 function create_backup()
 	local date = os.date("%y%m%d%H%M")
 	local tar_file = "/tmp/passwall-" .. date .. "-backup.tar.gz"
+	local version_file = "/tmp/passwall-version"
+	local version = api.get_version()
 	fs.remove(tar_file)
-	local cmd = "tar -czf " .. tar_file .. " " .. table.concat(backup_files, " ")
+	fs.writefile(version_file, version .. "\n")
+	local cmd = "tar -czf " .. tar_file .. " " .. table.concat(backup_files, " ") .. " " .. "-C /tmp passwall-version"
 	luci.sys.call(cmd)
+	fs.remove(version_file)
 	http.header("Content-Disposition", "attachment; filename=passwall-" .. date .. "-backup.tar.gz")
 	http.header("X-Backup-Filename", "passwall-" .. date .. "-backup.tar.gz")
 	http.prepare_content("application/octet-stream")
@@ -895,7 +913,12 @@ function restore_backup()
 			uci:revert(c_config)
 			uci:revert(api.s_config)
 			luci.sys.call("echo '' > /tmp/log/passwall.log")
-			api.log(" * PassWall 配置文件上传成功…")
+			api.log(" * PassWall 备份文件上传成功…")
+			local version_file = "passwall-version"
+			local version = luci.sys.exec("tar -xOf " .. file_path .. " " .. version_file .. " 2>/dev/null"):match("^%s*(.-)%s*$")
+			if version and version ~= "" then
+				api.log(" * 备份文件由 PassWall " .. version .. " 生成。")
+			end
 			local temp_dir = '/tmp/passwall_bak'
 			luci.sys.call("mkdir -p " .. temp_dir)
 			if luci.sys.call("tar -xzf " .. file_path .. " -C " .. temp_dir) == 0 then
@@ -909,8 +932,9 @@ function restore_backup()
 					end
 				end
 				if type == "all" or type == "client" then
-					api.log(" * PassWall 配置还原成功…")
+					api.log(" * PassWall 备份还原成功…")
 					api.log(" * 重启 PassWall 服务中…\n")
+					api.sh_uci_set(c_config, "@global[0]", "flush_set", "1", true)
 					luci.sys.call('/etc/init.d/passwall restart > /dev/null 2>&1 &')
 				end
 				if type == "all" or type == "server" then
@@ -918,7 +942,7 @@ function restore_backup()
 				end
 				result = { status = "success", message = "Upload completed", path = file_path }
 			else
-				api.log(" * PassWall 配置文件解压失败，请重试！")
+				api.log(" * PassWall 备份文件解压失败，请重试！")
 				result = { status = "error", message = "Decompression failed" }
 			end
 			luci.sys.call("rm -rf " .. temp_dir)

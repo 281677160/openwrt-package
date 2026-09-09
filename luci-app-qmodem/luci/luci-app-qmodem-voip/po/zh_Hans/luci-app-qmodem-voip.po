@@ -363,6 +363,57 @@ msgstr "号码已隐藏"
 msgid "Write-only. The password is cleared after each attempt."
 msgstr "仅可写入。每次尝试后都会清除密码。"
 
+msgid "All calls"
+msgstr "全部通话"
+
+msgid "Call history"
+msgstr "通话记录"
+
+msgid "Call history is temporarily unavailable."
+msgstr "暂时无法读取通话记录。"
+
+msgid "Completed"
+msgstr "已完成"
+
+msgid "Direction"
+msgstr "方向"
+
+msgid "Duration"
+msgstr "时长"
+
+msgid "Enable HTTPS and WebSocket media access"
+msgstr "启用 HTTPS 和 WebSocket 媒体访问"
+
+msgid "Enables the uhttpd HTTPS listener used by browser WSS media."
+msgstr "启用浏览器 WSS 媒体所需的 uhttpd HTTPS 监听。"
+
+msgid "Failed"
+msgstr "失败"
+
+msgid "Generate credentials"
+msgstr "生成凭据"
+
+msgid "Generated password"
+msgstr "生成的密码"
+
+msgid "Incoming"
+msgstr "呼入"
+
+msgid "Missed"
+msgstr "未接"
+
+msgid "No call records."
+msgstr "暂无通话记录。"
+
+msgid "Refresh"
+msgstr "刷新"
+
+msgid "Result"
+msgstr "结果"
+
+msgid "Time"
+msgstr "时间"
+
 #~ msgid "Call workspace"
 #~ msgstr "通话工作区"
 
