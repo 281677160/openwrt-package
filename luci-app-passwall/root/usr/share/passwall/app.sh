@@ -87,7 +87,7 @@ run_ipt2socks() {
 run_singbox() {
 	local flag type node redir_port tcp_proxy_way socks_address socks_port socks_username socks_password http_address http_port http_username http_password
 	local dns_listen_port direct_dns_query_strategy direct_dns_port direct_dns_udp_server direct_dns_tcp_server remote_dns_protocol remote_dns_udp_server remote_dns_tcp_server remote_dns_doh remote_dns_client_ip remote_fakedns remote_dns_query_strategy remote_rewrite_ttl dns_cache dns_socks_address dns_socks_port
-	local loglevel log_file config_file server_host server_port no_run use_proxy_list use_gfw_list chn_list
+	local loglevel log_file config_file server_host server_port no_run use_proxy_list use_gfw_list chn_list run_in_global
 	eval_set_val "$@"
 	[ -z "$type" ] && {
 		type=$(echo $(config_n_get $node type) | tr 'A-Z' 'a-z')
@@ -182,13 +182,17 @@ run_singbox() {
 	[ "$remote_fakedns" = "1" ] && json_add_string "remote_dns_fake" "1"
 	[ -n "$remote_rewrite_ttl" ] && json_add_string "remote_rewrite_ttl" "${remote_rewrite_ttl}"
 	[ -n "$no_run" ] && json_add_string "no_run" "1"
+	[ -n "$run_in_global" ] && json_add_string "run_in_global" "1"
 	local _json_arg="$(json_dump)"
 	lua $UTIL_SINGBOX gen_config "${_json_arg}" > $config_file
 	[ -n "$no_run" ] && return
 
 	local test_log_file=$log_file
+	local status=0
 	[ "$test_log_file" = "/dev/null" ] && test_log_file="${TMP_PATH}/${config_file##*/}_test.log"
-	$SINGBOX_BIN check -c "$config_file" > $test_log_file 2>&1; local status=$?
+	[ -n "$run_in_global" ] && {
+		$SINGBOX_BIN check -c "$config_file" > $test_log_file 2>&1; status=$?
+	}
 	if [ "${status}" = 0 ]; then
 		ln_run "$SINGBOX_BIN" "sing-box" "${log_file}" run -c "$config_file"
 	else
@@ -201,7 +205,7 @@ run_singbox() {
 run_xray() {
 	local flag type node redir_port tcp_proxy_way socks_address socks_port socks_username socks_password http_address http_port http_username http_password
 	local dns_listen_port direct_dns_query_strategy direct_dns_port direct_dns_udp_server direct_dns_tcp_server remote_dns_protocol remote_dns_udp_server remote_dns_tcp_server remote_dns_doh remote_dns_client_ip remote_fakedns remote_dns_query_strategy dns_cache dns_socks_address dns_socks_port
-	local loglevel log_file config_file server_host server_port no_run use_proxy_list use_gfw_list chn_list
+	local loglevel log_file config_file server_host server_port no_run use_proxy_list use_gfw_list chn_list run_in_global
 	eval_set_val "$@"
 	[ -z "$type" ] && {
 		type=$(echo $(config_n_get $node type) | tr 'A-Z' 'a-z')
@@ -278,13 +282,17 @@ run_xray() {
 
 	json_add_string "loglevel" "$loglevel"
 	[ -n "$no_run" ] && json_add_string "no_run" "1"
+	[ -n "$run_in_global" ] && json_add_string "run_in_global" "1"
 	local _json_arg="$(json_dump)"
 	lua $UTIL_XRAY gen_config "${_json_arg}" > $config_file
 	[ -n "$no_run" ] && return
 
 	local test_log_file=$log_file
+	local status=0
 	[ "$test_log_file" = "/dev/null" ] && test_log_file="${TMP_PATH}/${config_file##*/}_test.log"
-	$XRAY_BIN run -test -c "$config_file" > $test_log_file; local status=$?
+	[ -n "$run_in_global" ] && {
+		$XRAY_BIN run -test -c "$config_file" > $test_log_file; status=$?
+	}
 	if [ "${status}" = 0 ]; then
 		ln_run "$XRAY_BIN" "xray" "${log_file}" run -c "$config_file"
 	else
@@ -489,8 +497,6 @@ run_socks() {
 	;;
 	esac
 
-	set_cache_var "node_${node}_socks_port" "${socks_port}"
-
 	# http to socks
 	[ -z "$http_flag" ] && [ "$http_port" != "0" ] && [ -n "$http_config_file" ] && [ "$type" != "sing-box" ] && [ "$type" != "xray" ] && [ "$type" != "socks" ] && {
 		json_init
@@ -601,7 +607,7 @@ start_global() {
 	;;
 	sing-box)
 		local _flag="global"
-		local _args=""
+		local _args="run_in_global=1"
 		[ "$on_node_socks" = "1" ] && {
 			node_socks_flag=1
 			_args="${_args} socks_address=${node_socks_bind} socks_port=${GLOBAL_SOCKS_port}"
@@ -679,7 +685,7 @@ start_global() {
 	;;
 	xray)
 		local _flag="global"
-		local _args=""
+		local _args="run_in_global=1"
 		[ "$on_node_socks" = "1" ] && {
 			node_socks_flag=1
 			_args="${_args} socks_address=${node_socks_bind} socks_port=${GLOBAL_SOCKS_port}"
@@ -829,7 +835,6 @@ start_global() {
 		set_cache_var "GLOBAL_SOCKS_server" "${GLOBAL_SOCKS_server}"
 	}
 	[ "$type" != "sing-box" ] && [ "$type" != "xray" ] && echo "${NODE}" >> $TMP_PATH/direct_node_list
-	set_cache_var "node_${NODE}_redir_port" "$REDIR_PORT"
 	set_cache_var "ACL_GLOBAL_node" "$NODE"
 	set_cache_var "ACL_GLOBAL_redir_port" "$REDIR_PORT"
 }
@@ -1570,9 +1575,9 @@ acl_app() {
 							#dhcp.leases to hosts
 							$APP_PATH/lease2hosts.sh > /dev/null 2>&1 &
 						}
-						local _redir_port=$(get_cache_var "node_${node}_redir_port")
-						local _socks_port=$(get_cache_var "node_${node}_socks_port")
-						local _enable_log=$(get_cache_var "node_${node}_enable_log")
+						local _redir_port=$(get_cache_var "acl_node_${node}_redir_port")
+						local _socks_port=$(get_cache_var "acl_node_${node}_socks_port")
+						local _enable_log=$(get_cache_var "acl_node_${node}_enable_log")
 						local _dns_port
 						if [ -n "${_socks_port}" ] && [ -n "${_redir_port}" ] && [ "${_enable_log}" != "1" ] && [ "${log}" != "1" ]; then
 							socks_port=${_socks_port}
@@ -1581,14 +1586,14 @@ acl_app() {
 							run_dns ${_dns_port}
 						else
 							socks_port=$(get_new_port $(expr $socks_port + 1))
-							set_cache_var "node_${node}_socks_port" "${socks_port}"
+							set_cache_var "acl_node_${node}_socks_port" "${socks_port}"
 							redir_port=$(get_new_port $(expr $redir_port + 1))
-							set_cache_var "node_${node}_redir_port" "${redir_port}"
+							set_cache_var "acl_node_${node}_redir_port" "${redir_port}"
 							node_port=$redir_port
 							local log_file="/dev/null"
 							[ "${log}" = "1" ] && {
 								log_file="${TMP_ACL_PATH}/${sid}/node.log"
-								set_cache_var "node_${node}_enable_log" "1"
+								set_cache_var "acl_node_${node}_enable_log" "1"
 							}
 
 							if [ "${type}" = "sing-box" ] || [ "${type}" = "xray" ]; then
