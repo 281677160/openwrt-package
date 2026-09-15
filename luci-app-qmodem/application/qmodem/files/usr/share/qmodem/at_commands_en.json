@@ -697,71 +697,207 @@
             }
         ]
     },
+    "gosuncn": {
+        "qualcomm": [
+            {
+                "Query PIN/PUK Retry Count > AT+ZPINPUK=?": "AT+ZPINPUK=?"
+            },
+            {
+                "Query Serving Cell Information > AT+ZCELLINFO?": "AT+ZCELLINFO?"
+            },
+            {
+                "Query Cell Lock Status > AT+ZLOCKCELL?": "AT+ZLOCKCELL?"
+            },
+            {
+                "Lock LTE Cell > AT+ZLOCKCELL=1,1,1650,186": "AT+ZLOCKCELL=1,1,1650,186"
+            },
+            {
+                "Lock 5G NR Cell > AT+ZLOCKCELL=1,2,504990,241,1,1": "AT+ZLOCKCELL=1,2,504990,241,1,1"
+            },
+            {
+                "Unlock Cell Lock > AT+ZLOCKCELL=0": "AT+ZLOCKCELL=0"
+            },
+            {
+                "Query Network Selection Mode > AT+ZSNT?": "AT+ZSNT?"
+            },
+            {
+                "Lock to LTE Only > AT+ZSNT=6,0,0": "AT+ZSNT=6,0,0"
+            },
+            {
+                "Lock to 5G NR Only > AT+ZSNT=7,0,0": "AT+ZSNT=7,0,0"
+            },
+            {
+                "Query Current Network Status > AT+ZPAS?": "AT+ZPAS?"
+            },
+            {
+                "Query System Information > AT^SYSINFO": "AT^SYSINFO"
+            },
+            {
+                "Query Band Configuration > AT+ZBAND?": "AT+ZBAND?"
+            },
+            {
+                "Lock LTE Bands 3 and 8 > AT+ZBAND=1,2,3,8": "AT+ZBAND=1,2,3,8"
+            },
+            {
+                "Query LTE Neighbor Cell RSRP/RSRQ/SINR > AT+ZRSP?": "AT+ZRSP?"
+            },
+            {
+                "Query IMS Registration Status > AT+ZIMSSTATE?": "AT+ZIMSSTATE?"
+            },
+            {
+                "Query IMS Enable Status > AT+ZIMSENABLE?": "AT+ZIMSENABLE?"
+            },
+            {
+                "Enable IMS > AT+ZIMSENABLE=1": "AT+ZIMSENABLE=1"
+            },
+            {
+                "Disable IMS > AT+ZIMSENABLE=0": "AT+ZIMSENABLE=0"
+            },
+            {
+                "Query SA/NSA Disable Mode > AT+ZNRMODE?": "AT+ZNRMODE?"
+            },
+            {
+                "Disable 5G SA > AT+ZNRMODE=1": "AT+ZNRMODE=1"
+            },
+            {
+                "Disable 5G NSA > AT+ZNRMODE=2": "AT+ZNRMODE=2"
+            },
+            {
+                "Restore SA/NSA Default Mode > AT+ZNRMODE=0": "AT+ZNRMODE=0"
+            },
+            {
+                "Query PDP Authentication Settings > AT$QCPDPP?": "AT$QCPDPP?"
+            },
+            {
+                "ECM/RNDIS Data Dial > AT+ZECMCALL=1": "AT+ZECMCALL=1"
+            },
+            {
+                "ECM/RNDIS Data Disconnect > AT+ZECMCALL=0": "AT+ZECMCALL=0"
+            },
+            {
+                "Query ECM/RNDIS Dial Information > AT+ZECMCALL?": "AT+ZECMCALL?"
+            },
+            {
+                "RMNET Data Dial > AT$QCRMCALL=1,1,1": "AT$QCRMCALL=1,1,1"
+            },
+            {
+                "RMNET Data Disconnect > AT$QCRMCALL=0,1,1": "AT$QCRMCALL=0,1,1"
+            },
+            {
+                "Query Local RTC > AT+CCLK?": "AT+CCLK?"
+            },
+            {
+                "Power Off Module > AT+ZTURNOFF": "AT+ZTURNOFF"
+            },
+            {
+                "Restart Module > AT+ZRST": "AT+ZRST"
+            },
+            {
+                "Query SIM Hot-Swap Settings > AT+ZSDT?": "AT+ZSDT?"
+            },
+            {
+                "Enable SIM Hot-Swap > AT+ZSDT=1,1,3": "AT+ZSDT=1,1,3"
+            },
+            {
+                "Query USB Port Configuration > AT+ZSWITCH?": "AT+ZSWITCH?"
+            },
+            {
+                "Switch to MBIM Mode > AT+ZSWITCH=8": "AT+ZSWITCH=8"
+            },
+            {
+                "Switch to RNDIS Mode > AT+ZSWITCH=R": "AT+ZSWITCH=R"
+            },
+            {
+                "Switch to ECM Mode > AT+ZSWITCH=E": "AT+ZSWITCH=E"
+            },
+            {
+                "Switch to QMI Mode > AT+ZSWITCH=X": "AT+ZSWITCH=X"
+            },
+            {
+                "Query Antenna Configuration (GM801) > AT+ZANT?": "AT+ZANT?"
+            },
+            {
+                "Set ANT5 External Antenna (GM801) > AT+ZANT=5,1,1": "AT+ZANT=5,1,1"
+            },
+            {
+                "Set ANT7 External Antenna (GM801) > AT+ZANT=7,1,1": "AT+ZANT=7,1,1"
+            },
+            {
+                "Start Local Differential/FOTA Update > AT+ZCOMUPDATE": "AT+ZCOMUPDATE"
+            },
+            {
+                "Synchronize Time via NTP > AT+ZNTP=203.107.6.88,123,1": "AT+ZNTP=203.107.6.88,123,1"
+            },
+            {
+                "Unlock Band Lock > AT+ZBAND=0": "AT+ZBAND=0"
+            }
+        ]
+    },
     "openluat": {
         "unisoc": [
-                {
-                    "Restart Modem > AT+RESET": "AT+RESET"
-                },
-                {
-                    "Disable Network Connection > AT+RNDISCALL=0,1": "AT+RNDISCALL=0,1"
-                },
-                {
-                    "Query Local Phone Number > AT+CNUM": "AT+CNUM"
-                },
-                {
-                    "Query VoLTE Registration Status > AT+CIREG?": "AT+CIREG?"
-                },
-                {
-                    "Query SMS Storage and Message Count > AT+CPMS?": "AT+CPMS?"
-                },
-                {
-                    "List All SMS Messages in Current Storage > AT+CMGL=\"ALL\"": "AT+CMGL=\"ALL\""
-                },
-                {
-                    "Switch to SIM SMS Storage > AT+CPMS=\"SM\",\"SM\",\"SM\"": "AT+CPMS=\"SM\",\"SM\",\"SM\""
-                },
-                {
-                    "Switch to Device SMS Storage > AT+CPMS=\"ME\",\"ME\",\"ME\"": "AT+CPMS=\"ME\",\"ME\",\"ME\""
-                },
-                {
-                    "Query Incoming SMS Storage > AT+CNMI?": "AT+CNMI?"
-                },
-                {
-                    "Enable Incoming SMS Storage > AT+CNMI=2,1,0,0,0": "AT+CNMI=2,1,0,0,0"
-                },
-                {
-                    "Query PDP Address Details > AT+CGCONTRDP=5": "AT+CGCONTRDP=5"
-                },
-                {
-                    "Query Current USB Network Mode > AT+SETUSB?": "AT+SETUSB?"
-                },
-                {
-                    "Switch to RNDIS Network Mode > AT+SETUSB=1": "AT+SETUSB=1"
-                },
-                {
-                    "Switch to ECM Network Mode > AT+SETUSB=2": "AT+SETUSB=2"
-                },
-                {
-                    "Enable Network Indicator Light > AT+CNETLIGHT=1": "AT+CNETLIGHT=1"
-                },
-                {
-                    "Disable Network Indicator Light > AT+CNETLIGHT=0": "AT+CNETLIGHT=0"
-                },
-                {
-                    "Manually Register with China Telecom LTE > AT+COPS=1,2,\"46011\",7": "AT+COPS=1,2,\"46011\",7"
-                },
-                {
-                    "Manually Register with China Unicom LTE > AT+COPS=1,2,\"46001\",7": "AT+COPS=1,2,\"46001\",7"
-                },
-                {
-                    "Manually Register with China Mobile LTE > AT+COPS=1,2,\"46000\",7": "AT+COPS=1,2,\"46000\",7"
-                },
-                {
-                    "Restore Automatic Operator Selection > AT+COPS=0": "AT+COPS=0"
-                },
-                {
-                    "Save Current User Settings > AT&W": "AT&W"
-                }
+            {
+                "Restart Modem > AT+RESET": "AT+RESET"
+            },
+            {
+                "Disable Network Connection > AT+RNDISCALL=0,1": "AT+RNDISCALL=0,1"
+            },
+            {
+                "Query Local Phone Number > AT+CNUM": "AT+CNUM"
+            },
+            {
+                "Query VoLTE Registration Status > AT+CIREG?": "AT+CIREG?"
+            },
+            {
+                "Query SMS Storage and Message Count > AT+CPMS?": "AT+CPMS?"
+            },
+            {
+                "List All SMS Messages in Current Storage > AT+CMGL=\"ALL\"": "AT+CMGL=\"ALL\""
+            },
+            {
+                "Switch to SIM SMS Storage > AT+CPMS=\"SM\",\"SM\",\"SM\"": "AT+CPMS=\"SM\",\"SM\",\"SM\""
+            },
+            {
+                "Switch to Device SMS Storage > AT+CPMS=\"ME\",\"ME\",\"ME\"": "AT+CPMS=\"ME\",\"ME\",\"ME\""
+            },
+            {
+                "Query Incoming SMS Storage > AT+CNMI?": "AT+CNMI?"
+            },
+            {
+                "Enable Incoming SMS Storage > AT+CNMI=2,1,0,0,0": "AT+CNMI=2,1,0,0,0"
+            },
+            {
+                "Query PDP Address Details > AT+CGCONTRDP=5": "AT+CGCONTRDP=5"
+            },
+            {
+                "Query Current USB Network Mode > AT+SETUSB?": "AT+SETUSB?"
+            },
+            {
+                "Switch to RNDIS Network Mode > AT+SETUSB=1": "AT+SETUSB=1"
+            },
+            {
+                "Switch to ECM Network Mode > AT+SETUSB=2": "AT+SETUSB=2"
+            },
+            {
+                "Enable Network Indicator Light > AT+CNETLIGHT=1": "AT+CNETLIGHT=1"
+            },
+            {
+                "Disable Network Indicator Light > AT+CNETLIGHT=0": "AT+CNETLIGHT=0"
+            },
+            {
+                "Manually Register with China Telecom LTE > AT+COPS=1,2,\"46011\",7": "AT+COPS=1,2,\"46011\",7"
+            },
+            {
+                "Manually Register with China Unicom LTE > AT+COPS=1,2,\"46001\",7": "AT+COPS=1,2,\"46001\",7"
+            },
+            {
+                "Manually Register with China Mobile LTE > AT+COPS=1,2,\"46000\",7": "AT+COPS=1,2,\"46000\",7"
+            },
+            {
+                "Restore Automatic Operator Selection > AT+COPS=0": "AT+COPS=0"
+            },
+            {
+                "Save Current User Settings > AT&W": "AT&W"
+            }
         ]
     }
 }

@@ -8,6 +8,8 @@ SMSD="$REPO/application/qmodem_smsd"
 FORWARDER="$REPO/application/sms_forwarder_next"
 LUCI="$REPO/luci/luci-app-qmodem-voip"
 
+"$ROOT/tests/registration-retry.sh"
+
 test -f "$ROOT/files/etc/init.d/qmodem_voip_sipd"
 test -f "$ROOT/files/etc/config/qmodem_sip"
 test -x "$ROOT/files/etc/uci-defaults/89-qmodem-sip-migrate"
@@ -22,6 +24,9 @@ grep -q 'name = "remote_number"' "$ROOT/src/sip_consumer.c"
 grep -q 'add_string_header(request, "P-Asserted-Identity"' \
 	"$ROOT/src/sip_consumer.c"
 grep -q 'from = pj_str(local_uri)' "$ROOT/src/sip_consumer.c"
+grep -q 'schedule_outbound_register_retry' "$ROOT/src/sip_consumer.c"
+grep -q '"registration_attempts"' "$ROOT/src/sip_consumer.c"
+grep -q '"retry_scheduled"' "$ROOT/src/sip_consumer.c"
 
 grep -q 'UBUS_METHOD("send_managed"' "$SMSD/src/main.c"
 grep -q 'managed send requires database mode' "$SMSD/src/main.c"

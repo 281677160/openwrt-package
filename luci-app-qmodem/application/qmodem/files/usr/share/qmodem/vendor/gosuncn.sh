@@ -72,36 +72,38 @@ get_mode()
 {
     case "$platform" in
         "qualcomm")
-            local mode_raw=$(cmd_zswitch_query "$at_port" | grep -o "+ZSWITCH: [a-zA-Z]" | cut -d' ' -f2)
+            local mode_raw=$(cmd_zswitch_query "$at_port" | grep -o "+ZSWITCH: [a-zA-Z0-9]" | cut -d' ' -f2)
             case "$mode_raw" in
-                "e") mode="mbim" ;;
-                "x") mode="rmnet" ;;
-                "r") mode="rndis" ;;
-                "E") mode="ecm" ;;
+                "8") mode="mbim" ;;
+                "e"|"E") mode="ecm" ;;
+                "r"|"R") mode="rndis" ;;
+                "x"|"X"|"q"|"Q"|"n"|"N") mode="qmi" ;;
+                "p"|"P") mode="eap" ;;
                 *) mode="$mode_raw" ;;
             esac
-        ;;
+            ;;
         "lte")
             local mode_raw=$(cmd_zswitch_query "$at_port" | grep -o "+ZSWITCH: [a-zA-Z]" | cut -d' ' -f2)
             case "$mode_raw" in
                 "e") mode="mbim" ;;
-                "x") mode="rmnet" ;;
+                "x") mode="qmi" ;;
                 "r") mode="rndis" ;;
                 "l") mode="ecm" ;;
                 *) mode="$mode_raw" ;;
             esac
-        ;;
+            ;;
         *)
             local mode_raw=$(cmd_zswitch_query "$at_port" | grep -o "+ZSWITCH: [a-zA-Z]" | cut -d' ' -f2)
             case "$mode_raw" in
                 "e") mode="mbim" ;;
-                "x") mode="rmnet" ;;
+                "x") mode="qmi" ;;
                 "r") mode="rndis" ;;
                 "E") mode="ecm" ;;
                 *) mode="$mode_raw" ;;
             esac
-        ;;
+            ;;
     esac
+
     available_modes=$(uci -q get qmodem.$config_section.modes)
     json_add_object "mode"
     for available_mode in $available_modes; do
@@ -118,22 +120,66 @@ get_mode()
 set_mode()
 {
     local mode=$1
-    case $mode in
-        "mbim")
-            cmd_zswitch_set "$at_port" "e"
+    case "$platform" in
+        "qualcomm")
+            case "$mode" in
+                "mbim")
+                    cmd_zswitch_set "$at_port" "8"
+                    ;;
+                "qmi")
+                    cmd_zswitch_set "$at_port" "x"
+                    ;;
+                "rndis")
+                    cmd_zswitch_set "$at_port" "r"
+                    ;;
+                "ecm")
+                    cmd_zswitch_set "$at_port" "e"
+                    ;;
+                *)
+                    echo "Invalid mode"
+                    return 1
+                    ;;
+            esac
             ;;
-        "rmnet")
-            cmd_zswitch_set "$at_port" "x"
-            ;;
-        "rndis")
-            cmd_zswitch_set "$at_port" "r"
-            ;;
-        "ecm")
-            cmd_zswitch_set "$at_port" "E"
+        "lte")
+            case $mode in
+                "mbim")
+                    cmd_zswitch_set "$at_port" "e"
+                    ;;
+                "qmi")
+                    cmd_zswitch_set "$at_port" "x"
+                    ;;
+                "rndis")
+                    cmd_zswitch_set "$at_port" "r"
+                    ;;
+                "ecm")
+                    cmd_zswitch_set "$at_port" "l"
+                    ;;
+                *)
+                    echo "Invalid mode"
+                    return 1
+                    ;;
+            esac
             ;;
         *)
-            echo "Invalid mode"
-            return 1
+            case $mode in
+                "mbim")
+                    cmd_zswitch_set "$at_port" "e"
+                    ;;
+                "qmi")
+                    cmd_zswitch_set "$at_port" "x"
+                    ;;
+                "rndis")
+                    cmd_zswitch_set "$at_port" "r"
+                    ;;
+                "ecm")
+                    cmd_zswitch_set "$at_port" "E"
+                    ;;
+                *)
+                    echo "Invalid mode"
+                    return 1
+                    ;;
+            esac
             ;;
     esac
 }
@@ -144,13 +190,13 @@ get_network_prefer()
     case "$platform" in
         "qualcomm")
             get_network_prefer_qualcomm
-        ;;
+            ;;
         "lte")
             get_network_prefer_lte
-        ;;
+            ;;
         *)
             get_network_prefer_lte
-        ;;
+            ;;
     esac
 }
 
@@ -159,15 +205,22 @@ get_network_prefer_lte()
     # AT+ZSNT? 返回格式: +ZSNT: cm_mode,net_sel_mode,pref_acq
     # cm_mode: 0=自动, 2=WCDMA, 6=LTE
     local res=$(cmd_zsnt_query "$at_port" | grep -o "+ZSNT: [0-9,]*" | cut -d' ' -f2)
-    local cm_mode=$(echo $res | cut -d',' -f1)
+    local cm_mode=$(echo "$res" | cut -d',' -f1)
 
     network_prefer_3g="0"
     network_prefer_4g="0"
 
     case "$cm_mode" in
-        "0") network_prefer_3g="1"; network_prefer_4g="1" ;;
-        "2") network_prefer_3g="1" ;;
-        "6") network_prefer_4g="1" ;;
+        "0")
+            network_prefer_3g="1"
+            network_prefer_4g="1"
+            ;;
+        "2")
+            network_prefer_3g="1"
+            ;;
+        "6")
+            network_prefer_4g="1"
+            ;;
     esac
 
     json_add_object network_prefer
@@ -179,16 +232,32 @@ get_network_prefer_lte()
 get_network_prefer_qualcomm()
 {
     local res=$(cmd_zsnt_query "$at_port" | grep -o "+ZSNT: [0-9,]*" | cut -d' ' -f2)
-    local cm_mode=$(echo $res | cut -d',' -f1)
+    local cm_mode=$(echo "$res" | cut -d',' -f1)
 
     network_prefer_3g="0"
     network_prefer_4g="0"
     network_prefer_5g="0"
 
+    # 0=AUTOMATIC, 2=WCDMA_ONLY, 6=LTE_ONLY, 7=NR5G_ONLY, 8=LTE NR.
     case "$cm_mode" in
-        "0") network_prefer_3g="1"; network_prefer_4g="1"; network_prefer_5g="1" ;;
-        "2") network_prefer_3g="1" ;;
-        "6") network_prefer_4g="1" ;;
+        "0")
+            network_prefer_3g="1"
+            network_prefer_4g="1"
+            network_prefer_5g="1"
+            ;;
+        "2")
+            network_prefer_3g="1"
+            ;;
+        "6")
+            network_prefer_4g="1"
+            ;;
+        "7")
+            network_prefer_5g="1"
+            ;;
+        "8")
+            network_prefer_4g="1"
+            network_prefer_5g="1"
+            ;;
     esac
 
     json_add_object network_prefer
@@ -201,21 +270,23 @@ get_network_prefer_qualcomm()
 #设置网络偏好
 set_network_prefer()
 {
-    network_prefer_3g=$(echo $1 | jq -r 'contains(["3G"])')
-    network_prefer_4g=$(echo $1 | jq -r 'contains(["4G"])')
-    network_prefer_5g=$(echo $1 | jq -r 'contains(["5G"])')
-    local length=$(echo $1 | jq -r 'length')
+    local config="$1"
+    network_prefer_3g=$(echo "$config" | jq -r 'contains(["3G"])')
+    network_prefer_4g=$(echo "$config" | jq -r 'contains(["4G"])')
+    network_prefer_5g=$(echo "$config" | jq -r 'contains(["5G"])')
+    local length=$(echo "$config" | jq -r 'length')
+    local zsnt_mode="0,0,0"
 
     case "$platform" in
         "qualcomm")
             set_network_prefer_qualcomm "$length"
-        ;;
+            ;;
         "lte")
             set_network_prefer_lte "$length"
-        ;;
+            ;;
         *)
             set_network_prefer_lte "$length"
-        ;;
+            ;;
     esac
 }
 
@@ -254,6 +325,15 @@ set_network_prefer_qualcomm()
                 zsnt_mode="2,0,0"
             elif [ "$network_prefer_4g" = "true" ]; then
                 zsnt_mode="6,0,0"
+            elif [ "$network_prefer_5g" = "true" ]; then
+                zsnt_mode="7,0,0"
+            fi
+            ;;
+        "2")
+            if [ "$network_prefer_4g" = "true" ] && [ "$network_prefer_5g" = "true" ]; then
+                zsnt_mode="8,0,0"
+            else
+                zsnt_mode="0,0,0"
             fi
             ;;
         *)
@@ -281,13 +361,13 @@ get_lockband()
     case "$platform" in
         "qualcomm")
             get_lockband_qualcomm
-        ;;
+            ;;
         "lte")
             get_lockband_lte
-        ;;
+            ;;
         *)
             get_lockband_lte
-        ;;
+            ;;
     esac
     json_close_object
 }
@@ -300,18 +380,18 @@ get_lockband_lte()
     local modem_info=$(cmd_zband_query "$at_port" | grep -i 'LTE' | cut -d: -f2 | tr -d '\r ')
     local LTE_LOCK_SUPPORTBAND=$(cmd_zband_list_query "$at_port" | grep -i 'LTE' | cut -d: -f2 | tr -d '() \r')
 
-    local lte_avalible_band=""
-    [ -n "$(uci -q get qmodem.$config_section.lte_band)" ] && lte_avalible_band=$(uci -q get qmodem.$config_section.lte_band | tr '/' ',')
+    local lte_available_band=""
+    [ -n "$(uci -q get qmodem.$config_section.lte_band)" ] && lte_available_band=$(uci -q get qmodem.$config_section.lte_band | tr '/' ',')
 
     json_add_object "LTE"
     json_add_array "available_band"
-    if [ -n "$lte_avalible_band" ]; then
-        for band in $(echo "$lte_avalible_band" | tr ',' '\n' | sort -n | uniq); do
-            add_avalible_band_entry "$band" "LTE_B$band"
+    if [ -n "$lte_available_band" ]; then
+        for band in $(echo "$lte_available_band" | tr ',' '\n' | sort -n | uniq); do
+            add_available_band_entry "$band" "LTE_B$band"
         done
     elif [ -n "$LTE_LOCK_SUPPORTBAND" ]; then
         for band in $(echo "$LTE_LOCK_SUPPORTBAND" | tr ',' '\n' | sort -n | uniq); do
-            add_avalible_band_entry "$band" "LTE_B$band"
+            add_available_band_entry "$band" "LTE_B$band"
         done
     fi
     json_close_array
@@ -329,33 +409,62 @@ get_lockband_lte()
 get_lockband_qualcomm()
 {
     m_debug "Gosuncn qualcomm get lockband info"
-    local modem_info=$(cmd_zband_query "$at_port" | grep -i 'LTE' | cut -d: -f2 | tr -d '\r ')
-    local LTE_LOCK_SUPPORTBAND=$(cmd_zband_list_query "$at_port" | grep -i 'LTE' | cut -d: -f2 | tr -d '() \r')
+    wcdma_avalible_band="1,2,3,4,5,6,7,8,9,19"
+    lte_avalible_band="1,2,3,4,5,7,8,12,13,14,17,18,19,20,25,26,28,29,30,32,34,38,39,40,41,42,66,71"
+    nr_avalible_band="1,2,3,5,7,8,12,20,25,28,38,40,41,48,66,71,77,78,79"
 
-    local lte_avalible_band=""
-    [ -n "$(uci -q get qmodem.$config_section.lte_band)" ] && lte_avalible_band=$(uci -q get qmodem.$config_section.lte_band | tr '/' ',')
+    local zband_response=$(cmd_zband_query "$at_port")
+    local wcdma_modem=$(echo "$zband_response" | grep -i 'WCDMA' | cut -d: -f2 | tr -d '\r ')
+    local lte_modem=$(echo "$zband_response" | grep -i 'LTE' | cut -d: -f2 | tr -d '\r ')
+    local nr_modem=$(echo "$zband_response" | grep -i 'NR5G' | cut -d: -f2 | tr -d '\r ')
+
+    [ -n "$(uci -q get qmodem.$config_section.wcdma_band)" ] && \
+        wcdma_available=$(uci -q get qmodem.$config_section.wcdma_band | tr '/' ',')
+    [ -n "$(uci -q get qmodem.$config_section.lte_band)" ] && \
+        lte_available=$(uci -q get qmodem.$config_section.lte_band | tr '/' ',')
+    [ -n "$(uci -q get qmodem.$config_section.sa_band)" ] && \
+        nr_available=$(uci -q get qmodem.$config_section.sa_band | tr '/' ',')
+
+    json_add_object "UMTS"
+    json_add_array "available_band"
+    for band in $(echo "$wcdma_available" | tr ',' '\n' | sort -n | uniq); do
+        [ -n "$band" ] && add_avalible_band_entry "$band" "UMTS_$band"
+    done
+    json_close_array
+    json_add_array "lock_band"
+    for band in $(echo "$wcdma_modem" | tr ',' '\n' | sort -n | uniq); do
+        [ -n "$band" ] && json_add_string "" "$band"
+    done
+    json_close_array
+    json_close_object
 
     json_add_object "LTE"
     json_add_array "available_band"
-    if [ -n "$lte_avalible_band" ]; then
-        for band in $(echo "$lte_avalible_band" | tr ',' '\n' | sort -n | uniq); do
-            add_avalible_band_entry "$band" "LTE_B$band"
-        done
-    elif [ -n "$LTE_LOCK_SUPPORTBAND" ]; then
-        for band in $(echo "$LTE_LOCK_SUPPORTBAND" | tr ',' '\n' | sort -n | uniq); do
-            add_avalible_band_entry "$band" "LTE_B$band"
-        done
-    fi
+    for band in $(echo "$lte_available" | tr ',' '\n' | sort -n | uniq); do
+        [ -n "$band" ] && add_avalible_band_entry "$band" "LTE_B$band"
+    done
     json_close_array
-
     json_add_array "lock_band"
-    if [ -n "$modem_info" ]; then
-        for band in $(echo "$modem_info" | tr ',' '\n' | sort -n | uniq); do
-            json_add_string "" "$band"
-        done
-    fi
+    for band in $(echo "$lte_modem" | tr ',' '\n' | sort -n | uniq); do
+        [ -n "$band" ] && json_add_string "" "$band"
+    done
     json_close_array
     json_close_object
+
+    for nr_class in NR NR_NSA; do
+        json_add_object "$nr_class"
+        json_add_array "available_band"
+        for band in $(echo "$nr_available" | tr ',' '\n' | sort -n | uniq); do
+            [ -n "$band" ] && add_avalible_band_entry "$band" "${nr_class}_N$band"
+        done
+        json_close_array
+        json_add_array "lock_band"
+        for band in $(echo "$nr_modem" | tr ',' '\n' | sort -n | uniq); do
+            [ -n "$band" ] && json_add_string "" "$band"
+        done
+        json_close_array
+        json_close_object
+    done
 }
 
 #设置锁频
@@ -369,13 +478,13 @@ set_lockband()
     case "$platform" in
         "qualcomm")
             set_lockband_qualcomm "$band_class" "$lock_band"
-        ;;
+            ;;
         "lte")
             set_lockband_lte "$band_class" "$lock_band"
-        ;;
+            ;;
         *)
             set_lockband_lte "$band_class" "$lock_band"
-        ;;
+            ;;
     esac
 
     json_select "result"
@@ -393,11 +502,11 @@ set_lockband_lte()
 
     if [ -z "$lock_band" ] || [ "$lock_band" = "null" ]; then
         # 解锁所有频段
-        res=$(cmd_zband_reset_all "$at_port")
+        res=$(cmd_zband_reset_all_lte "$at_port")
     else
         local hex=$(convert2hex "$lock_band")
         m_debug "Lock LTE band hex: $hex"
-        res=$(cmd_zband_set_nr "$at_port" "$hex")
+        res=$(cmd_zband_set_lte "$at_port" "$hex")
     fi
 }
 
@@ -407,12 +516,60 @@ set_lockband_qualcomm()
     local lock_band="$2"
 
     if [ -z "$lock_band" ] || [ "$lock_band" = "null" ]; then
-        res=$(cmd_zband_reset_all "$at_port")
-    else
-        local hex=$(convert2hex "$lock_band")
-        m_debug "Lock LTE band hex: $hex"
-        res=$(cmd_zband_set_nr "$at_port" "$hex")
+        res=$(cmd_zband_reset_all_qualcomm "$at_port")
+        return
     fi
+
+    case "$lock_band" in
+        *[!0-9,]*)
+            res="ERROR: invalid band list"
+            return
+            ;;
+    esac
+
+    local band_list=$(echo "$lock_band" | tr ',' '\n' | grep -v '^$' | sort -n | uniq)
+
+    if [ -z "$band_list" ]; then
+        res="ERROR: invalid band list"
+        return
+    fi
+
+    local band_count=$(echo "$band_list" | wc -l)
+
+    if [ "$band_count" -lt 1 ] || [ "$band_count" -gt 10 ]; then
+        res="ERROR: ZBAND supports 1-10 bands per command"
+        return
+    fi
+
+    for band in $band_list; do
+        if [ "$band" -lt 1 ] || [ "$band" -gt 320 ]; then
+            res="ERROR: band must be in range 1-320"
+            return
+        fi
+    done
+
+    local clean_lock_band=$(echo "$band_list" | tr '\n' ',')
+    clean_lock_band="${clean_lock_band%,}"
+    case "$band_class" in
+        "UMTS")
+            res=$(cmd_zband_set_qualcomm "$at_port" "3" "$band_count" "$clean_lock_band")
+            ;;
+        "TDSCDMA")
+            res=$(cmd_zband_set_qualcomm "$at_port" "2" "$band_count" "$clean_lock_band")
+            ;;
+        "GSM")
+            res=$(cmd_zband_set_qualcomm "$at_port" "4" "$band_count" "$clean_lock_band")
+            ;;
+        "LTE")
+            res=$(cmd_zband_set_qualcomm "$at_port" "1" "$band_count" "$clean_lock_band")
+            ;;
+        "NR"|"NR_NSA")
+            res=$(cmd_zband_set_qualcomm "$at_port" "5" "$band_count" "$clean_lock_band")
+            ;;
+        *)
+            res="ERROR: unsupported band_class: $band_class"
+            ;;
+    esac
 }
 
 #SIM卡信息
@@ -506,13 +663,13 @@ cell_info()
     case "$platform" in
         "qualcomm")
             cell_info_qualcomm
-        ;;
+            ;;
         "lte")
             cell_info_lte
-        ;;
+            ;;
         *)
             cell_info_lte
-        ;;
+            ;;
     esac
 }
 
@@ -701,6 +858,17 @@ set_neighborcell()
     json_add_string "setlockcell" "not supported"
     json_close_object
 }
+
+get_neighborcell_qualcomm()
+{
+    echo "to do..."
+}
+
+set_neighborcell_qualcomm()
+{
+    echo "to do..."
+}
+
 
 vendor_get_disabled_features()
 {
