@@ -217,13 +217,14 @@ static int load_config(const char *section_name, struct modem_config *cfg)
              option_string(uci, section, "override_at_port",
              option_string(uci, section, "sms_at_port",
              option_string(uci, section, "at_port", ""))));
+    cfg->use_ubus = !strcmp(option_string(uci, section, "use_ubus", "1"), "1");
     snprintf(cfg->mode, sizeof(cfg->mode), "%s",
-             option_string(uci, section, "sms_mode", "database_poll"));
+             option_string(uci, section, "sms_mode",
+                           cfg->use_ubus ? "database_poll" : "direct"));
     snprintf(cfg->storage, sizeof(cfg->storage), "%s",
              option_string(uci, section, "sms_storage_mem1", "SM"));
     snprintf(cfg->legacy_dir, sizeof(cfg->legacy_dir), "%s",
              option_string(uci, section, "sms_db_path", "/etc/qmodem"));
-    cfg->use_ubus = !strcmp(option_string(uci, section, "use_ubus", "1"), "1");
     cfg->auto_delete = strcmp(option_string(uci, section,
                               "sms_auto_delete_from_sim", "1"), "0") != 0;
     cfg->forwarding = !strcmp(option_string(uci, section, "sms_forwarding", "0"), "1");
@@ -622,7 +623,7 @@ static int configure_method(struct ubus_context *ctx, struct ubus_object *obj,
             strcmp(mode_name, "database_urc"))
             return UBUS_STATUS_INVALID_ARGUMENT;
         options[option_count] = "sms_mode"; values[option_count++] = mode_name;
-        if (!strcmp(mode_name, "database_urc")) {
+        if (strcmp(mode_name, "direct")) {
             options[option_count] = "use_ubus"; values[option_count++] = "1";
         }
     }
@@ -1128,15 +1129,18 @@ static int modem_list_method(struct ubus_context *ctx, struct ubus_object *obj,
     array = blobmsg_open_array(&b, "modems");
     uci_foreach_element(&package->sections, element) {
         struct uci_section *section = uci_to_section(element);
+        int use_ubus;
         if (strcmp(section->type, "modem-device"))
             continue;
         void *entry = blobmsg_open_table(&b, NULL);
         char state_path[256];
         struct json_object *state = NULL, *state_value = NULL;
+        use_ubus = !strcmp(option_string(uci, section, "use_ubus", "1"), "1");
         blobmsg_add_string(&b, "modem_id", section->e.name);
         blobmsg_add_string(&b, "name", option_string(uci, section, "name", section->e.name));
-        blobmsg_add_string(&b, "mode", option_string(uci, section, "sms_mode", "database_poll"));
-        blobmsg_add_u8(&b, "use_ubus", !strcmp(option_string(uci, section, "use_ubus", "1"), "1"));
+        blobmsg_add_string(&b, "mode", option_string(uci, section, "sms_mode",
+                           use_ubus ? "database_poll" : "direct"));
+        blobmsg_add_u8(&b, "use_ubus", use_ubus);
         blobmsg_add_u8(&b, "enabled", strcmp(option_string(uci, section, "enabled", "1"), "0") != 0);
         snprintf(state_path, sizeof(state_path), "/var/run/qmodem/settings/%s.json", section->e.name);
         state = json_object_from_file(state_path);
