@@ -22,8 +22,8 @@ cmd_zswitch_query()
     at "$1" "AT+ZSWITCH?"
 }
 
-#set network mode
-#$2: mode letter (e/x/r/E)
+#set usb network mode
+#$2: mode (8=MBIM, e/E=ECM, r/R=RNDIS, x/X or q/Q=QMI)
 cmd_zswitch_set()
 {
     at "$1" "AT+ZSWITCH=$2"
@@ -48,6 +48,18 @@ cmd_zsnt_reset()
     at "$1" "AT+ZSNT=0,0,0"
 }
 
+#query current network access state
+cmd_zpas_query()
+{
+    at "$1" "AT+ZPAS?"
+}
+
+#query 5G registration state
+cmd_c5greg_query()
+{
+    at "$1" "AT+C5GREG?"
+}
+
 #query temperature
 cmd_mtsm()
 {
@@ -61,22 +73,62 @@ cmd_zband_query()
 }
 
 #query supported bands
-cmd_zband_list_query()
+cmd_zband_list_query_lte()
 {
     at "$1" 'AT+ZBAND=?'
 }
 
 #reset bands to all
-cmd_zband_reset_all()
+cmd_zband_reset_all_lte()
 {
     at "$1" "AT+ZBAND=all,all,all,all"
 }
 
-#lock NR bands
+cmd_zband_reset_all_qualcomm()
+{
+    at "$1" "AT+ZBAND=0"
+}
+
+#lock bands
 #$2: hex band mask
-cmd_zband_set_nr()
+cmd_zband_set_lte()
 {
     at "$1" "AT+ZBAND=all,all,all,$2"
+}
+
+#$2: RAT (0=Unlock, 1=LTE, 2=TDSCDMA, 3=WCDMA, 4=GSM, 5=NR5G)
+#$3: number of bands (1-10)
+#$4: comma-separated band list
+cmd_zband_set_qualcomm()
+{
+    at "$1" "AT+ZBAND=$2,$3,$4"
+}
+
+
+#query cell-lock state
+cmd_zlockcell_query()
+{
+    at "$1" "AT+ZLOCKCELL?"
+}
+
+#set LTE cell lock
+#$2: earfcn  $3: pci
+cmd_zlockcell_set_lte()
+{
+    at "$1" "AT+ZLOCKCELL=1,1,$2,$3"
+}
+
+#set NR5G cell lock
+#$2: narfcn  $3: pci  $4: scs(0-3)  $5: nr band
+cmd_zlockcell_set_qualcomm()
+{
+    at "$1" "AT+ZLOCKCELL=1,2,$2,$3,$4,$5"
+}
+
+#unlock all cell locks
+cmd_zlockcell_unlock()
+{
+    at "$1" "AT+ZLOCKCELL=0"
 }
 
 #query SIM status

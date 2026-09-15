@@ -753,6 +753,88 @@
 			}
 		]
 	},
+	"gosuncn": {
+		"qualcomm": [
+			{
+				"查询网络选择模式 > AT+ZSNT?": "AT+ZSNT?"
+			},
+			{
+				"锁定LTE > AT+ZSNT=6,0,0": "AT+ZSNT=6,0,0"
+			},
+			{
+				"锁定5G NR > AT+ZSNT=7,0,0": "AT+ZSNT=7,0,0"
+			},
+			{
+				"查询当前网络状态 > AT+ZPAS?": "AT+ZPAS?"
+			},
+			{
+				"查询频段配置 > AT+ZBAND?": "AT+ZBAND?"
+			},
+			{
+				"锁定LTE Band 3和8 > AT+ZBAND=1,2,3,8": "AT+ZBAND=1,2,3,8"
+			},
+			{
+				"解除频段锁定 > AT+ZBAND=0": "AT+ZBAND=0"
+			},
+			{
+				"查询LTE邻小区RSRP/RSRQ/SINR > AT+ZRSP?": "AT+ZRSP?"
+			},
+			{
+				"查询SA/NSA禁用模式 > AT+ZNRMODE?": "AT+ZNRMODE?"
+			},
+			{
+				"关闭5G SA > AT+ZNRMODE=1": "AT+ZNRMODE=1"
+			},
+			{
+				"关闭5G NSA > AT+ZNRMODE=2": "AT+ZNRMODE=2"
+			},
+			{
+				"恢复SA/NSA默认模式 > AT+ZNRMODE=0": "AT+ZNRMODE=0"
+			},
+			{
+				"ECM/RNDIS数据拨号 > AT+ZECMCALL=1": "AT+ZECMCALL=1"
+			},
+			{
+				"ECM/RNDIS断开拨号 > AT+ZECMCALL=0": "AT+ZECMCALL=0"
+			},
+			{
+				"查询ECM/RNDIS拨号信息 > AT+ZECMCALL?": "AT+ZECMCALL?"
+			},
+			{
+				"重启模组 > AT+ZRST": "AT+ZRST"
+			},
+			{
+				"查询SIM热插拔设置 > AT+ZSDT?": "AT+ZSDT?"
+			},
+			{
+				"开启SIM热插拔 > AT+ZSDT=1,1,3": "AT+ZSDT=1,1,3"
+			},
+			{
+				"查询USB端口配置 > AT+ZSWITCH?": "AT+ZSWITCH?"
+			},
+			{
+				"切换到MBIM模式 > AT+ZSWITCH=8": "AT+ZSWITCH=8"
+			},
+			{
+				"切换到RNDIS模式 > AT+ZSWITCH=R": "AT+ZSWITCH=R"
+			},
+			{
+				"切换到ECM模式 > AT+ZSWITCH=E": "AT+ZSWITCH=E"
+			},
+			{
+				"切换到QMI模式 > AT+ZSWITCH=X": "AT+ZSWITCH=X"
+			},
+			{
+				"查询天线配置（GM801） > AT+ZANT?": "AT+ZANT?"
+			},
+			{
+				"设置ANT5为外置天线（GM801） > AT+ZANT=5,1,1": "AT+ZANT=5,1,1"
+			},
+			{
+				"设置ANT7为外置天线（GM801） > AT+ZANT=7,1,1": "AT+ZANT=7,1,1"
+			}
+		]
+	},
 	"openluat": {
 		"unisoc": [
 			{
