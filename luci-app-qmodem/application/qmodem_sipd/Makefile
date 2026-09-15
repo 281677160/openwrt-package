@@ -14,7 +14,7 @@ define Package/$(PKG_NAME)
   CATEGORY:=Utilities
   TITLE:=QModem SIP transport service (experimental)
   DEPENDS:=+qmodem-voip +qmodem-smsd +libubus +libubox +libblobmsg-json +libjson-c +libuci \
-	+libpj +libpjlib-util +libpjsip +libpjsip-ua +libspandsp3 +libsoxr +alsa-lib
+	+libpj +libpjlib-util +libpjsip +libpjsip-ua +libsoxr +alsa-lib
 endef
 
 define Package/$(PKG_NAME)/description
@@ -28,7 +28,7 @@ endef
 define Build/Prepare
 	$(RM) -r $(PKG_BUILD_DIR)
 	mkdir -p $(PKG_BUILD_DIR)
-	$(CP) ../voipd/src/media.h ../voipd/src/media_socket.h \
+	$(CP) ../voipd/src/g711.h ../voipd/src/media.h ../voipd/src/media_socket.h \
 		../voipd/src/modem_profile.h \
 		../voipd/src/rtp_transport.h $(PKG_BUILD_DIR)/
 	$(CP) ./src/* $(PKG_BUILD_DIR)/
@@ -37,13 +37,14 @@ endef
 define Build/Compile
 	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) \
 		-DPJ_AUTOCONF=1 -DPJ_IS_BIG_ENDIAN=0 -DPJ_IS_LITTLE_ENDIAN=1 \
-		-I$(STAGING_DIR)/usr/include -I$(STAGING_DIR)/usr/lib/spandsp3/include \
+		-I$(STAGING_DIR)/usr/include \
 		-Wall -Wextra -Werror -std=gnu11 \
 		-o $(PKG_BUILD_DIR)/qmodem_voip_sip_consumer \
 		$(PKG_BUILD_DIR)/sip_consumer.c $(PKG_BUILD_DIR)/sip_gateway.c \
-		$(PKG_BUILD_DIR)/sip_activation.c $(PKG_BUILD_DIR)/media_socket_client.c \
-		$(TARGET_LDFLAGS) -L$(STAGING_DIR)/usr/lib/spandsp3/lib \
-		-lpjsip -lpjsip-ua -lpjlib-util -lpj -lspandsp -lsoxr -lasound \
+		$(PKG_BUILD_DIR)/sip_activation.c $(PKG_BUILD_DIR)/sip_registration.c \
+		$(PKG_BUILD_DIR)/media_socket_client.c \
+		$(TARGET_LDFLAGS) \
+		-lpjsip -lpjsip-ua -lpjlib-util -lpj -lsoxr -lasound \
 		-lubus -lubox -lblobmsg_json -ljson-c -lm
 	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) \
 		-I$(STAGING_DIR)/usr/include -Wall -Wextra -Werror -std=gnu11 \

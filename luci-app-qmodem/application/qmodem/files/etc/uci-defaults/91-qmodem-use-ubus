@@ -8,10 +8,17 @@ default_use_ubus()
 {
 	local section="$1"
 	local value
+	local sms_mode
 
 	config_get value "$section" use_ubus
-	[ -n "$value" ] && return 0
-	uci -q set "qmodem.$section.use_ubus=1" || return 1
+	config_get sms_mode "$section" sms_mode
+	if [ -z "$value" ]; then
+		uci -q set "qmodem.$section.use_ubus=1" || return 1
+	elif [ "$value" = 0 ] && [ -z "$sms_mode" ]; then
+		uci -q set "qmodem.$section.sms_mode=direct" || return 1
+	else
+		return 0
+	fi
 	changed=1
 }
 

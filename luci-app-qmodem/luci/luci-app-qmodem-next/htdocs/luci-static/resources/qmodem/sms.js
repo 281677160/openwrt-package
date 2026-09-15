@@ -41,6 +41,13 @@ function listRaw(modem) {
 	});
 }
 
+function syncRaw(modem) {
+	return callSync(modem).then(function(result) {
+		if (result.status === 'error') return Promise.reject(new Error(result.error || 'SMS synchronization failed'));
+		return result;
+	});
+}
+
 function deleteMany(modem, ids) {
 	ids = Array.isArray(ids) ? ids : [ ids ];
 	return Promise.all(ids.map(function(id) { return callDelete(modem, id, id); })).then(function(results) {
@@ -81,8 +88,8 @@ return L.Class.extend({
 	listSms: function(configSection) {
 		var modem = configSection || 'modem_1';
 		return listRaw(modem).then(function(first) {
-			var refresh = first.mode === 'database_poll' ? callSync(modem) : Promise.resolve();
-			return refresh.catch(function() {}).then(function() { return first.mode === 'database_poll' ? listRaw(modem) : first; });
+			var refresh = first.mode === 'database_poll' ? syncRaw(modem) : Promise.resolve();
+			return refresh.then(function() { return first.mode === 'database_poll' ? listRaw(modem) : first; });
 		}).then(function(result) {
 			var messages = messagesFrom(result);
 			return { conversations: conversations(messages), total: messages.length, mode: result.mode };
@@ -94,7 +101,7 @@ return L.Class.extend({
 			return { messages: found ? found.messages : [] };
 		});
 	},
-	sync: function(configSection) { return callSync(configSection || 'modem_1'); },
+	sync: function(configSection) { return syncRaw(configSection || 'modem_1'); },
 	sendSms: function(configSection, recipient, message) {
 		return callSend(configSection || 'modem_1', recipient, message).then(function(result) { result.success = result.status === 'success'; return result; });
 	},
