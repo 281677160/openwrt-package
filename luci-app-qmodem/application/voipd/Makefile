@@ -18,7 +18,9 @@ define Package/$(PKG_NAME)
   CATEGORY:=Utilities
   TITLE:=QModem VoIP daemon (experimental)
   DEPENDS:=+libubus +libubox +libblobmsg-json +libjson-c +libuci +uci +jsonfilter +jshn +adb \
-	+alsa-lib +libspandsp3 +libsoxr +libwebsockets-mbedtls +px5g-mbedtls \
+	+alsa-lib +libsoxr \
+	+PACKAGE_libwebsockets-full:libwebsockets-full \
+	+!PACKAGE_libwebsockets-full:libwebsockets-openssl +px5g-mbedtls \
 	+kmod-usb-serial +kmod-usb-serial-option
 endef
 
@@ -42,11 +44,11 @@ define Build/Compile
 		-o $(PKG_BUILD_DIR)/libqvoice_media_gate.so \
 		$(PKG_BUILD_DIR)/qvoice_media_gate.c
 	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) -std=gnu11 -Wall -Wextra -Werror \
-		-I$(STAGING_DIR)/usr/include -I$(STAGING_DIR)/usr/lib/spandsp3/include \
+		-I$(STAGING_DIR)/usr/include \
 		-o $(PKG_BUILD_DIR)/qmodem_voip_adb_unlock \
 		$(PKG_BUILD_DIR)/adb_unlock.c $(TARGET_LDFLAGS) -lcrypt
 	$(TARGET_CC) $(TARGET_CPPFLAGS) $(TARGET_CFLAGS) -std=gnu11 -Wall -Wextra -Werror \
-		-I$(STAGING_DIR)/usr/include -I$(STAGING_DIR)/usr/lib/spandsp3/include \
+		-I$(STAGING_DIR)/usr/include \
 		-o $(PKG_BUILD_DIR)/qmodem_voip \
 		$(PKG_BUILD_DIR)/main.c $(PKG_BUILD_DIR)/daemon_core.c \
 		$(PKG_BUILD_DIR)/media_manager.c $(PKG_BUILD_DIR)/call_state.c \
@@ -57,8 +59,7 @@ define Build/Compile
 		$(PKG_BUILD_DIR)/media_socket.c \
 		$(PKG_BUILD_DIR)/rtp_transport.c \
 		$(TARGET_LDFLAGS) \
-		-L$(STAGING_DIR)/usr/lib/spandsp3/lib \
-		-lspandsp -lubus -lubox -lblobmsg_json -ljson-c -lsoxr -lasound \
+		-lubus -lubox -lblobmsg_json -ljson-c -lsoxr -lasound \
 		-lwebsockets -luci -lm -lpthread
 endef
 

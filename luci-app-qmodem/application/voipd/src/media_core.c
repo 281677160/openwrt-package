@@ -1,5 +1,6 @@
 #include "media.h"
 #include "media_serial.h"
+#include "g711.h"
 
 #include <math.h>
 #include <string.h>
@@ -9,7 +10,6 @@
 #endif
 
 #ifndef QMODEM_VOIP_HOST_TEST
-#include <spandsp.h>
 #include <soxr.h>
 #endif
 
@@ -100,82 +100,15 @@ void qmodem_voip_media_queue_drift(struct qmodem_voip_media_queue *queue,
 	(void)pthread_mutex_unlock(&queue->lock);
 }
 
-#ifdef QMODEM_VOIP_HOST_TEST
-static uint8_t ulaw_encode(int16_t value)
-{
-	int sample = value;
-	int sign = sample < 0;
-	int exponent = 7;
-	int mantissa;
-	if (sign)
-		sample = -sample;
-	if (sample > 32635)
-		sample = 32635;
-	sample += 132;
-	while (exponent > 0 && !(sample & (1 << (exponent + 7))))
-		exponent--;
-	mantissa = (sample >> (exponent + 3)) & 15;
-	return (uint8_t)~((sign << 7) | (exponent << 4) | mantissa);
-}
-
-static int16_t ulaw_decode(uint8_t value)
-{
-	int sample = ((~value & 15) << 3) + 132;
-	int exponent = (~value >> 4) & 7;
-	sample <<= exponent;
-	return (int16_t)((~value & 128) ? 132 - sample : sample - 132);
-}
-
-static uint8_t alaw_encode(int16_t value)
-{
-	int sample = value;
-	int sign = sample >= 0;
-	int exponent = 7;
-	int mantissa;
-	if (!sign)
-		sample = -sample - 1;
-	if (sample > 32767)
-		sample = 32767;
-	while (exponent > 0 && !(sample & (1 << (exponent + 7))))
-		exponent--;
-	mantissa = exponent ? (sample >> (exponent + 3)) & 15 : (sample >> 4) & 15;
-	return (uint8_t)(((sign << 7) | (exponent << 4) | mantissa) ^ 0x55);
-}
-
-static int16_t alaw_decode(uint8_t value)
-{
-	int data = value ^ 0x55;
-	int sample = (data & 15) << 4;
-	int exponent = (data >> 4) & 7;
-	if (!exponent)
-		sample += 8;
-	else if (exponent == 1)
-		sample += 0x108;
-	else
-		sample = (sample + 0x108) << (exponent - 1);
-	return (int16_t)((data & 128) ? sample : -sample);
-}
-#endif
-
 int qmodem_voip_media_g711_encode(enum qmodem_voip_media_codec codec,
 				  const int16_t *input, size_t samples, uint8_t *output)
 {
 	if (!input || !output || (codec != QMODEM_VOIP_MEDIA_PCMA && codec != QMODEM_VOIP_MEDIA_PCMU))
 		return -1;
-#ifdef QMODEM_VOIP_HOST_TEST
 	for (size_t i = 0; i < samples; i++)
-		output[i] = codec == QMODEM_VOIP_MEDIA_PCMA ? alaw_encode(input[i]) : ulaw_encode(input[i]);
+		output[i] = codec == QMODEM_VOIP_MEDIA_PCMA
+			? qmodem_g711_alaw_encode(input[i]) : qmodem_g711_ulaw_encode(input[i]);
 	return 0;
-#else
-	g711_state_t *state;
-	int result;
-	state = g711_init(NULL, codec == QMODEM_VOIP_MEDIA_PCMA ? G711_ALAW : G711_ULAW);
-	if (!state)
-		return -1;
-	result = g711_encode(state, output, input, (int)samples);
-	(void)g711_free(state);
-	return result == (int)samples ? 0 : -1;
-#endif
 }
 
 int qmodem_voip_media_g711_decode(enum qmodem_voip_media_codec codec,
@@ -183,20 +116,10 @@ int qmodem_voip_media_g711_decode(enum qmodem_voip_media_codec codec,
 {
 	if (!input || !output || (codec != QMODEM_VOIP_MEDIA_PCMA && codec != QMODEM_VOIP_MEDIA_PCMU))
 		return -1;
-#ifdef QMODEM_VOIP_HOST_TEST
 	for (size_t i = 0; i < samples; i++)
-		output[i] = codec == QMODEM_VOIP_MEDIA_PCMA ? alaw_decode(input[i]) : ulaw_decode(input[i]);
+		output[i] = codec == QMODEM_VOIP_MEDIA_PCMA
+			? qmodem_g711_alaw_decode(input[i]) : qmodem_g711_ulaw_decode(input[i]);
 	return 0;
-#else
-	g711_state_t *state;
-	int result;
-	state = g711_init(NULL, codec == QMODEM_VOIP_MEDIA_PCMA ? G711_ALAW : G711_ULAW);
-	if (!state)
-		return -1;
-	result = g711_decode(state, output, input, (int)samples);
-	(void)g711_free(state);
-	return result == (int)samples ? 0 : -1;
-#endif
 }
 
 int qmodem_voip_media_resample(const int16_t *input, size_t input_samples,
