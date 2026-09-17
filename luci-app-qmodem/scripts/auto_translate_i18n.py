@@ -367,7 +367,7 @@ def main():
     
     parser.add_argument(
         '--output',
-        default='luci/luci-app-qmodem-next/po/zh_Hans/qmodem-next.po',
+        default='luci/luci-app-qmodem-next/po/zh_Hans/luci-app-qmodem-next.po',
         help='Output PO file path'
     )
     
