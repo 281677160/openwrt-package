@@ -1,3 +1,17 @@
+# Translation for luci-app-qmodem-next
+msgid ""
+msgstr ""
+"Project-Id-Version: luci-app-qmodem-next\n"
+"POT-Creation-Date: 2026-09-16 00:00+0000\n"
+"PO-Revision-Date: 2026-09-16 00:00+0000\n"
+"Last-Translator: QModem contributors\n"
+"Language-Team: Chinese (Simplified)\n"
+"Language: zh_Hans\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
 # Source: vendor/sierra.sh:437, vendor/sierra.sh:440, vendor/sierra.sh:443, vendor/sierra.sh:446
 msgid "$key"
 msgstr "$key"
@@ -1372,6 +1386,10 @@ msgstr "短信对话"
 msgid "SMS Database Path"
 msgstr "短信数据库路径"
 
+# Source: menu.d/luci-app-qmodem-next.json
+msgid "SMS Forwarder"
+msgstr "短信转发"
+
 # Source: view/qmodem/sms.js:171
 # Source: view/qmodem/sms.js
 msgid "SMS Messages"
@@ -2528,10 +2546,6 @@ msgstr "SIM卡上的短信"
 # Source: view/qmodem/sms_sim.js
 msgid "Index"
 msgstr "索引"
-
-# Source: view/qmodem/sms_sim.js
-msgid "Type"
-msgstr "类型"
 
 # Source: view/qmodem/sms_sim.js
 msgid "Part"
