@@ -387,11 +387,11 @@ get_lockband_lte()
     json_add_array "available_band"
     if [ -n "$lte_available_band" ]; then
         for band in $(echo "$lte_available_band" | tr ',' '\n' | sort -n | uniq); do
-            add_available_band_entry "$band" "LTE_B$band"
+            add_avalible_band_entry "$band" "LTE_B$band"
         done
     elif [ -n "$LTE_LOCK_SUPPORTBAND" ]; then
         for band in $(echo "$LTE_LOCK_SUPPORTBAND" | tr ',' '\n' | sort -n | uniq); do
-            add_available_band_entry "$band" "LTE_B$band"
+            add_avalible_band_entry "$band" "LTE_B$band"
         done
     fi
     json_close_array
@@ -409,14 +409,14 @@ get_lockband_lte()
 get_lockband_qualcomm()
 {
     m_debug "Gosuncn qualcomm get lockband info"
-    wcdma_avalible_band="1,2,3,4,5,6,7,8,9,19"
-    lte_avalible_band="1,2,3,4,5,7,8,12,13,14,17,18,19,20,25,26,28,29,30,32,34,38,39,40,41,42,66,71"
-    nr_avalible_band="1,2,3,5,7,8,12,20,25,28,38,40,41,48,66,71,77,78,79"
+    local wcdma_available="1,2,3,4,5,8"
+    local lte_available="1,2,3,4,5,7,8,12,13,14,17,18,19,20,25,26,28,29,30,38,39,40,41,42,43,48,66,71"
+    local nr_available="1,2,3,5,7,8,20,28,41,66,71,77,78,79"
 
-    local zband_response=$(cmd_zband_query "$at_port")
-    local wcdma_modem=$(echo "$zband_response" | grep -i 'WCDMA' | cut -d: -f2 | tr -d '\r ')
-    local lte_modem=$(echo "$zband_response" | grep -i 'LTE' | cut -d: -f2 | tr -d '\r ')
-    local nr_modem=$(echo "$zband_response" | grep -i 'NR5G' | cut -d: -f2 | tr -d '\r ')
+    local zband_response=$(cmd_zband_query "$at_port" | tr -d ' \r')
+    local wcdma_modem=$(echo "$zband_response" | grep -i 'WCDMA' | cut -d':' -f2)
+    local lte_modem=$(echo "$zband_response" | grep -i 'LTE' | cut -d':' -f2)
+    local nr_modem=$(echo "$zband_response" | grep -i 'NR5G' | cut -d':' -f2)
 
     [ -n "$(uci -q get qmodem.$config_section.wcdma_band)" ] && \
         wcdma_available=$(uci -q get qmodem.$config_section.wcdma_band | tr '/' ',')
@@ -425,10 +425,10 @@ get_lockband_qualcomm()
     [ -n "$(uci -q get qmodem.$config_section.sa_band)" ] && \
         nr_available=$(uci -q get qmodem.$config_section.sa_band | tr '/' ',')
 
-    json_add_object "UMTS"
+    json_add_object "WCDMA"
     json_add_array "available_band"
     for band in $(echo "$wcdma_available" | tr ',' '\n' | sort -n | uniq); do
-        [ -n "$band" ] && add_avalible_band_entry "$band" "UMTS_$band"
+        [ -n "$band" ] && add_avalible_band_entry "$band" "WCDMA_B_$band"
     done
     json_close_array
     json_add_array "lock_band"
@@ -451,20 +451,18 @@ get_lockband_qualcomm()
     json_close_array
     json_close_object
 
-    for nr_class in NR NR_NSA; do
-        json_add_object "$nr_class"
-        json_add_array "available_band"
-        for band in $(echo "$nr_available" | tr ',' '\n' | sort -n | uniq); do
-            [ -n "$band" ] && add_avalible_band_entry "$band" "${nr_class}_N$band"
-        done
-        json_close_array
-        json_add_array "lock_band"
-        for band in $(echo "$nr_modem" | tr ',' '\n' | sort -n | uniq); do
-            [ -n "$band" ] && json_add_string "" "$band"
-        done
-        json_close_array
-        json_close_object
+    json_add_object "NR"
+    json_add_array "available_band"
+    for band in $(echo "$nr_available" | tr ',' '\n' | sort -n | uniq); do
+        [ -n "$band" ] && add_avalible_band_entry "$band" "NR_N$band"
     done
+    json_close_array
+    json_add_array "lock_band"
+    for band in $(echo "$nr_modem" | tr ',' '\n' | sort -n | uniq); do
+        [ -n "$band" ] && json_add_string "" "$band"
+    done
+    json_close_array
+    json_close_object
 }
 
 #设置锁频
@@ -551,19 +549,13 @@ set_lockband_qualcomm()
     local clean_lock_band=$(echo "$band_list" | tr '\n' ',')
     clean_lock_band="${clean_lock_band%,}"
     case "$band_class" in
-        "UMTS")
+        "WCDMA")
             res=$(cmd_zband_set_qualcomm "$at_port" "3" "$band_count" "$clean_lock_band")
-            ;;
-        "TDSCDMA")
-            res=$(cmd_zband_set_qualcomm "$at_port" "2" "$band_count" "$clean_lock_band")
-            ;;
-        "GSM")
-            res=$(cmd_zband_set_qualcomm "$at_port" "4" "$band_count" "$clean_lock_band")
             ;;
         "LTE")
             res=$(cmd_zband_set_qualcomm "$at_port" "1" "$band_count" "$clean_lock_band")
             ;;
-        "NR"|"NR_NSA")
+        "NR")
             res=$(cmd_zband_set_qualcomm "$at_port" "5" "$band_count" "$clean_lock_band")
             ;;
         *)
@@ -602,7 +594,7 @@ sim_info()
     imsi=$(cmd_cimi "$at_port" | sed -n '2p' | sed 's/\r//g')
 
     #ICCID
-    iccid=$(cmd_iccid "$at_port" | grep -o "+ICCID:[ ]*[-0-9A-Fa-f]\+" | awk -F': ' '{print $2}' | tr -d ' ')
+    iccid=$(cmd_iccid "$at_port" | grep -o "+\?ICCID:[ ]*[-0-9A-Fa-f]\+" | awk -F': ' '{print $2}' | tr -d ' ')
 
     add_plain_info_entry "SIM Status" "$sim_status" "SIM Status"
     add_plain_info_entry "ISP" "$isp" "Internet Service Provider"
@@ -689,7 +681,7 @@ cell_info_lte()
     local tac=$(echo "$zcellinfo" | cut -d',' -f1 | tr -d ' ')
     local cell_id=$(echo "$zcellinfo" | cut -d',' -f2 | tr -d ' ')
     local pci=$(echo "$zcellinfo" | cut -d',' -f3 | tr -d ' ')
-    local lband=$(echo "$zcellinfo" | cut -d',' -f4 | tr -d '\r' | tr -d '\n')
+    local band=$(echo "$zcellinfo" | cut -d',' -f4 | tr -d '\r' | tr -d '\n')
 
     # 获取信号质量
     local cesq_response=$(cmd_cesq "$at_port" | grep "+CESQ:")
@@ -736,7 +728,7 @@ cell_info_lte()
         "LTE")
             network_mode="LTE Mode"
             add_plain_info_entry "network_mode" "$network_mode" "Network Mode"
-            set_4g_cell_info "$mcc" "$mnc" "$tac" "$cell_id" "" "$pci" "$lband" "" "" "$rsrp" "$rsrq" "" "" ""
+            set_4g_cell_info "$mcc" "$mnc" "$tac" "$cell_id" "" "$pci" "$band" "" "" "$rsrp" "$rsrq" "" "" ""
             add_bar_info_entry "RSSI" "$rssi" "Received Signal Strength Indicator" -120 -20 dBm
             ;;
         "WCDMA")
@@ -745,7 +737,7 @@ cell_info_lte()
             add_plain_info_entry "LAC" "$tac" "Location Area Code"
             add_plain_info_entry "Cell ID" "$cell_id" "Cell ID"
             add_plain_info_entry "PSC" "$pci" "Primary Scrambling Code"
-            add_plain_info_entry "Band" "$lband" "Band"
+            add_plain_info_entry "Band" "$band" "Band"
             add_bar_info_entry "RSSI" "$rssi" "Received Signal Strength Indicator" -120 -20 dBm
             ;;
         *)
@@ -754,7 +746,7 @@ cell_info_lte()
             add_plain_info_entry "TAC" "$tac" "Tracking Area Code"
             add_plain_info_entry "Cell ID" "$cell_id" "Cell ID"
             add_plain_info_entry "PCI" "$pci" "Physical Cell ID"
-            add_plain_info_entry "Band" "$lband" "Band"
+            add_plain_info_entry "Band" "$band" "Band"
             add_bar_info_entry "RSSI" "$rssi" "Received Signal Strength Indicator" -120 -20 dBm
             ;;
     esac
@@ -762,117 +754,226 @@ cell_info_lte()
 
 cell_info_qualcomm()
 {
-    local zcellinfo=$(cmd_zcellinfo_query "$at_port" | grep '+ZCELLINFO:' | cut -d: -f2-)
-    local cops_response=$(cmd_cops_query "$at_port" | grep "+COPS:")
-    local rat_num=$(echo "$cops_response" | awk -F',' '{print $4}' | sed 's/\r//g')
-    local network_type=$(get_rat $rat_num)
+    local cell=$(cmd_zcellinfo_query "$at_port" | tr -d ' \r')
+    local zcellinfo=$(echo "$cell" | grep '+ZCELLINFO:')
+    local zcellinfo_nsa=$(echo "$cell" | grep 'narfcn:')
 
     if [ -z "$zcellinfo" ]; then
         return
     fi
 
-    local tac=$(echo "$zcellinfo" | cut -d',' -f1 | tr -d ' ')
-    local cell_id=$(echo "$zcellinfo" | grep -o 'cellid:[^,]*' | cut -d: -f2)
-    local pci=$(echo "$zcellinfo" | grep -o 'pci:[^,]*' | cut -d: -f2)
-    local lband=$(echo "$zcellinfo" | grep -o 'band:[^,]*' | cut -d: -f2 | tr -d '\r ')
-
-    local cesq_response=$(cmd_cesq "$at_port" | grep "+CESQ:")
-    local rsrp="" rsrq=""
-    if [ -n "$cesq_response" ]; then
-        rsrq=$(echo "$cesq_response" | awk -F',' '{print $5}' | tr -d ' ')
-        rsrp=$(echo "$cesq_response" | awk -F',' '{print $6}' | tr -d ' \r')
-        if [ -n "$rsrp" ] && [ "$rsrp" != "255" ]; then
-            rsrp=$(($rsrp - 141))
-        else
-            rsrp=""
-        fi
-        if [ -n "$rsrq" ] && [ "$rsrq" != "255" ]; then
-            rsrq=$(echo "$rsrq" | awk '{printf "%.1f", ($1 / 2) - 19.5}')
-        else
-            rsrq=""
-        fi
-    fi
-
-    local csq_response=$(cmd_csq "$at_port" | grep "+CSQ:")
-    local rssi=""
-    if [ -n "$csq_response" ]; then
-        local csq_num=$(echo "$csq_response" | awk -F'[:,]' '{print $2}' | tr -d ' ')
-        if [ "$csq_num" != "99" ] && [ -n "$csq_num" ]; then
-            rssi="$((2 * csq_num - 113))"
-        fi
-    fi
-
-    cmd_cops_numeric "$at_port" > /dev/null 2>&1
-    local cops_num=$(cmd_cops_query "$at_port" | grep "+COPS:" | awk -F'"' '{print $2}')
-    local mcc="" mnc=""
-    if [ -n "$cops_num" ] && [ ${#cops_num} -ge 5 ]; then
-        mcc=${cops_num:0:3}
-        mnc=${cops_num:3}
-    fi
+    local network_type=$(echo "$zcellinfo" | awk -F':' '{print $2}')
+    local tac=$(echo "$zcellinfo" | grep -o 'tac:[^,]*' | cut -d':' -f2)
+    local lac=$(echo "$zcellinfo" | grep -o 'lac:[^,]*' | cut -d':' -f2)
+    local cell_id=$(echo "$zcellinfo" | grep -o 'cell_\?id:[^,]*' | cut -d':' -f2)
+    local pci=$(echo "$zcellinfo" | grep -o 'pci:[^,]*' | cut -d':' -f2)
+    local psc=$(echo "$zcellinfo" | grep -o 'psc:[^,]*' | cut -d':' -f2)
+    local band=$(echo "$zcellinfo" | grep -o 'band:[^,]*' | cut -d':' -f2)
+    local freq=$(echo "$zcellinfo" | grep -o 'freq:[^,]*' | cut -d':' -f2)
+    local mcc=$(echo "$zcellinfo" | grep -o 'mcc:[^,]*' | cut -d':' -f2)
+    local mnc=$(echo "$zcellinfo" | grep -o 'mnc:[^,]*' | cut -d':' -f2)
+    local rsrp=$(echo "$zcellinfo" | grep -o 'rsrp:[^,]*' | cut -d':' -f2)
+    local rsrq=$(echo "$zcellinfo" | grep -o 'rsrq:[^,]*' | cut -d':' -f2)
+    local rssi=$(echo "$zcellinfo" | grep -o 'rssi:[^,]*' | cut -d':' -f2)
+    local sinr=$(echo "$zcellinfo" | grep -o 'sinr:[^,]*' | cut -d':' -f2)
+    local rscp=$(echo "$zcellinfo" | grep -o 'rscp:[^,]*' | cut -d':' -f2)
+    local ecio=$(echo "$zcellinfo" | grep -o 'ecio:[^,]*' | cut -d':' -f2)
 
     class="Cell Information"
     case "$network_type" in
-        "LTE")
-            network_mode="LTE Mode"
+        "NR5G")
+            network_mode="NR5G-SA Mode"
             add_plain_info_entry "network_mode" "$network_mode" "Network Mode"
-            set_4g_cell_info "$mcc" "$mnc" "$tac" "$cell_id" "" "$pci" "$lband" "" "" "$rsrp" "$rsrq" "" "" ""
-            add_bar_info_entry "RSSI" "$rssi" "Received Signal Strength Indicator" -120 -20 dBm
+            set_5g_cell_info "$mcc" "$mnc" "$tac" "$cell_id" "$freq" "$pci" "$band" "" "" "$rsrp" "$rsrq" "$sinr" "" ""
             ;;
-        "WCDMA")
-            network_mode="WCDMA Mode"
-            add_plain_info_entry "network_mode" "$network_mode" "Network Mode"
-            add_plain_info_entry "LAC" "$tac" "Location Area Code"
-            add_plain_info_entry "Cell ID" "$cell_id" "Cell ID"
-            add_plain_info_entry "PSC" "$pci" "Primary Scrambling Code"
-            add_plain_info_entry "Band" "$lband" "Band"
-            add_bar_info_entry "RSSI" "$rssi" "Received Signal Strength Indicator" -120 -20 dBm
+        "LTE")
+            if [ -n "$zcellinfo_nsa" ]; then
+                local nsa_freq=$(echo "$zcellinfo_nsa" | grep -o 'narfcn:[^,]*' | cut -d':' -f2)
+                local nsa_pci=$(echo "$zcellinfo_nsa" | grep -o 'nr5g_pci:[^,]*' | cut -d':' -f2)
+                local nsa_cell_id=$(echo "$zcellinfo_nsa" | grep -o 'cell_id:[^,]*' | cut -d':' -f2)
+                local nsa_band=$(echo "$zcellinfo_nsa" | grep -o 'band:[^,]*' | cut -d':' -f2)
+                local nsa_rsrp=$(echo "$zcellinfo_nsa" | grep -o '5g_rsrp:[^,]*' | cut -d':' -f2)
+                local nsa_rsrq=$(echo "$zcellinfo_nsa" | grep -o '5g_rsrq:[^,]*' | cut -d':' -f2)
+                local nsa_sinr=$(echo "$zcellinfo_nsa" | grep -o '5g_sinr:[^,]*' | cut -d':' -f2)
+
+                network_mode="EN-DC Mode"
+                add_plain_info_entry "network_mode" "$network_mode" "Network Mode"
+
+                add_plain_info_entry "LTE" "LTE" ""
+                extra_info="LTE"
+                set_4g_cell_info "$mcc" "$mnc" "$tac" "$cell_id" "$freq" "$pci" "$band" "" "" "$rsrp" "$rsrq" "$sinr" "" ""
+                add_bar_info_entry "RSSI" "$rssi" "Received Signal Strength Indicator" -120 -20 dBm
+
+                add_plain_info_entry "NR5G-NSA" "NR5G-NSA" ""
+                extra_info="NR"
+                set_5g_cell_info "" "" "" "$nsa_cell_id" "$nsa_freq" "$nsa_pci" "$nsa_band" "" "" "$nsa_rsrp" "$nsa_rsrq" "$nsa_sinr" "" ""
+            else
+                network_mode="LTE Mode"
+                add_plain_info_entry "network_mode" "$network_mode" "Network Mode"
+                set_4g_cell_info "$mcc" "$mnc" "$tac" "$cell_id" "$freq" "$pci" "$band" "" "" "$rsrp" "$rsrq" "$sinr" "" ""
+                add_bar_info_entry "RSSI" "$rssi" "Received Signal Strength Indicator" -120 -20 dBm
+            fi
+            ;;
+        "lac")
+            if [ -n "$freq" ]; then
+                network_mode="WCDMA Mode"
+                add_plain_info_entry "network_mode" "$network_mode" "Network Mode"
+                set_3g_cell_info "$mcc" "$mnc" "$lac" "$cell_id" "$freq" "$psc" "$band" "" "" "$rscp" "" "$ecio" "" ""
+            else
+                if [ -n "$ecio" ]; then
+                    network_mode="GSM Mode"
+                    add_plain_info_entry "network_mode" "$network_mode" "Network Mode"
+                    set_3g_cell_info "$mcc" "$mnc" "$lac" "$cell_id" "" "" "$band" "" "" "" "" "$ecio" "" ""
+                else
+                    network_mode="TDSCDMA"
+                    add_plain_info_entry "network_mode" "$network_mode" "Network Mode"
+                    set_3g_cell_info "" "" "$lac" "$cell_id" "" "" "$band" "" "" "" "" "" "" ""
+                fi
+            fi
             ;;
         *)
-            network_mode="${network_type} Mode"
-            add_plain_info_entry "network_mode" "$network_mode" "Network Mode"
-            add_plain_info_entry "TAC" "$tac" "Tracking Area Code"
-            add_plain_info_entry "Cell ID" "$cell_id" "Cell ID"
-            add_plain_info_entry "PCI" "$pci" "Physical Cell ID"
-            add_plain_info_entry "Band" "$lband" "Band"
-            add_bar_info_entry "RSSI" "$rssi" "Received Signal Strength Indicator" -120 -20 dBm
+            return
             ;;
     esac
 }
 
-#邻区信息（Gosuncn LTE平台暂不支持）
+#邻区信息
 get_neighborcell()
 {
+    #not real responses
+    #examples for set_neighborcell() paras quick copy
     json_add_object "neighborcell"
     json_add_array "LTE"
-    json_close_array
-    json_add_object "lockcell_status"
-    json_add_string "LTE" "unlock"
+    json_add_object ""
+    json_add_string "neighbourcell" "ex1"
+    json_add_string "arfcn" "1850"
+    json_add_string "pci" "317"
+    json_add_string "band" "3"
+    json_add_string "rssi" "-57.00"
+    json_add_string "rsrp" "-88.40"
+    json_add_string "rsrq" "-9.90"
+    json_add_string "sinr" "4"
     json_close_object
+    json_close_array
+
+    json_add_array "NR"
+    json_add_object ""
+    json_add_string "neighbourcell" "ex2"
+    json_add_string "arfcn" "504990"
+    json_add_string "pci" "241"
+    json_add_string "scs" "0"
+    json_add_string "band" "41"
+    json_add_string "rsrp" "-87"
+    json_add_string "rsrq" "-11"
+    json_add_string "sinr" "17"
+    json_close_object
+
+    json_add_object ""
+    json_add_string "neighbourcell" "ex3"
+    json_add_string "arfcn" "633984"
+    json_add_string "pci" "397"
+    json_add_string "scs" "1"
+    json_add_string "band" "78"
+    json_add_string "rsrp" "-89"
+    json_add_string "rsrq" "-12"
+    json_add_string "sinr" "14"
+    json_close_object
+    json_close_array
+
+    local zlockcell=$(cmd_zlockcell_query "$at_port" | tr -d ' \r')
+    local lte_status=$(echo "$zlockcell" | grep -i "lte")
+    local nr_status=$(echo "$zlockcell" | grep -i "nr5g")
+    local lte_lock_status=$(echo "$lte_status" | awk -F':' '{print $NF}')
+    local nr_lock_status=$(echo "$nr_status" | awk -F':' '{print $NF}')
+
+    if [ "$lte_lock_status" == "on" ]; then
+        lte_lock_status="locked"
+        local lte_lock_freq=$(echo "$lte_status" | grep -o "earfcn:[^,]*" | cut -d':' -f2)
+        local lte_lock_pci=$(echo "$lte_status" | grep -o "pci:[^,]*" | cut -d':' -f2)
+    else
+        lte_lock_status=""
+    fi
+
+    if [ "$nr_lock_status" == "on" ]; then
+        nr_lock_status="locked"
+        local nr_lock_pci=$(echo "$nr_status" | grep -o "pci:[^,]*" | cut -d':' -f2)
+        local nr_lock_freq=$(echo "$nr_status" | grep -o "nr5g_chanel:[^,]*" | cut -d':' -f2)
+        local nr_lock_scs=$(echo "$nr_status" | grep -o "scs:[^,]*" | cut -d':' -f2)
+        local nr_lock_band=$(echo "$nr_status" | grep -o "band:[^,]*" | cut -d':' -f2)
+    else
+        nr_lock_status=""
+    fi
+
+    json_add_object "lockcell_status"
+    if [ -n "$lte_lock_status" ]; then
+        json_add_string "LTE" "$lte_lock_status"
+        json_add_string "LTE_Freq" "$lte_lock_freq"
+        json_add_string "LTE_PCI" "$lte_lock_pci"
+    else
+        json_add_string "LTE" "unlock"
+    fi
+    if [ -n "$nr_lock_status" ]; then
+        json_add_string "NR" "$nr_lock_status"
+        json_add_string "NR_Freq" "$nr_lock_freq"
+        json_add_string "NR_PCI" "$nr_lock_pci"
+        json_add_string "NR_SCS" "$nr_lock_scs"
+        json_add_string "NR_Band" "$nr_lock_band"
+    else
+        json_add_string "NR" "unlock"
+    fi
+    json_close_object
+
     qmodem_lockcell_boot_hook_add_json "$config_section"
     json_close_object
 }
 
 set_neighborcell()
 {
+    local json_param=$1
+    local rat=$(echo "$json_param" | jq -r '.rat')
+    local pci=$(echo "$json_param" | jq -r '.pci')
+    local arfcn=$(echo "$json_param" | jq -r '.arfcn')
+    local band=$(echo "$json_param" | jq -r '.band')
+    local scs=$(echo "$json_param" | jq -r '.scs')
+    local en_boot_hook=$(echo $json_param | jq -r '.en_boot_hook // empty')
+
+    if [ -z "$pci" ] || [ -z "$arfcn" ]; then
+        #unlock
+        res=$(cmd_zlockcell_unlock "$at_port")
+        qmodem_lockcell_boot_hook_clear "$config_section"
+    else
+        if [ "$rat" == "1" ]; then
+            #nr
+            lockcell_boot_cmd="AT+ZLOCKCELL=1,2,$arfcn,$pci,$scs,$band"
+            res=$(cmd_zlockcell_set_nr "$at_port" "$arfcn" "$pci" "$scs" "$band")
+        else
+            #lte
+            lockcell_boot_cmd="AT+ZLOCKCELL=1,1,$arfcn,$pci"
+            res=$(cmd_zlockcell_set_lte "$at_port" "$arfcn" "$pci")
+        fi
+        qmodem_lockcell_boot_hook_sync "$config_section" "$en_boot_hook" "$lockcell_boot_cmd"
+    fi
+
     json_select "result"
-    json_add_string "setlockcell" "not supported"
+    json_add_string "setlockcell" "$res"
+    json_add_string "rat" "$rat"
+    json_add_string "pci" "$pci"
+    json_add_string "arfcn" "$arfcn"
+    json_add_string "band" "$band"
+    json_add_string "scs" "$scs"
+    if qmodem_bool_enabled "$(uci -q get "qmodem.${config_section}.lockcell_boot_hook_enabled")"; then
+        json_add_boolean "boot_hook_enabled" 1
+    else
+        json_add_boolean "boot_hook_enabled" 0
+    fi
     json_close_object
 }
 
-get_neighborcell_qualcomm()
-{
-    echo "to do..."
-}
-
-set_neighborcell_qualcomm()
-{
-    echo "to do..."
-}
-
-
 vendor_get_disabled_features()
 {
-    json_add_string "" "NeighborCell"
+    if [ "$platform" == "lte" ]; then
+        json_add_string "" "NeighborCell"
+    fi
 }
 
 #重启模组
@@ -884,7 +985,17 @@ soft_reboot()
 #重置模组
 reset_module()
 {
-    cmd_zsnt_reset "$at_port" 2>&1 > /dev/null
-    cmd_zband_reset_all "$at_port" 2>&1 > /dev/null
-    cmd_atf_factory "$at_port" 2>&1 > /dev/null
+    cmd_zsnt_reset "$at_port" > /dev/null 2>&1
+    case "$platform" in
+        "qualcomm")
+            cmd_zband_reset_all_qualcomm "$at_port" > /dev/null 2>&1
+            ;;
+        "lte")
+            cmd_zband_reset_all_lte "$at_port" > /dev/null 2>&1
+            ;;
+        *)
+            cmd_zband_reset_all_lte "$at_port" > /dev/null 2>&1
+            ;;
+    esac
+    cmd_atf_factory "$at_port" > /dev/null 2>&1
 }

@@ -530,9 +530,9 @@ get_rssi()
 {
     local rssi
     case $1 in
-		"99") rssi="unknown" ;;
-		* )  rssi=$((2 * $1 - 113)) ;;
-	esac
+        "99") rssi="unknown" ;;
+        * )  rssi=$((2 * $1 - 113)) ;;
+    esac
     echo "$rssi"
 }
 
@@ -542,12 +542,12 @@ get_rat()
 {
     local rat
     case $1 in
-		"0"|"1"|"3"|"8") rat="GSM" ;;
-		"2"|"4"|"5"|"6"|"9"|"10") rat="WCDMA" ;;
+        "0"|"1"|"3"|"8") rat="GSM" ;;
+        "2"|"4"|"5"|"6"|"9"|"10") rat="WCDMA" ;;
         "7") rat="LTE" ;;
         "11"|"12") rat="NR" ;;
         "13") rat="LTE-NR" ;;
-	esac
+    esac
     echo "${rat}"
 }
 
@@ -555,7 +555,8 @@ get_rat()
 # FM350 reports IPv6 in dotted decimal notation after the IPv4 address.
 get_cgpaddr_ipv4()
 {
-    echo "$1" | grep -oE '"[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"' | tr -d '"' \
+    echo "$1" | tr -d '"' | tr ',' '\n' \
+        | grep -oE '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$' \
         | grep -v '^0\.0\.0\.0$' | head -n 1
 }
 
@@ -577,7 +578,7 @@ get_connect_status()
         fi
     else
         expect="+CGACT:"
-        result=`cmd_cgact_query "$at_port" | grep $expect|tr '\r' '\n'`
+        result=$(cmd_cgact_query "$at_port" | tr -d '\r' | grep $expect)
         # for fm350 pdp_index 0, GGACT will return empty,so we need to add it manually
         if [ -z "$result" ]; then
             case $vendor in
@@ -588,14 +589,17 @@ get_connect_status()
                             ;;
                     esac
                     ;;
-                esac
+            esac
         fi
         
-        for pdp_index in `echo  "$result" | tr -d "\r" | awk -F'[,:]' '$3 == 1 {print $2}'`; do
+        for pdp_index in $(echo "$result" | tr -d ' \r' | awk -F '[,:]' '$3 == 1 {print $2}'); do
             expect="+CGPADDR:"
-            result=$(cmd_cgpaddr "$at_port" "$pdp_index" | grep $expect)
+            result=$(cmd_cgpaddr "$at_port" "$pdp_index" | tr -d '\r'| grep $expect)
             if [ -n "$result" ];then
-                ipv6=$(echo $result | grep -oE "\b([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\b")
+                ipv6=$(echo "$result" | grep -oE "\b([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}\b")
+                if [ -z "$ipv6" ]; then
+                    ipv6=$(echo "$result" | tr -d '"' | tr ',' '\n' | grep -oE '^([0-9]{1,3}\.){15}[0-9]{1,3}$' | head -n 1)
+                fi
                 ipv4=$(get_cgpaddr_ipv4 "$result")
             fi
             if [ -n "$ipv4" ] || [ -n "$ipv6" ];then
@@ -618,7 +622,7 @@ get_info()
     #基本信息
     base_info
 
-	#SIM卡信息
+    #SIM卡信息
     sim_info
     if [ "$sim_status" != "ready" ]; then
         [ -n "$sim_status" ] && add_warning_message_entry "sim_status" "$sim_status" "SIM Error,Error code:" "warning"

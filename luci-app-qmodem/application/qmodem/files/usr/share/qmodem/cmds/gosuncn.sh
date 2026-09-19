@@ -120,7 +120,7 @@ cmd_zlockcell_set_lte()
 
 #set NR5G cell lock
 #$2: narfcn  $3: pci  $4: scs(0-3)  $5: nr band
-cmd_zlockcell_set_qualcomm()
+cmd_zlockcell_set_nr()
 {
     at "$1" "AT+ZLOCKCELL=1,2,$2,$3,$4,$5"
 }
