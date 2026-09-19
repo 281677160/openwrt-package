@@ -348,7 +348,6 @@ led_services_running()
 
 stop_service()
 {
-	procd_kill "$service"
 	turn_off_saved_leds
 	rm -f "$LED_STATE_FILE"
 }
