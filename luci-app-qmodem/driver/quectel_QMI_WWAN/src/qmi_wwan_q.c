@@ -57,11 +57,6 @@
  */
 #define QMI_USBNET_HAS_BH_WORK (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 17, 0))
 
-#ifdef CONFIG_PINCTRL_IPQ807x
-#define CONFIG_QCA_NSS_DRV
-//#define CONFIG_QCA_NSS_PACKET_FILTER
-#endif
-
 #define _RMNET_NSS_H_
 #define _RMENT_NSS_H_
 struct rmnet_nss_cb {
@@ -70,15 +65,9 @@ struct rmnet_nss_cb {
         int (*nss_tx)(struct sk_buff *skb);
 };
 static struct rmnet_nss_cb __read_mostly *nss_cb = NULL;
-#if defined(CONFIG_PINCTRL_IPQ807x) || defined(CONFIG_PINCTRL_IPQ5018) || defined(CONFIG_PINCTRL_IPQ8074)
-//#ifdef CONFIG_RMNET_DATA //spf12.x none, not effect for spf11.x
-#define CONFIG_QCA_NSS_DRV
-/* define at qsdk/qca/src/linux-4.4/net/rmnet_data/rmnet_data_main.c */ //for spf11.x
-/* define at qsdk/qca/src/datarmnet/core/rmnet_config.c */ //for spf12.x
-/* set at qsdk/qca/src/data-kernel/drivers/rmnet-nss/rmnet_nss.c */
-/* need add DEPENDS:= kmod-rmnet-core in feeds/makefile */
+#ifdef CONFIG_QCA_NSS_DRV
+/* NSS builds must explicitly enable this and provide the callback symbol. */
 extern struct rmnet_nss_cb *rmnet_nss_callbacks __rcu __read_mostly;
-//#endif
 #endif
 
 /* This driver supports wwan (3G/LTE/?) devices using a vendor
