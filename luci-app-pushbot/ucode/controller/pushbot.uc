@@ -718,6 +718,254 @@ return {
 		http.write_json({ ok: true });
 	},
 
+	/* ── OTA Update: detect package manager (apk vs opkg) ── */
+	act_detect_pkgmgr: function() {
+		let mgr = "opkg";
+		let f = popen("command -v apk 2>/dev/null", "r");
+		if (f) { let o = f.read("all"); f.close(); if (o && length(replace(o, /\s+/, "")) > 0) mgr = "apk"; }
+		http.prepare_content("application/json");
+		http.write_json({ pkgmgr: mgr });
+	},
+
+	/* ── OTA Update: trigger background download with retry (max 3) ── */
+	act_download: function() {
+		let ver = http.formvalue("ver") ?? "";
+		let rel = http.formvalue("rel") ?? "";
+		if (ver == "" || rel == "") {
+			http.prepare_content("application/json");
+			http.write_json({ ok: false, error: "missing ver/rel" });
+			return;
+		}
+
+		/* sanitize version/release to prevent injection */
+		ver = replace(ver, /[^0-9.]/g, "");
+		rel = replace(rel, /[^0-9]/g, "");
+		if (ver == "" || rel == "") {
+			http.prepare_content("application/json");
+			http.write_json({ ok: false, error: "invalid ver/rel" });
+			return;
+		}
+
+		/* detect package manager */
+		let mgr = "opkg";
+		let f0 = popen("command -v apk 2>/dev/null", "r");
+		if (f0) { let o = f0.read("all"); f0.close(); if (o && length(replace(o, /\s+/, "")) > 0) mgr = "apk"; }
+
+		/* build download URLs */
+		let base = "https://github.com/zzsj0928/luci-app-pushbot/releases/download/luci-app-pushbot-v" + ver + "-r" + rel + "/";
+		let files;
+		if (mgr == "apk") {
+			files = [
+				"luci-app-pushbot-" + ver + "-r" + rel + ".apk",
+				"luci-i18n-pushbot-zh-cn-" + ver + "-r" + rel + ".apk"
+			];
+		} else {
+			files = [
+				"luci-app-pushbot_" + ver + "-r" + rel + "_all.ipk",
+				"luci-i18n-pushbot-zh-cn_" + ver + "-r" + rel + "_all.ipk"
+			];
+		}
+
+		/* progress file */
+		let pfile = "/tmp/pushbot/ota_progress";
+		/* clear previous progress */
+		system("echo '0' > " + pfile + " 2>/dev/null");
+
+		/* background download script with retry */
+		let dl_script = "#!/bin/sh\n"
+			+ "PFILE='" + pfile + "'\n"
+			+ "BASE='" + base + "'\n"
+			+ "MAX_RETRY=3\n"
+			+ "TOTAL=" + length(files) + "\n"
+			+ "OK=0\n"
+			+ "for f in " + join(" ", files) + "; do\n"
+			+ "  URL=\"${BASE}${f}\"\n"
+			+ "  DEST=\"/tmp/${f}\"\n"
+			+ "  ATTEMPT=0\n"
+			+ "  while [ $ATTEMPT -lt $MAX_RETRY ]; do\n"
+			+ "    ATTEMPT=$((ATTEMPT+1))\n"
+			+ "    curl -k -L --connect-timeout 15 --max-time 120 -o \"${DEST}\" \"${URL}\" 2>/dev/null\n"
+			+ "    if [ $? -eq 0 ] && [ -s \"${DEST}\" ] && [ $(wc -c < \"${DEST}\") -gt 10000 ]; then\n"
+			+ "      OK=$((OK+1))\n"
+			+ "      echo \"$((OK * 100 / TOTAL))\" > \"${PFILE}\"\n"
+			+ "      [ $OK -lt $TOTAL ] && sleep 1\n"
+			+ "      break\n"
+			+ "    fi\n"
+			+ "    rm -f \"${DEST}\"\n"
+			+ "    sleep 2\n"
+			+ "  done\n"
+			+ "done\n"
+			+ "if [ $OK -eq $TOTAL ]; then\n"
+			+ "  sleep 1\n"
+			+ "  echo 'done' > \"${PFILE}\"\n"
+			+ "else\n"
+			+ "  echo 'fail' > \"${PFILE}\"\n"
+			+ "fi\n";
+
+		/* write and execute background script */
+		let sf = open("/tmp/pushbot/ota_download.sh", "w");
+		if (sf) {
+			sf.write(dl_script);
+			sf.close();
+			system("chmod +x /tmp/pushbot/ota_download.sh && /tmp/pushbot/ota_download.sh &");
+		}
+
+		http.prepare_content("application/json");
+		http.write_json({ ok: true });
+	},
+
+	/* ── OTA Update: poll download progress ── */
+	act_download_progress: function() {
+		let pfile = "/tmp/pushbot/ota_progress";
+		let progress = "0";
+		let f = popen("cat " + pfile + " 2>/dev/null || echo '0'", "r");
+		if (f) { progress = replace(f.read("all"), /\s+/, ""); f.close(); }
+		if (progress == "") progress = "0";
+		http.prepare_content("application/json");
+		http.write_json({ progress: progress });
+	},
+
+	/* ── OTA Update: install downloaded packages ── */
+	act_install: function() {
+		let mgr = "opkg";
+		let f0 = popen("command -v apk 2>/dev/null", "r");
+		if (f0) { let o = f0.read("all"); f0.close(); if (o && length(replace(o, /\s+/, "")) > 0) mgr = "apk"; }
+
+		let ifile = "/tmp/pushbot/ota_install.log";
+		let cmd;
+		if (mgr == "apk") {
+			cmd = "apk add --allow-untrusted /tmp/luci-app-pushbot-*.apk /tmp/luci-i18n-pushbot-*.apk";
+		} else {
+			/* opkg 同版本会 up to date 跳过，需 --force-reinstall 覆盖 */
+			cmd = "opkg install --force-reinstall /tmp/luci-app-pushbot_*.ipk /tmp/luci-i18n-pushbot-zh-cn_*.ipk";
+		}
+
+		/* run install in background, log output */
+		let install_cmd = "(" + cmd + ") > " + ifile + " 2>&1 && echo 'ok' >> " + ifile + " || echo 'fail' >> " + ifile + " &";
+		system(install_cmd);
+
+		http.prepare_content("application/json");
+		http.write_json({ ok: true, pkgmgr: mgr });
+	},
+
+	/* ── OTA Update: poll install result ── */
+	act_install_progress: function() {
+		let ifile = "/tmp/pushbot/ota_install.log";
+		let output = "";
+		let f = popen("cat " + ifile + " 2>/dev/null", "r");
+		if (f) { output = f.read("all"); f.close(); }
+		let done = false, success = false;
+		if (match(output, /(^|\n)ok\s*$/)) { done = true; success = true; }
+		else if (match(output, /(^|\n)fail\s*$/)) { done = true; success = false; }
+		http.prepare_content("application/json");
+		http.write_json({ done: done, success: success, output: output });
+	},
+
+	/* ── OTA: clear downloaded packages ── */
+	act_clear_packages: function() {
+		/* remove all possible package files from /tmp, no error if absent */
+		let patterns = [
+			"/tmp/luci-app-pushbot-*.apk",
+			"/tmp/luci-i18n-pushbot-zh-cn-*.apk",
+			"/tmp/luci-app-pushbot_*_all.ipk",
+			"/tmp/luci-i18n-pushbot-zh-cn_*_all.ipk"
+		];
+		system("rm -f " + join(" ", patterns) + " 2>/dev/null");
+		http.prepare_content("application/json");
+		http.write_json({ ok: true });
+	},
+
+	/* ── 配置管理：全部重置（不保留 token） ── */
+	act_reset_config: function() {
+		let defaults = "/usr/share/pushbot/defaults";
+		system("echo `date '+%%Y-%%m-%%d %%H:%%M:%%S'` 【OTA】act_reset_config called >> /tmp/pushbot/pushbot.log");
+		if (!access(defaults)) {
+			http.prepare_content("application/json");
+			http.write_json({ ok: false, error: "defaults dir missing" });
+			return;
+		}
+		/* 重置 UCI 配置 */
+		system("/bin/cp -f " + defaults + "/pushbot /etc/config/pushbot 2>/dev/null");
+		system("/bin/cp -f " + defaults + "/ipv4.list /usr/bin/pushbot/api/ipv4.list 2>/dev/null");
+		system("/bin/cp -f " + defaults + "/ipv6.list /usr/bin/pushbot/api/ipv6.list 2>/dev/null");
+		system("/bin/cp -f " + defaults + "/diy.json /usr/bin/pushbot/api/diy.json 2>/dev/null");
+		http.prepare_content("application/json");
+		http.write_json({ ok: true });
+	},
+
+	/* ── 配置管理：重置并保留当前渠道的所有相关配置 ── */
+	act_reset_config_keep_token: function() {
+		let defaults = "/usr/share/pushbot/defaults";
+		system("echo `date '+%%Y-%%m-%%d %%H:%%M:%%S'` 【OTA】act_reset_config_keep_token called >> /tmp/pushbot/pushbot.log");
+		if (!access(defaults)) {
+			http.prepare_content("application/json");
+			http.write_json({ ok: false, error: "defaults dir missing" });
+			return;
+		}
+
+		let u = cursor();
+		let section = u.get_all("pushbot", "pushbot") ?? {};
+
+		/* 根据当前 jsonpath 确定渠道前缀 */
+		let jsonpath = section.jsonpath ?? "";
+		/* jsonpath → 前缀映射 */
+		let prefix_map = {
+			"dingding.json": "dd_",
+			"ent_wechat.json": "we_",
+			"pushplus.json": "pp_",
+			"feishu.json": "fs_",
+			"pushdeer.json": "pushdeer",
+			"bark.json": "bark",
+			"ntfy.json": "ntfy",
+			"gotify.json": "gotify",
+			"wxpusher.json": "wxpusher",
+		};
+		let prefix = "";
+		for (let fname, pfx in prefix_map) {
+			/* ucode 无 indexOf/match(对含点字符串)，用 substr 循环查找子串 */
+			let found = false;
+			for (let i = 0; i <= length(jsonpath) - length(fname); i++) {
+				if (substr(jsonpath, i, length(fname)) == fname) { found = true; break; }
+			}
+			if (found) { prefix = pfx; break; }
+		}
+		if (prefix == "") {
+			http.prepare_content("application/json");
+			http.write_json({ ok: false, error: "no current channel" });
+			return;
+		}
+
+		/* 保留当前渠道的所有参数（前缀匹配 + jsonpath 本身）。
+		   ucode 无 startsWith/endsWith，统一用 indexOf(prefix)==0 判断前缀 */
+		let keep = {};
+		for (let k in section) {
+			/* ucode 无 indexOf/startsWith，用 substr 判断前缀 */
+			if (k == prefix || substr(k, 0, length(prefix)) == prefix) {
+				keep[k] = section[k];
+			}
+		}
+		keep.jsonpath = jsonpath;
+		system("echo keep_keys=" + join(",", keys(keep)) + " >> /tmp/pushbot/pushbot.log");
+
+		/* 重置 UCI 配置为默认 */
+		system("/bin/cp -f " + defaults + "/pushbot /etc/config/pushbot 2>/dev/null");
+		system("/bin/cp -f " + defaults + "/ipv4.list /usr/bin/pushbot/api/ipv4.list 2>/dev/null");
+		system("/bin/cp -f " + defaults + "/ipv6.list /usr/bin/pushbot/api/ipv6.list 2>/dev/null");
+		system("/bin/cp -f " + defaults + "/diy.json /usr/bin/pushbot/api/diy.json 2>/dev/null");
+		system("echo after_cp_lines=$(wc -l < /etc/config/pushbot) >> /tmp/pushbot/pushbot.log");
+
+		/* 写回保留的参数 */
+		for (let k in keep) {
+			let v = "" + keep[k];
+			system("echo uci_set_" + k + " >> /tmp/pushbot/pushbot.log");
+			system("/sbin/uci -q set pushbot.pushbot." + k + "='" + v + "'");
+		}
+		system("/sbin/uci -q commit pushbot");
+		system("echo after_commit_lines=$(wc -l < /etc/config/pushbot) >> /tmp/pushbot/pushbot.log");
+		http.prepare_content("application/json");
+		http.write_json({ ok: true, prefix: prefix, restored_keys: Object.keys(keep) });
+	},
+
 	/* compatibility: index — no-op, menu registration is handled by menu.d JSON */
 	index: function() {}
 };
