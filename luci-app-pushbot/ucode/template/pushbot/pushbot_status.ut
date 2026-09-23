@@ -2,8 +2,8 @@
 {% import { readfile } from 'fs' %}
 {% let pushbot_argon_mode = cursor().get_first('argon', 'global', 'mode') ?? '' %}
 {% let pushbot_liquid_mode = cursor().get_first('liquid', 'theme', 'mode') ?? '' %}
-{% let pushbot_def_ipv4 = readfile('/usr/bin/pushbot/api/ipv4.list') ?? '' %}
-{% let pushbot_def_ipv6 = readfile('/usr/bin/pushbot/api/ipv6.list') ?? '' %}
+{% let pushbot_def_ipv4 = readfile('/usr/share/pushbot/defaults/ipv4.list') ?? readfile('/usr/bin/pushbot/api/ipv4.list') ?? '' %}
+{% let pushbot_def_ipv6 = readfile('/usr/share/pushbot/defaults/ipv6.list') ?? readfile('/usr/bin/pushbot/api/ipv6.list') ?? '' %}
 {% include('header') %}
 <script type="text/javascript">//<![CDATA[
 if (typeof XHR === 'undefined') {
@@ -79,6 +79,75 @@ pollStatus();
 //]]></script>
 
 <script type="text/javascript">//<![CDATA[
+/* ── 配置管理按钮（复用预览弹窗的 overlay + box 风格） ── */
+function pbShowConfigMgmt() {
+	var oldOv = document.querySelector('.pb-preview-overlay');
+	if (oldOv) { oldOv.remove(); return; }
+	var ov = document.createElement('div');
+	ov.className = 'pb-preview-overlay';
+	var box = document.createElement('div');
+	box.className = 'pb-preview-box';
+	var tit = document.createElement('div');
+	tit.className = 'pb-preview-title'; tit.textContent = '{{ _('Config Management') }}';
+	box.appendChild(tit);
+	/* 内容：说明 + 按钮 */
+	var body = document.createElement('div');
+	body.style.cssText = 'flex:1;overflow-y:auto;';
+	body.innerHTML = '<div style="text-align:center;color:#64748b;font-size:13px;margin-bottom:16px">{{ _('Choose a reset option. This action is irreversible.') }}</div>';
+	var btns = document.createElement('div');
+	btns.id = 'pb_cm_btns';
+	btns.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+	var btnReset = document.createElement('button');
+	btnReset.type = 'button'; btnReset.className = 'pb-preview-btn pb-preview-btn-conf';
+	btnReset.style.cssText = 'background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border-color:rgba(248,113,113,0.5);';
+	btnReset.textContent = '{{ _('Reset Config') }}';
+	btnReset.addEventListener('click', function(){ pbCmConfirm(ov, 'reset_config', '{{ _('Reset Config') }}', '{{ _('This will reset all configurations to factory defaults. This action is irreversible.') }}'); });
+	var btnKeep = document.createElement('button');
+	btnKeep.type = 'button'; btnKeep.className = 'pb-preview-btn';
+	btnKeep.style.cssText = 'background:linear-gradient(135deg,#f59e0b,#ea580c);color:#fff;border-color:rgba(251,146,60,0.5);';
+	btnKeep.textContent = '{{ _('Reset Config (Keep Token)') }}';
+	btnKeep.addEventListener('click', function(){ pbCmConfirm(ov, 'reset_config_keep_token', '{{ _('Reset Config (Keep Token)') }}', '{{ _('This will reset all configurations to factory defaults, but keep enabled channel tokens and their related settings.') }}'); });
+	btns.appendChild(btnReset); btns.appendChild(btnKeep);
+	body.appendChild(btns); box.appendChild(body);
+	var disc = document.createElement('button');
+	disc.type = 'button'; disc.className = 'pb-preview-btn pb-preview-btn-disc'; disc.textContent = '{{ _('Cancel') }}';
+	disc.addEventListener('click', function() { ov.remove(); });
+	var discWrap = document.createElement('div');
+	discWrap.style.cssText = 'margin-top:12px;display:flex;justify-content:center;';
+	discWrap.appendChild(disc);
+	box.appendChild(discWrap);
+	ov.appendChild(box);
+	document.body.appendChild(ov);
+	setTimeout(function() { ov.classList.add('show'); }, 10);
+}
+function pbCmConfirm(parentOv, apiPath, label, desc) {
+	var box = parentOv.querySelector('.pb-preview-box');
+	/* 保留 token 的按钮用橙色，全量重置用红色 */
+	var btnStyle = (apiPath === 'reset_config_keep_token')
+		? 'background:linear-gradient(135deg,#f59e0b,#ea580c);color:#fff;border-color:rgba(251,146,60,0.5);'
+		: 'background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border-color:rgba(248,113,113,0.5);';
+	box.innerHTML = '<div class="pb-preview-title">{{ _('Confirm Reset') }}</div>'
+		+ '<div style="text-align:center;color:#64748b;font-size:13px;margin:16px 0;line-height:1.6">' + desc + '</div>'
+		+ '<div style="display:flex;justify-content:center;gap:10px">'
+		+ '<button id="pb_cm_yes" class="pb-preview-btn pb-preview-btn-conf" style="' + btnStyle + '">' + label + '</button>'
+		+ '<button id="pb_cm_no" class="pb-preview-btn pb-preview-btn-disc">{{ _('Cancel') }}</button>'
+		+ '</div>';
+	box.querySelector('#pb_cm_no').addEventListener('click', function() { parentOv.remove(); });
+	box.querySelector('#pb_cm_yes').addEventListener('click', function() {
+		box.innerHTML = '<div style="text-align:center;padding:24px 0">{{ _('Resetting...') }}</div>';
+		var xhr = new XMLHttpRequest();
+		xhr.open('GET', '/cgi-bin/luci/admin/services/pushbot/' + apiPath + '?_=' + Date.now());
+		xhr.onload = function(){
+			box.innerHTML = '<div style="text-align:center;padding:24px 0"><div style="font-size:28px;margin-bottom:8px">✓</div><div style="font-size:14px;font-weight:700">{{ _('Configuration has been reset. Page will reload.') }}</div></div>';
+			setTimeout(function(){ location.reload(); }, 2000);
+		};
+		xhr.send();
+	});
+}
+window.addEventListener('DOMContentLoaded', function(){
+	var btn = document.getElementById('pushbot_config_mgmt_btn');
+	if (btn) btn.addEventListener('click', pbShowConfigMgmt);
+});
 var PB_CONFIG = null;
 var PB_READY = [];
 var PB_BLACK_BASE = null, PB_BLACK_SHOWN = null;
@@ -136,6 +205,68 @@ if (document.readyState === 'complete')
 else
 	window.addEventListener('load', PB_bootstrap);
 
+/* install countdown - toast-sized card, same as version check toast.
+   10s countdown as fallback; poll version every 2s, reload as soon as it changes. */
+function pb_ota_showCountdown(ov) {
+	var card = document.querySelector('.pushbot-header-card');
+	if (!card) return;
+	/* remember current version to detect change */
+	var badge = document.getElementById('pushbot_version_badge');
+	var curVer = badge ? (badge.textContent || '').trim() : '';
+	var cdOv = document.createElement('div');
+	cdOv.className = 'pushbot-ver-overlay';
+	cdOv.style.zIndex = '99999';
+	var cdToast = document.createElement('div');
+	cdToast.className = 'pushbot-ver-toast is-latest';
+	cdToast.style.cssText = 'min-width:150px;max-width:220px;padding:12px 16px;border-radius:10px;text-align:center;transform:scale(0.85);';
+	cdToast.innerHTML = '<div style="font-size:22px;font-weight:800;font-family:Menlo,Consolas,monospace" id="pb_ota_countdown">10</div>'
+		+ '<div style="margin-top:6px"><button onclick="location.reload()" style="padding:4px 14px;border-radius:6px;border:1px solid rgba(255,255,255,0.35);background:rgba(255,255,255,0.15);color:#fff;font-size:11px;font-weight:600;cursor:pointer">{{ _('Refresh Now') }}</button></div>';
+	cdOv.appendChild(cdToast);
+	card.appendChild(cdOv);
+	setTimeout(function() { cdOv.classList.add('show'); }, 20);
+	var cdSec = 10;
+	var cdTimer = setInterval(function() {
+		cdSec--;
+		var el = document.getElementById('pb_ota_countdown');
+		if (el) el.textContent = cdSec;
+		if (cdSec <= 0) { clearInterval(cdTimer); clearInterval(verTimer); location.reload(); }
+	}, 1000);
+	/* poll version every 2s, reload as soon as it changes */
+	var verTimer = setInterval(function() {
+		var px = new XMLHttpRequest();
+		px.open('GET', '{{ dispatcher.build_url("admin", "services", "pushbot", "version") }}?_=' + Date.now());
+		px.onload = function() {
+			try {
+				var d = JSON.parse(px.responseText);
+				if (d && d.version && curVer && ('v' + d.version) !== curVer) {
+					clearInterval(verTimer);
+					clearInterval(cdTimer);
+					location.reload();
+				}
+			} catch(e) {}
+		};
+		px.send();
+	}, 2000);
+}
+function pb_ota_showError(ov, msg) {
+	var card = document.querySelector('.pushbot-header-card');
+	if (!card) return;
+	var errOv = document.createElement('div');
+	errOv.className = 'pushbot-ver-overlay';
+	errOv.style.zIndex = '99999';
+	var errToast = document.createElement('div');
+	errToast.className = 'pushbot-ver-toast is-err';
+	errToast.style.cssText = 'min-width:180px;max-width:280px;padding:14px 20px;border-radius:12px;text-align:center;color:#fff;font-size:13px;font-weight:600;';
+	errToast.innerHTML = '⚠️ ' + msg;
+	errOv.appendChild(errToast);
+	card.appendChild(errOv);
+	setTimeout(function() { errOv.classList.add('show'); }, 20);
+	setTimeout(function() {
+		errOv.classList.remove('show');
+		setTimeout(function() { errOv.remove(); }, 550);
+	}, 4000);
+}
+
 /* click version badge → fetch upstream GitHub Makefile from browser (8s timeout), frosted toast */
 (function() {
 	function bindVersionCheck() {
@@ -158,7 +289,8 @@ else
 		return 0;
 	}
 
-	function showToast(msg, sub, cls) {
+	/* show toast with optional action buttons; returns { ov, pauseAutohide() } */
+	function showToast(msg, sub, cls, buttons) {
 		var card = document.querySelector('.pushbot-header-card') || document.body;
 		var ov = document.createElement('div');
 		ov.className = 'pushbot-ver-overlay';
@@ -170,15 +302,48 @@ else
 			var ts = document.createElement('div');
 			ts.className = 'pushbot-ver-toast-sub'; ts.textContent = sub; toast.appendChild(ts);
 		}
+		/* action buttons row */
+		if (buttons && buttons.length > 0) {
+			var btnRow = document.createElement('div');
+			btnRow.className = 'pushbot-ota-btn-row';
+			buttons.forEach(function(cfg) {
+				var b = document.createElement('button');
+				b.type = 'button';
+				b.className = 'pushbot-ota-btn';
+				b.textContent = cfg.label;
+				if (cfg.id) b.id = cfg.id;
+				b.addEventListener('click', function(e) {
+					e.preventDefault();
+					e.stopPropagation();
+					if (cfg.onClick) cfg.onClick(b, ov);
+				});
+				btnRow.appendChild(b);
+			});
+			toast.appendChild(btnRow);
+		}
 		ov.appendChild(toast);
 		card.appendChild(ov);
 		/* 0.5s frosted fade-in */
 		setTimeout(function() { ov.classList.add('show'); }, 20);
-		/* hold 4s, then fade back and remove */
-		setTimeout(function() {
-			ov.classList.remove('show');
-			setTimeout(function() { ov.remove(); }, 550);
-		}, 4000);
+		/* auto-hide timer (4s): only for toasts without buttons (e.g. "already latest") */
+		var autoHideId = null;
+		if (!buttons || buttons.length === 0) {
+			autoHideId = setTimeout(function() {
+				ov.classList.remove('show');
+				setTimeout(function() { ov.remove(); }, 550);
+			}, 4000);
+		}
+		return {
+			ov: ov,
+			pauseAutohide: function() {
+				if (autoHideId) { clearTimeout(autoHideId); autoHideId = null; }
+			},
+			dismiss: function() {
+				if (autoHideId) { clearTimeout(autoHideId); autoHideId = null; }
+				ov.classList.remove('show');
+				setTimeout(function() { ov.remove(); }, 550);
+			}
+		};
 	}
 
 	badge.addEventListener('click', function() {
@@ -209,7 +374,164 @@ else
 					msg = '{{ _('You are on the latest version!') }}';
 					cls = 'is-latest';
 				}
-				showToast(msg, '📦 v' + local + '　☁️ v' + remote, cls);
+				/* parse remote version for download URLs */
+				var remoteVer = '', remoteRel = '';
+				if (mv && mr) { remoteVer = mv[1]; remoteRel = mr[1]; }
+
+				/* when update available, show 3 action buttons */
+				var btns = [];
+				if (c < 0) {
+					btns = [
+						{
+							label: '{{ _('One-Click Update') }}',
+							id: 'pb_ota_oneclick_btn',
+							onClick: function(btn, ov) {
+								btn.disabled = true;
+								/* show 0% ring immediately, same as Pull NewPkg */
+								btn.innerHTML = '<span class="pb-ota-progress-ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" class="pb-ota-ring-bg"/><circle cx="18" cy="18" r="15.9" class="pb-ota-ring-fg" style="stroke-dasharray:0, 100"/></svg></span>0%';
+								var xhr = new XMLHttpRequest();
+								xhr.open('GET', '{{ dispatcher.build_url("admin", "services", "pushbot", "download") }}?ver=' + encodeURIComponent(remoteVer) + '&rel=' + encodeURIComponent(remoteRel) + '&_=' + Date.now());
+								xhr.onload = function() {
+									var pollId = setInterval(function() {
+										var px = new XMLHttpRequest();
+										px.open('GET', '{{ dispatcher.build_url("admin", "services", "pushbot", "download_progress") }}?_=' + Date.now());
+										px.onload = function() {
+											try {
+												var pd = JSON.parse(px.responseText);
+												var pct = pd.progress || '0';
+												if (pct === 'done') {
+													clearInterval(pollId);
+													btn.textContent = '{{ _('Installing...') }}';
+													var ix = new XMLHttpRequest();
+													ix.open('GET', '{{ dispatcher.build_url("admin", "services", "pushbot", "install") }}?_=' + Date.now());
+													ix.send();
+													/* install kills self-process, can't wait for response — start countdown immediately */
+pb_ota_showCountdown(ov);
+												} else if (pct === 'fail') {
+													clearInterval(pollId);
+													btn.disabled = false;
+													btn.textContent = '{{ _('One-Click Update') }}';
+													pb_ota_showError(ov, '{{ _('Download Failed') }}');
+												} else {
+													var num = parseInt(pct, 10) || 0;
+													btn.innerHTML = '<span class="pb-ota-progress-ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" class="pb-ota-ring-bg"/><circle cx="18" cy="18" r="15.9" class="pb-ota-ring-fg" style="stroke-dasharray:' + num + ', 100"/></svg></span>' + num + '%';
+												}
+											} catch(e) {}
+										};
+										px.send();
+									}, 1000);
+								};
+								xhr.send();
+							}
+						},
+						{
+							label: '{{ _('Pull NewPkg') }}',
+							id: 'pb_ota_dl_btn',
+							onClick: function(btn, ov) {
+								/* if already downloaded, trigger install + countdown */
+								if (btn.getAttribute('data-ready') === '1') {
+									btn.disabled = true;
+									btn.textContent = '{{ _('Installing...') }}';
+									var ix = new XMLHttpRequest();
+									ix.open('GET', '{{ dispatcher.build_url("admin", "services", "pushbot", "install") }}?_=' + Date.now());
+									ix.onload = function() {};
+									ix.send();
+									/* install kills self-process, start countdown immediately */
+									pb_ota_showCountdown(ov);
+									return;
+								}
+								/* show 0% ring + start polling immediately (don't wait for xhr.onload) */
+								btn.disabled = true;
+								btn.innerHTML = '<span class="pb-ota-progress-ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" class="pb-ota-ring-bg"/><circle cx="18" cy="18" r="15.9" class="pb-ota-ring-fg" style="stroke-dasharray:0, 100"/></svg></span>0%';
+								var zeroCount = 0;
+								var pollId = setInterval(function() {
+									var px = new XMLHttpRequest();
+									px.open('GET', '{{ dispatcher.build_url("admin", "services", "pushbot", "download_progress") }}?_=' + Date.now());
+									px.onload = function() {
+										try {
+											var pd = JSON.parse(px.responseText);
+											var pct = pd.progress || '0';
+											if (pct === 'done') {
+												clearInterval(pollId);
+												btn.disabled = false;
+												btn.textContent = '{{ _('Install Update') }}';
+												btn.classList.add('pb-ota-ready');
+												btn.setAttribute('data-ready', '1');
+											} else if (pct === 'fail') {
+												clearInterval(pollId);
+												btn.disabled = false;
+												btn.textContent = '{{ _('Pull NewPkg') }}';
+												pb_ota_showError(ov, '{{ _('Download Failed') }}');
+											} else {
+												var num = parseInt(pct, 10) || 0;
+												if (num === 0) { zeroCount++; } else { zeroCount = 0; }
+												if (zeroCount >= 20) {
+													clearInterval(pollId);
+													btn.disabled = false;
+													btn.textContent = '{{ _('Pull NewPkg') }}';
+													pb_ota_showError(ov, '{{ _('GitHub Release Unreachable') }}');
+													return;
+												}
+												btn.innerHTML = '<span class="pb-ota-progress-ring"><svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" class="pb-ota-ring-bg"/><circle cx="18" cy="18" r="15.9" class="pb-ota-ring-fg" style="stroke-dasharray:' + num + ', 100"/></svg></span>' + num + '%';
+											}
+										} catch(e) {}
+									};
+									px.send();
+								}, 1000);
+								/* trigger download (fire and forget) */
+								var xhr = new XMLHttpRequest();
+								xhr.open('GET', '{{ dispatcher.build_url("admin", "services", "pushbot", "download") }}?ver=' + encodeURIComponent(remoteVer) + '&rel=' + encodeURIComponent(remoteRel) + '&_=' + Date.now());
+								xhr.send();
+							}
+						},
+						{
+							label: '{{ _('Download Link') }}',
+							onClick: function(btn, ov) {
+								var baseUrl = 'https://github.com/zzsj0928/luci-app-pushbot/releases/download/luci-app-pushbot-v' + remoteVer + '-r' + remoteRel + '/';
+								var isApk = false;
+								var xh = new XMLHttpRequest();
+								xh.open('GET', '{{ dispatcher.build_url("admin", "services", "pushbot", "detect_pkgmgr") }}?_=' + Date.now(), false);
+								xh.send();
+								if (xh.status === 200) {
+									try { var d = JSON.parse(xh.responseText); isApk = (d.pkgmgr === 'apk'); } catch(e) {}
+								}
+								var ext = isApk ? 'apk' : 'ipk';
+								var appFile, i18nFile;
+								if (isApk) {
+									appFile = 'luci-app-pushbot-' + remoteVer + '-r' + remoteRel + '.apk';
+									i18nFile = 'luci-i18n-pushbot-zh-cn-' + remoteVer + '-r' + remoteRel + '.apk';
+								} else {
+									appFile = 'luci-app-pushbot_' + remoteVer + '-r' + remoteRel + '_all.ipk';
+									i18nFile = 'luci-i18n-pushbot-zh-cn_' + remoteVer + '-r' + remoteRel + '_all.ipk';
+								}
+								window.open(baseUrl + appFile, '_blank');
+								setTimeout(function() { window.open(baseUrl + i18nFile, '_blank'); }, 500);
+								result.dismiss();
+							}
+						},
+						{
+							label: '{{ _('Clear Packages') }}',
+							onClick: function(btn, ov) {
+								var xhr = new XMLHttpRequest();
+								xhr.open('GET', '{{ dispatcher.build_url("admin", "services", "pushbot", "clear_packages") }}?_=' + Date.now());
+								xhr.onload = function() {
+									btn.textContent = '{{ _('Cleared') }}';
+									btn.disabled = true;
+									setTimeout(function() { result.dismiss(); }, 1500);
+								};
+								xhr.send();
+							}
+						},
+						{
+							label: '{{ _('Ignore') }}',
+							onClick: function(btn, ov) {
+								result.dismiss();
+							}
+						}
+					];
+				}
+
+				var result = showToast(msg, '📦 v' + local + '　☁️ v' + remote, cls, btns);
 			})
 			.catch(function(e) {
 				clearTimeout(timer);
@@ -3968,6 +4290,9 @@ window.addEventListener('DOMContentLoaded', function() {
 	transform: scale(0.92) translateY(6px);
 	transition: transform 0.5s ease;
 }
+@media (min-width: 481px) {
+	.pushbot-ver-toast { max-width: 460px; }
+}
 .pushbot-ver-overlay.show .pushbot-ver-toast { transform: scale(1) translateY(0); }
 /* status colors: beta=violet, latest=green, update=orange, error=red */
 .pushbot-ver-toast.is-ahead {
@@ -4011,6 +4336,45 @@ window.addEventListener('DOMContentLoaded', function() {
 	opacity: 0.9;
 	font-family: Menlo, Consolas, monospace;
 }
+
+/* ── OTA action buttons ── */
+.pushbot-ota-btn-row {
+	display: flex;
+	flex-wrap: nowrap;
+	gap: 4px;
+	justify-content: center;
+	margin-top: 12px;
+}
+.pushbot-ota-btn {
+	padding: 5px 10px;
+	border-radius: 8px;
+	border: 1px solid rgba(255,255,255,0.35);
+	background: rgba(255,255,255,0.18);
+	color: #fff;
+	font-size: 11px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background 0.2s, transform 0.15s;
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	line-height: 1.2;
+	white-space: nowrap;
+	flex-shrink: 1;
+	min-width: 0;
+}
+.pushbot-ota-btn:hover { background: rgba(255,255,255,0.3); transform: translateY(-1px); }
+.pushbot-ota-btn:active { transform: scale(0.96); }
+.pushbot-ota-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+.pushbot-ota-btn.pb-ota-ready { background: rgba(16,185,129,0.45); border-color: rgba(52,211,153,0.6); }
+.pushbot-ota-btn.pb-ota-success { background: rgba(16,185,129,0.6); border-color: rgba(52,211,153,0.8); }
+
+/* circular progress ring */
+.pb-ota-progress-ring { display: inline-block; width: 18px; height: 18px; vertical-align: middle; }
+.pb-ota-progress-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.pb-ota-ring-bg { fill: none; stroke: rgba(255,255,255,0.2); stroke-width: 2.8; }
+.pb-ota-ring-fg { fill: none; stroke: #fff; stroke-width: 2.8; stroke-linecap: round;
+	transition: stroke-dasharray 0.35s ease; }
 
 .pushbot-status-dot {
 	width: 8px;
@@ -4727,10 +5091,15 @@ window.addEventListener('DOMContentLoaded', function() {
 .pushbot-save-row {
 	margin-top: 28px;
 	display: flex;
+	flex-wrap: wrap;
 	justify-content: flex-end;
 	align-items: center;
-	gap: 12px;
+	gap: 10px;
 	padding: 0 4px;
+}
+.pushbot-save-row .pushbot-preview-btn,
+.pushbot-save-row .pushbot-save-btn {
+	white-space: nowrap;
 }
 .pushbot-save-btn {
 	display: inline-flex;
@@ -4991,13 +5360,14 @@ window.addEventListener('load',function(){apply(compute());});
 				</div>
 			</div>
 		</div>
-		<span class="pushbot-version-badge" id="pushbot_version_badge">v5.13-r4</span>
+		<span class="pushbot-version-badge" id="pushbot_version_badge">6.00-r1</span>
 		<div id="pushbot_status_badge" class="pushbot-status-badge is-stopped" role="status" aria-live="polite">
 			<span class="pushbot-status-dot"></span>
 			<span id="pushbot_status_text">{{ _('NOT RUNNING') }}</span>
 		</div>
 	</div>
 	<div class="pushbot-save-row">
+		<button type="button" class="pushbot-preview-btn" id="pushbot_config_mgmt_btn">{{ _('Config Management') }}</button>
 		<button type="button" class="pushbot-preview-btn" id="pushbot_preview_btn">{{ _('Preview changes') }}</button>
 		<button type="button" class="pushbot-save-btn" id="pushbot_save_btn">{{ _('Save & Apply') }}</button>
 	</div>
