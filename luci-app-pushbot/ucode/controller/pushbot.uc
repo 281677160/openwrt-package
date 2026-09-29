@@ -174,6 +174,7 @@ return {
 		}
 
 		let ip = "";
+		let api_note = "";
 		if (mode == "iface" && iface != "") {
 			if (ip_type == "4") {
 				ip = run("/sbin/ifconfig " + sq(iface) +
@@ -206,14 +207,17 @@ return {
 					if (iswan == "1") bind = " --interface " + sq(iface);
 				}
 				let start = time() % length(lines);
+				let used_api = "";
 				for (let i = 0; i < 3 && i < length(lines); i++) {
 					let pick = lines[(start + i) % length(lines)];
 					let out = run("curl -k -s -" + (ip_type == "4" ? "4" : "6") + bind + " -m 8 " + sq(pick) +
 						(ip_type == "4"
 							? " | grep -oE '[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}' | head -n1"
 							: " | grep -oE '([\\da-fA-F0-9]{1,4}(:{1,2})){1,15}[\\da-fA-F0-9]{1,4}' | head -n1"));
-					if (out != "") { ip = out; break; }
+					if (out != "") { ip = out; used_api = pick; break; }
 				}
+				/* 记录探测来源，成功结果后追加显示（全角括号，避免破坏前端半角 ( 的非公网判定） */
+				if (used_api != "") api_note = "（来自API：" + used_api + "）";
 			}
 		}
 
@@ -223,10 +227,10 @@ return {
 		}
 		if (is_private(ip)) {
 			let note = translate('Not a public IP') ?? 'Not a public IP';
-			http.write(ip + " (" + note + ")");
+			http.write(ip + " (" + note + ")" + api_note);
 			return;
 		}
-		http.write(ip);
+		http.write(ip + api_note);
 	},
 
 	get_log: function() {
@@ -755,7 +759,11 @@ return {
 		let f0 = popen("command -v apk 2>/dev/null", "r");
 		if (f0) { let o = f0.read("all"); f0.close(); if (o && length(replace(o, /\s+/, "")) > 0) mgr = "apk"; }
 
-		/* build download URLs */
+		/* OTA 日志：开始下载 + 版本 marker（供 install 日志读取） */
+		system("echo \"$(date '+%Y-%m-%d %H:%M:%S')\" 【OTA】开始下载 v" + ver + "-r" + rel + "（2 个包） >> /tmp/pushbot/pushbot.log");
+		system("echo \"v" + ver + "-r" + rel + "\" > /tmp/pushbot/ota_ver");
+
+
 		let base = "https://github.com/zzsj0928/luci-app-pushbot/releases/download/luci-app-pushbot-v" + ver + "-r" + rel + "/";
 		let files;
 		if (mgr == "apk") {
@@ -803,8 +811,12 @@ return {
 			+ "if [ $OK -eq $TOTAL ]; then\n"
 			+ "  sleep 1\n"
 			+ "  echo 'done' > \"${PFILE}\"\n"
+			+ "  V=$(cat /tmp/pushbot/ota_ver 2>/dev/null)\n"
+			+ "  echo \"$(date '+%Y-%m-%d %H:%M:%S') 【OTA】下载完成 ${V}\" >> /tmp/pushbot/pushbot.log\n"
 			+ "else\n"
 			+ "  echo 'fail' > \"${PFILE}\"\n"
+			+ "  V=$(cat /tmp/pushbot/ota_ver 2>/dev/null)\n"
+			+ "  echo \"$(date '+%Y-%m-%d %H:%M:%S') 【OTA】下载失败 ${V}（请检查网络或 Release 是否存在）\" >> /tmp/pushbot/pushbot.log\n"
 			+ "fi\n";
 
 		/* write and execute background script */
@@ -884,7 +896,10 @@ return {
 			+ "if [ $RC1 -eq 0 ] && [ $RC2 -eq 0 ]; then "
 			+ "rm -f /tmp/pushbot/pkgs/* /tmp/luci-app-pushbot* /tmp/luci-i18n-pushbot* 2>/dev/null; "
 			+ "echo 'ok' >> " + ifile + "; "
-			+ "else echo 'fail' >> " + ifile + "; fi ) &";
+			+ "V=$(cat /tmp/pushbot/ota_ver 2>/dev/null); "
+			+ "echo \"$(date '+%Y-%m-%d %H:%M:%S') 【OTA】安装完成 ${V}\" >> /tmp/pushbot/pushbot.log; "
+			+ "else echo 'fail' >> " + ifile + "; "
+			+ "echo \"$(date '+%Y-%m-%d %H:%M:%S') 【OTA】安装失败（详见 " + ifile + "）\" >> /tmp/pushbot/pushbot.log; fi ) &";
 		system("mkdir -p /tmp/pushbot/pkgs && " + install_cmd);
 
 		http.prepare_content("application/json");
@@ -915,6 +930,7 @@ return {
 			"/tmp/pushbot/pkgs/*"
 		];
 		system("rm -f " + join(" ", patterns) + " 2>/dev/null");
+		system("echo \"$(date '+%Y-%m-%d %H:%M:%S') 【OTA】已清除下载包\" >> /tmp/pushbot/pushbot.log");
 		http.prepare_content("application/json");
 		http.write_json({ ok: true });
 	},
@@ -922,7 +938,7 @@ return {
 	/* ── 配置管理：全部重置（不保留 token） ── */
 	act_reset_config: function() {
 		let defaults = "/usr/share/pushbot/defaults";
-		system("echo `date '+%%Y-%%m-%%d %%H:%%M:%%S'` 【OTA】act_reset_config called >> /tmp/pushbot/pushbot.log");
+		system("echo `date '+%Y-%m-%d %H:%M:%S'` 【OTA】act_reset_config called >> /tmp/pushbot/pushbot.log");
 		if (!access(defaults)) {
 			http.prepare_content("application/json");
 			http.write_json({ ok: false, error: "defaults dir missing" });
@@ -940,7 +956,7 @@ return {
 	/* ── 配置管理：重置并保留当前渠道的所有相关配置 ── */
 	act_reset_config_keep_token: function() {
 		let defaults = "/usr/share/pushbot/defaults";
-		system("echo `date '+%%Y-%%m-%%d %%H:%%M:%%S'` 【OTA】act_reset_config_keep_token called >> /tmp/pushbot/pushbot.log");
+		system("echo `date '+%Y-%m-%d %H:%M:%S'` 【OTA】act_reset_config_keep_token called >> /tmp/pushbot/pushbot.log");
 		if (!access(defaults)) {
 			http.prepare_content("application/json");
 			http.write_json({ ok: false, error: "defaults dir missing" });
