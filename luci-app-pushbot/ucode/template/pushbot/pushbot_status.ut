@@ -206,7 +206,8 @@ else
 	window.addEventListener('load', PB_bootstrap);
 
 /* install countdown - toast-sized card, same as version check toast.
-   10s countdown as fallback; poll version every 2s, reload as soon as it changes. */
+   30s countdown as fallback (slow installs need the room); poll version every 2s,
+   reload as soon as the new version is detected (do not wait for the countdown). */
 function pb_ota_showCountdown(ov) {
 	var card = document.querySelector('.pushbot-header-card');
 	if (!card) return;
@@ -219,12 +220,12 @@ function pb_ota_showCountdown(ov) {
 	var cdToast = document.createElement('div');
 	cdToast.className = 'pushbot-ver-toast is-latest';
 	cdToast.style.cssText = 'min-width:150px;max-width:220px;padding:12px 16px;border-radius:10px;text-align:center;transform:scale(0.85);';
-	cdToast.innerHTML = '<div style="font-size:22px;font-weight:800;font-family:Menlo,Consolas,monospace" id="pb_ota_countdown">10</div>'
+	cdToast.innerHTML = '<div style="font-size:22px;font-weight:800;font-family:Menlo,Consolas,monospace" id="pb_ota_countdown">30</div>'
 		+ '<div style="margin-top:6px"><button onclick="location.reload()" style="padding:4px 14px;border-radius:6px;border:1px solid rgba(255,255,255,0.35);background:rgba(255,255,255,0.15);color:#fff;font-size:11px;font-weight:600;cursor:pointer">{{ _('Refresh Now') }}</button></div>';
 	cdOv.appendChild(cdToast);
 	card.appendChild(cdOv);
 	setTimeout(function() { cdOv.classList.add('show'); }, 20);
-	var cdSec = 10;
+	var cdSec = 30;
 	var cdTimer = setInterval(function() {
 		cdSec--;
 		var el = document.getElementById('pb_ota_countdown');
@@ -762,8 +763,11 @@ pb_ota_showCountdown(ov);
 			'</div>'
 		].join('');
 
-		var hc = document.querySelector('.pushbot-header-card');
-		if (hc && hc.parentNode) hc.parentNode.insertBefore(card, hc.nextSibling);
+		var bp = document.getElementById('pushbot_pane_basic');
+		if (bp) bp.appendChild(card); else {
+			var hc = document.querySelector('.pushbot-header-card');
+			if (hc && hc.parentNode) hc.parentNode.insertBefore(card, hc.nextSibling);
+		}
 
 		var enEl = hiddenBox.querySelector('[name="cbid.pushbot.pushbot.pushbot_enable"]');
 		var flagEls = extraFlags.map(function(n) { return hiddenBox.querySelector('[name="cbid.pushbot.pushbot.' + n + '"]'); });
@@ -795,8 +799,62 @@ pb_ota_showCountdown(ov);
 
 		toggleButton.addEventListener('click', function(e) {
 			e.preventDefault();
-			enEl.value = enEl.value === '1' ? '0' : '1';
-			syncState();
+			if (toggleButton.disabled) return;
+			/* 点击意图：目标态（启用=应运行 / 禁用=应停止） */
+			var targetRun = enEl.value !== '1';
+			var newVal = targetRun ? '1' : '0';
+			/* UI 保持原样不做乐观翻转：提交配置（后端 uci commit +
+			   en=1 启动 / en=0 停止）后紧凑轮询真实运行状态，
+			   检测到目标态才翻转显示 —— 与页面状态驱动设计一致。 */
+			toggleButton.disabled = true;
+			var settled = false;
+			var watch = null;
+			var limit = null;
+			function finish() {
+				if (watch) clearInterval(watch);
+				if (limit) clearTimeout(limit);
+				toggleButton.disabled = false;
+			}
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', '{{ dispatcher.build_url('admin', 'services', 'pushbot', 'save_config') }}', true);
+			xhr.setRequestHeader('Content-Type', 'application/json');
+			xhr.onload = function() {
+				var r = null;
+				try { r = JSON.parse(xhr.responseText); } catch (err) {}
+				if (!(r && r.ok === true)) { finish(); pbShowToast(false); return; }
+				/* 提交成功：轮询 act_status，真实状态匹配目标态才翻转 */
+				var check = function() {
+					if (settled) return;
+					var s = new XMLHttpRequest();
+					s.open('GET', '{{ dispatcher.build_url('admin', 'services', 'pushbot', 'status') }}?_=' + Date.now(), true);
+					s.onload = function() {
+						if (settled) return;
+						var d = null;
+						try { d = JSON.parse(s.responseText); } catch (err) {}
+						if (!d) return;
+						if (!!d.running === targetRun) {
+							settled = true;
+							enEl.value = newVal;
+							syncState();
+							if (PB_CONFIG && PB_CONFIG.config) PB_CONFIG.config.pushbot_enable = newVal;
+							finish();
+							pollStatus();
+						}
+					};
+					s.send();
+				};
+				watch = setInterval(check, 1500);
+				check();
+				/* 超时未达目标态 → 视为未生效：恢复按钮 + 提示 */
+				limit = setTimeout(function() {
+					if (settled) return;
+					settled = true;
+					finish();
+					pbShowToast(false);
+				}, 15000);
+			};
+			xhr.onerror = function() { finish(); pbShowToast(false); };
+			xhr.send(JSON.stringify({ pushbot_enable: newVal }));
 		});
 
 		liteChoiceBtns.forEach(function(b) {
@@ -860,10 +918,9 @@ pb_ota_showCountdown(ov);
 			'</div>'
 		].join('');
 
-		var runCard = document.getElementById('pushbot_mode_card');
-		if (runCard && runCard.parentNode) {
-			runCard.parentNode.insertBefore(card, runCard.nextSibling);
-		} else {
+		var bp = document.getElementById('pushbot_pane_basic');
+		if (bp) bp.appendChild(card);
+		else {
 			var hc = document.querySelector('.pushbot-header-card');
 			if (hc && hc.parentNode) { hc.parentNode.insertBefore(card, hc.nextSibling); }
 			else { document.querySelector('.pushbot-body').appendChild(card); }
@@ -1280,10 +1337,9 @@ pb_ota_showCountdown(ov);
 		desc.textContent = '{{ _('Enter MAC-alias, e.g. XX:XX:XX:XX:XX:XX-MyPhone. Multiple aliases supported, separated by comma or space') }}';
 		card.appendChild(desc);
 
-		var pushCard = document.getElementById('pushbot_pushmode_card');
-		if (pushCard && pushCard.parentNode) {
-			pushCard.parentNode.insertBefore(card, pushCard.nextSibling);
-		} else {
+		var bp = document.getElementById('pushbot_pane_basic');
+		if (bp) bp.appendChild(card);
+		else {
 			document.querySelector('.pushbot-mode-card') && document.querySelector('.pushbot-mode-card').parentNode.appendChild(card);
 		}
 	}
@@ -1786,9 +1842,10 @@ pb_ota_showCountdown(ov);
 		})();
 
 		/* insert after terminal card */
-		var termCard = document.getElementById('pushbot_terminal_card');
-		if (termCard && termCard.parentNode) {
-			termCard.parentNode.insertBefore(card, termCard.nextSibling);
+		var bp = document.getElementById('pushbot_pane_basic');
+		if (bp) bp.appendChild(card); else {
+			var hc = document.querySelector('.pushbot-header-card');
+			if (hc && hc.parentNode) hc.parentNode.insertBefore(card, hc.nextSibling);
 		}
 	}
 
@@ -2766,18 +2823,21 @@ cuSub.appendChild(mkBtn('{{ _('Traffic DND') }}',cdOn,function(on){updateFlagInp
 		try{initScheduledPushCard();}catch(e){console.error('scheduled card:',e);}
 	});
 
+	/* 架构：先建 tab+panes（initModernTabs），卡片创建时直接进入所属 pane，
+	   append 调用序 = tab 内从上到下视觉顺序（不再两阶段搬家） */
+	window.addEventListener('load', initModernTabs);
 	window.addEventListener('load', initCard);
 	window.addEventListener('load', initPushModeCard);
 	window.addEventListener('load', initTerminalCard);
 	window.addEventListener('load', initDisturbCard);
-	window.addEventListener('load', initModernTabs);
+	setTimeout(function(){try{initModernTabs();}catch(e){console.error('initModernTabs:',e);}}, 200);
 	setTimeout(function(){try{initCard();}catch(e){console.error('initCard:',e);}}, 200);
-	setTimeout(function(){try{initPushModeCard();}catch(e){console.error('initPushModeCard:',e);}}, 200);
-	setTimeout(function(){try{initTerminalCard();}catch(e){console.error('initTerminalCard:',e);}}, 250);
-	setTimeout(function(){try{initDisturbCard();}catch(e){console.error('initDisturbCard:',e);}}, 300);
-	setTimeout(function(){try{initModernTabs();}catch(e){console.error('initModernTabs:',e);}}, 350);
+	setTimeout(function(){try{initPushModeCard();}catch(e){console.error('initPushModeCard:',e);}}, 250);
+	setTimeout(function(){try{initTerminalCard();}catch(e){console.error('initTerminalCard:',e);}}, 300);
+	setTimeout(function(){try{initDisturbCard();}catch(e){console.error('initDisturbCard:',e);}}, 350);
 	/* also try direct call if DOM ready, but guard against errors */
 	if (document.readyState !== 'loading') {
+		try { initModernTabs(); } catch(e) {}
 		try { initCard(); } catch(e) {}
 	}
 	/* expose for initModernTabs (outside IIFE) */
@@ -3309,11 +3369,9 @@ function initModernTabs() {
 	var headerCard = document.querySelector('.pushbot-header-card');
 	if (!headerCard || !headerCard.parentNode) return;
 
-	/* wait for cards to exist before building tabs */
-	if (!document.getElementById('pushbot_mode_card') || !document.getElementById('pushbot_pushmode_card')) {
-		setTimeout(initModernTabs, 100);
-		return;
-	}
+	/* 注：此处原有"等卡片出现再建 tabs"的 guard —— 它是"先建卡再搬家"时代的遗物，
+	   与"建卡即入 pane"的新架构构成双向等待（pane等卡、卡等pane），靠定时器
+	   随机顺序碰运气，导致卡片偶发落回页面流。建 pane 不依赖卡片，直接建。 */
 
 	/* build tab bar */
 	var tabBar = document.createElement('div');
@@ -3381,16 +3439,6 @@ function initModernTabs() {
 	tabBar.parentNode.insertBefore(monitorPane, scheduledPane.nextSibling);
 	tabBar.parentNode.insertBefore(clientPane, monitorPane.nextSibling);
 	tabBar.parentNode.insertBefore(logPane, clientPane.nextSibling);
-
-	/* move cards (Run Control + Push Mode + Terminal Info) into basic pane */
-	var runCard = document.getElementById('pushbot_mode_card');
-	var pushCard = document.getElementById('pushbot_pushmode_card');
-	var termCard = document.getElementById('pushbot_terminal_card');
-	var distCard = document.getElementById('pushbot_disturb_card');
-	if (runCard) basicPane.appendChild(runCard);
-	if (pushCard) basicPane.appendChild(pushCard);
-	if (termCard) basicPane.appendChild(termCard);
-	if (distCard) basicPane.appendChild(distCard);
 
 	/* hide old LuCI tabs, switch to the custom tab bar */
 	var oldTabMenu = document.querySelector('.cbi-tabmenu');
@@ -4136,6 +4184,7 @@ window.addEventListener('DOMContentLoaded', function() {
 //]]&gt;
 </script>
 <style>
+
 /* CBI elements — hidden: pushbot uses custom JS UI, not CBI forms */
 .cbi-tabmenu { display: none !important; }
 .mar-10 {margin-left: 50px; margin-right: 10px;}
@@ -4150,12 +4199,26 @@ window.addEventListener('DOMContentLoaded', function() {
 	border: 1px solid rgba(148, 163, 184, 0.22);
 	border-radius: 16px;
 	background: #ffffff;
-	box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+	box-shadow:
+			/* 底部主投影（最重） */
+			0 10px 28px rgba(15, 23, 42, 0.14),
+			/* 上 / 右 / 左：三向完全同参（3px 偏移、8px 模糊、0.05） */
+			0 -3px 8px rgba(15, 23, 42, 0.05),
+			3px 0 8px rgba(15, 23, 42, 0.05),
+			-3px 0 8px rgba(15, 23, 42, 0.05);
 }
 
 .pushbot-header-card {
-	margin: 0 0 16px 0;
+	/* 标题卡片及其下所有插件模块整体下移 16px */
+	margin: 16px 0 16px 0;
 	padding: 18px 20px;
+	box-shadow:
+			/* 底部主投影（最重） */
+			0 10px 28px rgba(15, 23, 42, 0.14),
+			/* 上 / 右 / 左：三向完全同参（3px 偏移、8px 模糊、0.05） */
+			0 -3px 8px rgba(15, 23, 42, 0.05),
+			3px 0 8px rgba(15, 23, 42, 0.05),
+			-3px 0 8px rgba(15, 23, 42, 0.05);
 }
 
 .pushbot-pushmode-card {
@@ -4494,7 +4557,19 @@ window.addEventListener('DOMContentLoaded', function() {
 .pushbot-dk .pushbot-mode-card {
 			background: rgba(10, 10, 18, 0.75) !important;
 			border-color: rgba(255, 255, 255, 0.08) !important;
-			box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+			box-shadow:
+				0 8px 20px rgba(46, 62, 96, 0.38),
+				0 -1px 4px rgba(58, 76, 112, 0.12),
+				1px 0 4px rgba(58, 76, 112, 0.12),
+				-1px 0 4px rgba(58, 76, 112, 0.12);
+		}
+
+		.pushbot-dk .pushbot-header-card {
+			box-shadow:
+				0 8px 20px rgba(46, 62, 96, 0.38),
+				0 -1px 4px rgba(58, 76, 112, 0.12),
+				1px 0 4px rgba(58, 76, 112, 0.12),
+				-1px 0 4px rgba(58, 76, 112, 0.12);
 		}
 
 		.pushbot-dk .pushbot-card-title {
