@@ -153,7 +153,7 @@ function copy_instance(var)
 
 	tinsert(conf_lines, "port=" .. LISTEN_PORT)
 	if TMP_DNSMASQ_PATH then
-		sys.call("rm -rf " .. TMP_DNSMASQ_PATH .. "/*passwall*")
+		api.remove(TMP_DNSMASQ_PATH .. "/*passwall*")
 	end
 	if var["-return"] == "1" then
 		return conf_lines
@@ -193,7 +193,7 @@ function add_rule(var)
 	local CACHE_TEXT_FILE = CACHE_DNS_PATH .. ".txt"
 	local USE_CHINADNS_NG = "0"
 	local IS_SHUNT_NODE = api.uci_get_c(NODE, "protocol") == "_shunt"
-	local USE_GEOVIEW = api.uci_get_c("@global_rules[0]", "enable_geoview")
+	local USE_GEOVIEW = api.uci_get_c("@global_rules[0]", "enable_geoview") or "0"
 
 	local list1 = {}
 	local excluded_domain = {}
@@ -333,19 +333,31 @@ function add_rule(var)
 		pipe:close()
 	end
 
-	local cache_text = ""
-	local nodes_address_md5 = sys.exec("echo -n $(uci show passwall | grep '\\.address') | md5sum")
-	local new_rules = sys.exec("echo -n $(find /usr/share/passwall/rules -type f | xargs md5sum)")
-	new_rules = new_rules .. sys.exec("echo -n $(find /etc/passwall/rules -type f | xargs md5sum)")
-	local new_text = TMP_DNSMASQ_PATH .. DNSMASQ_CONF_FILE .. DEFAULT_DNS .. LOCAL_DNS .. TUN_DNS .. USE_DEFAULT_DNS .. CHINADNS_DNS .. USE_DIRECT_LIST .. USE_PROXY_LIST .. USE_BLOCK_LIST .. USE_GFW_LIST .. CHN_LIST .. DEFAULT_PROXY_MODE .. NO_PROXY_IPV6 .. nodes_address_md5 .. new_rules .. NFTFLAG
-	if fs.access(CACHE_TEXT_FILE) then
-		for line in io.lines(CACHE_TEXT_FILE) do
-			cache_text = line
+	local function get_dns_config_key()
+		local address_md5 = api.md5_string(sys.exec([[uci show passwall | grep -E '\.(address|download_address|domain_resolver_dns|domain_resolver_dns_https)=|^passwall\.sub_[^.]+\.url=' | cut -d "'" -f 2 | sort -u]]))
+		local new_rules = sys.exec([[
+		for f in \
+			/usr/share/passwall/rules/chnlist \
+			/usr/share/passwall/rules/gfwlist \
+			/etc/passwall/rules/direct_host \
+			/etc/passwall/rules/proxy_host \
+			/etc/passwall/rules/block_host
+		do
+			[ -f "$f" ] && md5sum "$f" | awk '{printf "%s", $1}'
+		done
+		]])
+		local SHUNT_LIST = ""
+		if IS_SHUNT_NODE then
+			local t = api.uci_get_c(NODE)
+			api.uci_foreach_c("shunt_rules", function(s)
+				local _node_id = t[s[".name"]]
+				if _node_id and _node_id ~= "_blackhole" and t["shunt_group"] == s.group then
+					SHUNT_LIST = SHUNT_LIST .. (s.domain_list or "") .. _node_id
+				end
+			end)
 		end
-	end
-
-	if cache_text ~= new_text then
-		api.remove(CACHE_DNS_PATH .. "*")
+		new_rules = new_rules .. api.md5_string(SHUNT_LIST)
+		return TMP_DNSMASQ_PATH .. DNSMASQ_CONF_FILE .. DEFAULT_DNS .. LOCAL_DNS .. TUN_DNS .. USE_DEFAULT_DNS .. CHINADNS_DNS .. USE_DIRECT_LIST .. USE_PROXY_LIST .. USE_BLOCK_LIST .. USE_GFW_LIST .. CHN_LIST .. DEFAULT_PROXY_MODE .. NO_PROXY_IPV6 .. address_md5 .. new_rules .. NFTFLAG .. USE_GEOVIEW
 	end
 
 	local dnsmasq_default_dns
@@ -374,6 +386,22 @@ function add_rule(var)
 
 	local setflag_4= (NFTFLAG == "1") and "4#inet#passwall#" or ""
 	local setflag_6= (NFTFLAG == "1") and "6#inet#passwall#" or ""
+
+	local new_text = ""
+	if USE_CHINADNS_NG == "0" then
+		local cache_text = ""
+		if fs.access(CACHE_TEXT_FILE) then
+			for line in io.lines(CACHE_TEXT_FILE) do
+				cache_text = line
+			end
+		end
+		new_text = get_dns_config_key()
+		if cache_text == "" or new_text == "" or cache_text ~= new_text then
+			api.remove(CACHE_DNS_PATH .. "*")
+		end
+	else
+		api.remove(CACHE_DNS_PATH .. "*")
+	end
 
 	if not fs.access(CACHE_DNS_PATH) then
 		fs.mkdir(CACHE_DNS_PATH)
@@ -621,7 +649,7 @@ function add_rule(var)
 						end
 					end
 					f:close()
-					log(string.format("  - 中国域名表(chnroute)：%s", fwd_dns or "默认"))
+					log(string.format("  - 中国域名表(chnlist)：%s", fwd_dns or "默认"))
 				end
 			end
 		end
@@ -763,6 +791,8 @@ function add_rule(var)
 		local f_out = io.open(CACHE_TEXT_FILE, "a")
 		f_out:write(new_text)
 		f_out:close()
+	else
+		log("  - 从缓存加载 Dnsmasq 域名分流规则。")
 	end
 
 	if USE_CHINADNS_NG == "0" then
@@ -811,7 +841,7 @@ function add_rule(var)
 	end
 
 	if USE_CHINADNS_NG == "0" then
-		log("  - PassWall必须依赖于Dnsmasq，如果你自行配置了错误的DNS流程，将会导致域名(直连/代理域名)分流失效！！！")
+		log("  - PassWall必须依赖于Dnsmasq，如果你自行配置了错误的DNS流程，将会导致域名(直连/代理)分流失效！！！")
 	end
 end
 
