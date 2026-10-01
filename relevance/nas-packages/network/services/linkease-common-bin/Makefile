@@ -11,19 +11,19 @@ PKG_ARCH_LINKEASE:=$(ARCH)
 
 PKG_NAME:=linkease-common-bin
 # use PKG_SOURCE_DATE instead of PKG_VERSION for compitable
-PKG_SOURCE_DATE:=1.7.5
-PKG_RELEASE:=5
+PKG_SOURCE_DATE:=1.7.6
+PKG_RELEASE:=1
 
 ARCH_HEXCODE:=
 ifeq ($(ARCH),x86_64)
 ARCH_HEXCODE=8664
-PKG_HASH:=fffcabac6072feeb460aef0a31d395acf245b78ae2f5af6abd59411a1757935a
+PKG_HASH:=608806ab0b2983c3abb9c55783673d74533fd56783327354faa246192909a78c
 else ifeq ($(ARCH),aarch64)
 ARCH_HEXCODE=aa64
-PKG_HASH:=1646db48f5a512b96a34971e5af82eacd5a51f32abab2c5e84f277c408a72eb8
+PKG_HASH:=90cc7b43ca881dd6938892b1bb95f8ea55f2b221a44693cdf5875075c0e540c5
 else ifeq ($(ARCH),arm)
 ARCH_HEXCODE=aa32
-PKG_HASH:=61f970245e1ae9783bc58280929e134fb0c94f5fc4e0e9a3deea117846b81e40
+PKG_HASH:=58ef68817e34365f749b8e0a684baaffdab80fc8e7ae7293a052a0f0c0715903
 else ifeq ($(ARCH),mipsel)
 ARCH_HEXCODE=1b0c
 endif
@@ -67,3 +67,12 @@ define Package/$(PKG_NAME)/install
 endef
 
 $(eval $(call BuildPackage,$(PKG_NAME)))
+
+# OpenWrt 24.10 does not expose a package-level REPLACES variable in
+# package-pack.mk. Preserve the generated control stanza and append the
+# versioned ownership hand-off required for legacy monolithic LinkEase packages.
+LINKEASE_COMMON_BIN_GENERATED_CONTROL:=$(Package/$(PKG_NAME)/CONTROL)
+define Package/$(PKG_NAME)/CONTROL
+$(LINKEASE_COMMON_BIN_GENERATED_CONTROL)
+Replaces: linkease (<< 1.7.6~)
+endef
