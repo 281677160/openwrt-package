@@ -389,8 +389,8 @@ function gen_outbound(flag, node, tag, proxy_table)
 								return (t and t >= 2 and t <= 60) and t or nil
 							end)(node.hysteria2_keep_alive_period),
 							disablePathMTUDiscovery = node.hysteria2_disable_mtu_discovery == "1",
-							initStreamReceiveWindow = node.hysteria2_stream_recv_win and tonumber(node.hysteria2_stream_recv_win) or nil,
-							initConnectionReceiveWindow = node.hysteria2_conn_recv_win and tonumber(node.hysteria2_conn_recv_win) or nil,
+							initStreamReceiveWindow = tonumber(node.hysteria2_stream_recv_win) and tonumber(node.hysteria2_stream_recv_win)*1048576 or nil,
+							initConnectionReceiveWindow = tonumber(node.hysteria2_conn_recv_win) and tonumber(node.hysteria2_conn_recv_win)*1048576 or nil,
 						}
 					end
 					if fragment and fragment_table and ({raw=1, ws=1, httpupgrade=1, grpc=1, xhttp=1})[TP] then
@@ -540,6 +540,10 @@ function gen_config_server(node)
 					u.user = user.username
 					u.pass = user.password
 				end
+				if node.protocol == "masque" then
+					u.email = user.username
+					u.pass = user.password
+				end
 				if node.protocol == "shadowsocks" or node.protocol == "trojan" then
 					u.email = user.username
 					u.password = user.password
@@ -609,6 +613,18 @@ function gen_config_server(node)
 		settings = {
 			version = 2,
 			users = users
+		}
+	elseif node.protocol == "masque" then
+		node.transport = "masque"
+		node.tls = "1"
+		node.reality = nil
+		node.alpn = nil
+		node.fallback = nil
+		node.finalmask = nil
+		settings = {
+			users = users,
+			address = node.masque_address,
+			mtu = tonumber(node.masque_mtu or 1280)
 		}
 	elseif node.protocol == "tunnel" then
 		settings = {
@@ -719,6 +735,9 @@ function gen_config_server(node)
 				streamSettings = {
 					method = node.transport,
 					security = "none",
+					masqueSettings = (node.protocol == "masque") and {
+						path = (node.masque_path and node.masque_path ~= "") and node.masque_path or nil
+					} or nil,
 					tlsSettings = ("1" == node.tls) and {
 						disableSystemRoot = false,
 						certificates = {
