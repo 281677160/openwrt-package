@@ -188,9 +188,6 @@ o:value("udp", translatef("Requery DNS By %s", "UDP"))
 o:value("tcp", translatef("Requery DNS By %s", "TCP"))
 o:depends({dns_shunt = "dnsmasq"})
 o:depends({dns_shunt = "chinadns-ng"})
-if has_smartdns then
-	o:depends({dns_shunt = "smartdns"})
-end
 
 o = s:taboption("DNS", Value, "direct_dns", translate("Direct DNS"))
 o.datatype = "or(ipaddr,ipaddrport(1))"
@@ -202,8 +199,25 @@ o:value("180.184.2.2")
 o:value("114.114.114.114")
 o:value("114.114.115.115")
 o:value("119.28.28.28")
-o:depends("direct_dns_mode", "udp")
-o:depends("direct_dns_mode", "tcp")
+o:depends({dns_shunt = "dnsmasq", direct_dns_mode = "udp"})
+o:depends({dns_shunt = "dnsmasq", direct_dns_mode = "tcp"})
+o:depends({dns_shunt = "chinadns-ng", direct_dns_mode = "udp"})
+o:depends({dns_shunt = "chinadns-ng", direct_dns_mode = "tcp"})
+
+if has_smartdns then
+	o = s:taboption("DNS", DynamicList, "smartdns_direct_dns", translate("Direct DNS"))
+	o.placeholder = translate("Auto")
+	o.rmempty = true
+	o:value("223.5.5.5")
+	o:value("119.29.29.29")
+	o:value("tcp://223.5.5.5")
+	o:value("tcp://114.114.114.114")
+	o:value("tls://dot.pub,1.12.12.12")
+	o:value("tls://dns.alidns.com,223.5.5.5")
+	o:value("https://223.5.5.5/dns-query")
+	o:value("https://1.12.12.12/dns-query")
+	o:depends({dns_shunt = "smartdns"})
+end
 
 o = s:taboption("DNS", Flag, "filter_proxy_ipv6", translate("Filter Proxy Host IPv6"))
 o.default = "0"
@@ -656,13 +670,12 @@ if has_smartdns then
 	o:value("notice", "Notice")
 	o:value("info", "Info")
 	o:value("debug", "Debug")
-	o:depends({dns_shunt = "smartdns", log_smartdns = "1"})
+	o:depends("log_smartdns", "1")
 
 	o = s:taboption("log", Value, "smartdns_log_size", translate("Log Size") .. " (MB)")
 	o.default = "1"
 	o.datatype = "and(uinteger,min(1))"
-	o.rmempty = false
-	o:depends({dns_shunt = "smartdns", log_smartdns = "1"})
+	o:depends("log_smartdns", "1")
 
 	o = s:taboption("log", DummyValue, "_smartdns_log", translate("Log File"))
 	o.rawhtml = true
@@ -680,7 +693,7 @@ if has_smartdns then
 		end
 		return s
 	end
-	o:depends({dns_shunt = "smartdns", log_smartdns = "1"})
+	o:depends("log_smartdns", "1")
 
 	if api.fs.access("/usr/lib/smartdns_ui.so") or api.fs.access("/usr/lib/smartdns/smartdns_ui.so") then
 		o = s:taboption("log", Flag, "smartdns_ui", "SmartDNS " .. translate("Enable WebUI"))
@@ -691,12 +704,10 @@ if has_smartdns then
 		o = s:taboption("log", Value, "smartdns_ui_port", translate("WebUI Port"))
 		o.default = "9880"
 		o.datatype = "range(1,65535)"
-		o.rmempty = false
-		o:depends({dns_shunt = "smartdns", smartdns_ui = "1"})
+		o:depends("smartdns_ui", "1")
 
 		o = s:taboption("log", Value, "smartdns_ui_data_dir", translate("WebUI Database Directory"))
 		o.default = api.CACHE_PATH .. "/smartdns"
-		o.rmempty = false
 		o.validate = function(self, value, section)
 			value = api.trim(value)
 			if value:sub(1, 1) ~= "/" or value:find("%s") then
@@ -704,13 +715,12 @@ if has_smartdns then
 			end
 			return value
 		end
-		o:depends({dns_shunt = "smartdns", smartdns_ui = "1"})
+		o:depends("smartdns_ui", "1")
 
 		o = s:taboption("log", Value, "smartdns_ui_log_max_age", translate("WebUI Log Retention Days"))
 		o.default = "7"
 		o.datatype = "and(uinteger,min(1))"
-		o.rmempty = false
-		o:depends({dns_shunt = "smartdns", smartdns_ui = "1"})
+		o:depends("smartdns_ui", "1")
 
 		o = s:taboption("log", DummyValue, "_smartdns_ui_link", "WebUI")
 		o.rawhtml = true
@@ -722,7 +732,7 @@ if has_smartdns then
 				translate("Open WebUI"), port
 			)
 		end
-		o:depends({dns_shunt = "smartdns", smartdns_ui = "1"})
+		o:depends("smartdns_ui", "1")
 	end
 end
 
