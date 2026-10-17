@@ -2,7 +2,8 @@ local api = require "luci.passwall.api"
 
 local var = api.get_args(arg)
 local FLAG = var["-FLAG"]
-local LOCAL_DNS = var["-LOCAL_DNS"]
+local DIRECT_DNS = var["-DIRECT_DNS"]
+local LOCAL_PORT = tonumber(var["-LOCAL_PORT"]) or 0
 local REMOTE_PROXY_SERVER = var["-REMOTE_PROXY_SERVER"]
 local USE_DEFAULT_DNS = var["-USE_DEFAULT_DNS"]
 local REMOTE_DNS = var["-REMOTE_DNS"]
@@ -132,12 +133,14 @@ if data_dir ~= SMARTDNS_DATA_PATH then
 	sys.call("mkdir -p " .. api.util.shellquote(data_dir))
 end
 
-local LOCAL_SERVERS = {}
-for endpoint in string.gmatch(LOCAL_DNS or "", "[^,]+") do
-	endpoint = api.trim(endpoint)
-	local protocol, address = endpoint:match("^(%w+)://(.+)$")
-	protocol = protocol and protocol:lower() or "udp"
-	address = address or endpoint
+-- 统一生成直连、远程上游，协议和默认端口由 SmartDNS 根据 URL 识别。
+local function make_server_param(endpoint)
+	local dns = api.split(api.trim(endpoint), ",")
+	local address = api.trim(dns[1] or "")
+	if address == "" then return nil end
+	local protocol, host_address = address:match("^(%w+)://(.+)$")
+	protocol = protocol and protocol:lower()
+	address = host_address or address
 	local host, port = address:match("^(.-)#(%d+)$")
 	if host then
 		if host:find(":", 1, true) and not host:find("[", 1, true) then host = "[" .. host .. "]" end
@@ -145,18 +148,27 @@ for endpoint in string.gmatch(LOCAL_DNS or "", "[^,]+") do
 	elseif datatypes.ip6addr(address) and not address:find("[", 1, true) then
 		address = "[" .. address .. "]"
 	end
-	if (protocol == "udp" or protocol == "tcp") and address ~= "" then
-		table.insert(LOCAL_SERVERS, "server " .. (protocol == "tcp" and "tcp://" or "") .. address)
+	local server_param = "server " .. (protocol and (protocol .. "://") or "") .. address
+	if dns[2] and dns[2] ~= "" then
+		-- 保留 URL 中的域名，固定连接 IP 交给 SmartDNS 处理，避免手动替换影响 SNI 和 HTTP Host。
+		server_param = server_param .. " -host-ip " .. api.trim(dns[2]):gsub("^%[(.*)%]$", "%1")
+	end
+	return server_param
+end
+
+local DIRECT_SERVERS = {}
+for endpoint in string.gmatch(DIRECT_DNS or "", "[^|]+") do
+	local server_param = make_server_param(endpoint)
+	if server_param then
+		-- 复用 PassWall 的直连标记，使所有协议及动态域名上游绕过本机透明代理。
+		table.insert(DIRECT_SERVERS, server_param .. " -set-mark 255")
 	end
 end
-if #LOCAL_SERVERS == 0 then
+if #DIRECT_SERVERS == 0 then
 	log("  * 注意：SmartDNS 没有可用的直连 DNS 服务器，DNS 将无法正常工作！！！")
 	os.exit(1)
 end
 
-if REMOTE_DNS then
-	REMOTE_DNS = REMOTE_DNS:gsub("#", ":")
-end
 local AUTO_GROUP = "auto"
 local auto_config_lines = {}
 -- 直连规则显式覆盖远程兜底的缓存、IPv6、测速和双栈优选设置。
@@ -169,6 +181,15 @@ local only_global = (DEFAULT_PROXY_MODE == "proxy" and CHN_LIST == "0" and USE_G
 if only_global == 1 then
 	DEFAULT_DNS_GROUP = "proxy"
 end
+local AUTO_DIRECT_PORT = 0
+if DEFAULT_DNS_GROUP == AUTO_GROUP then
+	AUTO_DIRECT_PORT = api.get_new_port(15350)
+	-- 避开同一进程尚未启动的主监听和直连监听端口。
+	for _ = 1, 2 do
+		if not AUTO_DIRECT_PORT or (AUTO_DIRECT_PORT ~= tonumber(LISTEN_PORT) and AUTO_DIRECT_PORT ~= LOCAL_PORT) then break end
+		AUTO_DIRECT_PORT = api.get_new_port(AUTO_DIRECT_PORT + 1)
+	end
+end
 local force_https_soa = api.uci_get_c("@global[0]", "force_https_soa") or 0
 local force_qtype_soa = tonumber(force_https_soa) == 1 and "force-qtype-SOA 65" or "force-qtype-SOA -,65"
 local proxy_server_name = "psw-proxy-server"
@@ -177,13 +198,16 @@ local local_domain = DNS_REDIRECT and api.uci_get("dhcp", "@dnsmasq[0]", "domain
 config_lines = {
 	tonumber(LISTEN_PORT) ~= 0 and ("bind " .. listen_address) or "",
 	tonumber(LISTEN_PORT) ~= 0 and ("bind-tcp " .. listen_address) or "",
+	LOCAL_PORT > 0 and ("bind [::]:" .. LOCAL_PORT .. "@lo -group direct -no-rules") or "",
+	LOCAL_PORT > 0 and ("bind-tcp [::]:" .. LOCAL_PORT .. "@lo -group direct -no-rules") or "",
+	AUTO_DIRECT_PORT > 0 and ("bind [::]:" .. AUTO_DIRECT_PORT .. "@lo -group auto-direct") or "",
 	"log-level " .. LOG_LEVEL,
 	"log-num " .. (LOG and "1" or "0"),
 	LOG and string.format("log-file %q", FLAG_PATH .. "/smartdns.log") or "",
 	LOG and ("log-size " .. LOG_SIZE .. "M") or "",
 	string.format("cache-file %q", SMARTDNS_DATA_PATH .. "/smartdns.cache"),
 	string.format("data-dir %q", data_dir),
-	"server 223.5.5.5 -bootstrap-dns",
+	"server 223.5.5.5 -bootstrap-dns -set-mark 255",
 	-- Set the suffix before loading hosts/leases so initial records are expanded too.
 	(local_domain and local_domain ~= "") and "local-domain " .. local_domain or "",
 	DNS_REDIRECT and "hosts-file /tmp/hosts/*" or "",
@@ -220,12 +244,15 @@ if DNS_REDIRECT then
 		table.insert(config_lines, string.format("odhcpd-lease-file %q", odhcpd_lease))
 	end
 end
-for _, server_param in ipairs(LOCAL_SERVERS) do
+for _, server_param in ipairs(DIRECT_SERVERS) do
 	table.insert(config_lines, server_param .. " -group direct -exclude-default-group")
-	if DEFAULT_DNS_GROUP == AUTO_GROUP then
-		-- 自动组的直连副本仅接受大陆 IP，普通直连组保持默认行为。
-		table.insert(auto_config_lines, server_param .. " -group " .. AUTO_GROUP .. " -exclude-default-group -whitelist-ip")
-	end
+end
+if DEFAULT_DNS_GROUP == AUTO_GROUP then
+	-- 自动组先通过独立入口去除 CNAME，再按原逻辑筛选 IP。
+	table.insert(auto_config_lines, "server 127.0.0.1:" .. AUTO_DIRECT_PORT .. " -group " .. AUTO_GROUP .. " -exclude-default-group -whitelist-ip")
+	table.insert(auto_config_lines, "group-begin auto-direct -inherit none")
+	merge_array(auto_config_lines, DIRECT_SERVERS)
+	merge_array(auto_config_lines, {"force-no-CNAME yes", "group-end"})
 end
 
 -- 由下方 DNS_MODE 分支调用，服务器参数来自 PassWall 的 REMOTE_DNS 或 TUN_DNS。
@@ -241,13 +268,7 @@ end
 
 if DNS_MODE == "socks" then
 	for w in string.gmatch(REMOTE_DNS, '[^|]+') do
-		-- 协议和默认端口由 SmartDNS 根据原始 URL 识别。
-		local dns = api.split(api.trim(w), ",")
-		local server_param = "server " .. api.trim(dns[1])
-		if dns[2] and dns[2] ~= "" then
-			-- 保留 URL 中的域名，固定连接 IP 交给 SmartDNS 处理，避免手动替换影响 SNI 和 HTTP Host。
-			server_param = server_param .. " -host-ip " .. api.trim(dns[2]):gsub("^%[(.*)%]$", "%1")
-		end
+		local server_param = make_server_param(w)
 
 		if not api.is_local_ip(w) then
 			server_param = server_param .. " -proxy " .. proxy_server_name
