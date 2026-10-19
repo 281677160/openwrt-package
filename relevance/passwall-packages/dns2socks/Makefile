@@ -6,20 +6,13 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=dns2socks
 PKG_VERSION:=2.1
-PKG_RELEASE:=2
-
-PKG_SOURCE:=SourceCode.zip
-PKG_SOURCE_URL:=https://github.com/Openwrt-Passwall/openwrt-passwall-packages/releases/download/dns2socks
-PKG_SOURCE_DATE:=2020-02-18
-PKG_HASH:=406b5003523577d39da66767adfe54f7af9b701374363729386f32f6a3a995f4
+PKG_RELEASE:=3
 
 PKG_MAINTAINER:=ghostmaker
 PKG_LICENSE:=BSD-3-Clause
 PKG_LICENSE_FILE:=LICENSE
 
 include $(INCLUDE_DIR)/package.mk
-
-UNZIP_CMD:=unzip -q -d $(PKG_BUILD_DIR) $(DL_DIR)/$(PKG_SOURCE)
 
 define Package/dns2socks
   SECTION:=net
@@ -33,6 +26,11 @@ endef
 define Package/dns2socks/description
   This is a command line utility to resolve DNS requests via
   a SOCKS tunnel like Tor or a HTTP proxy.
+endef
+
+define Build/Prepare
+	mkdir -p $(PKG_BUILD_DIR)
+	$(CP) ./src/. $(PKG_BUILD_DIR)/
 endef
 
 define Build/Compile
