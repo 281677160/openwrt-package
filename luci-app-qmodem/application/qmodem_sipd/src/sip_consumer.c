@@ -19,6 +19,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include "sip_gateway.h"
+#include <openssl/sha.h>
 #include "sip_activation.h"
 #include "g711.h"
 #include "sip_registration.h"
@@ -94,6 +95,8 @@ struct consumer {
 	unsigned media_attach_attempts;
 	struct sockaddr_in rtp_peer;
 	enum qmodem_voip_media_codec rtp_codec;
+	struct uloop_timeout rtp_clock;
+	uint32_t last_capture_ms;
 	uint16_t rtp_sequence;
 	uint32_t rtp_timestamp;
 	uint32_t rtp_ssrc;
@@ -120,6 +123,7 @@ struct consumer {
 	char incoming_number[64];
 	int incoming_caller_id_withheld;
 	int incoming_ringing;
+	struct uloop_timeout incoming_offer_timeout;
 	int invite_alerted;
 	unsigned outbound_port;
 	unsigned outbound_interval;
@@ -129,9 +133,15 @@ struct consumer {
 	char direction[9];
 	char pidfile[128];
 	char sms_modem[64];
+	char group[64];
+	char modem_id[64];
+	char voice_object[96];
+	char credentials_path[256];
+	int voice_enabled;
+	unsigned rtp_start;
 	unsigned listen_port;
 	struct ubus_object ubus_object;
-	char ubus_object_name[32];
+	char ubus_object_name[160];
 	struct {
 		struct ubus_request_data request;
 		struct uloop_timeout timeout;
@@ -535,7 +545,7 @@ static int ubus_action(const char *action, const char *number)
 	struct blob_buf buffer = { 0 };
 	uint32_t object;
 	int result;
-	if (!app.ubus || ubus_lookup_id(app.ubus, "qmodem_voip", &object) != 0)
+	if (!app.voice_enabled || !app.ubus || ubus_lookup_id(app.ubus, app.voice_object, &object) != 0)
 		return -1;
 	blob_buf_init(&buffer, 0);
 	blobmsg_add_string(&buffer, "endpoint",
@@ -545,12 +555,14 @@ static int ubus_action(const char *action, const char *number)
 	result = ubus_invoke(app.ubus, object, action, buffer.head, NULL, NULL,
 			     UBUS_ACTION_TIMEOUT_MS);
 	blob_buf_free(&buffer);
+	if (result != 0)
+		syslog(LOG_WARNING, "qmodem_voip sip: action %s failed ubus=%d", action, result);
 	return result == 0 ? 0 : -1;
 }
 
 static int ubus_lookup_voip(uint32_t *object)
 {
-	if (!app.ubus || ubus_lookup_id(app.ubus, "qmodem_voip", object) != 0)
+	if (!app.voice_enabled || !app.ubus || ubus_lookup_id(app.ubus, app.voice_object, object) != 0)
 		return -1;
 	return 0;
 }
@@ -664,9 +676,9 @@ static int set_lan_answer(pjsip_rx_data *request, pjsip_tx_data *response,
 		return -1;
 	length = snprintf(body, sizeof(body),
 		"v=0\r\no=qmodem_voip 1 1 IN IP4 %s\r\ns=QModem VoIP\r\n"
-		"c=IN IP4 %s\r\nt=0 0\r\nm=audio 40000 RTP/AVP %s\r\n%s"
+		"c=IN IP4 %s\r\nt=0 0\r\nm=audio %u RTP/AVP %s\r\n%s"
 		"a=rtpmap:101 telephone-event/8000\r\na=sendrecv\r\n",
-		address, address, payloads, rtpmap);
+		address, address, app.rtp_start, payloads, rtpmap);
 	if (length < 0 || length >= (int)sizeof(body))
 		return -1;
 	to = (pjsip_to_hdr *)pjsip_msg_find_hdr(response->msg, PJSIP_H_TO, NULL);
@@ -870,10 +882,10 @@ static int set_incoming_offer(pjsip_tx_data *request)
 	int length = snprintf(body, sizeof(body),
 		"v=0\r\no=qmodem_voip 1 1 IN IP4 %s\r\n"
 		"s=QModem VoIP\r\nc=IN IP4 %s\r\nt=0 0\r\n"
-		"m=audio 40000 RTP/AVP 8 0 101\r\n"
+		"m=audio %u RTP/AVP 8 0 101\r\n"
 		"a=rtpmap:8 PCMA/8000\r\na=rtpmap:0 PCMU/8000\r\n"
 		"a=rtpmap:101 telephone-event/8000\r\na=sendrecv\r\n",
-		app.lan_address, app.lan_address);
+		app.lan_address, app.lan_address, app.rtp_start);
 	if (length < 0 || length >= (int)sizeof(body))
 		return -1;
 	text = pj_str(body);
@@ -901,6 +913,8 @@ static void send_dialog_bye(void)
 	pjsip_cseq_hdr *cseq;
 	pjsip_uri *target;
 	pj_str_t remote_tag;
+	pjsip_tpselector selector;
+	pj_status_t status;
 	unsigned next_cseq;
 
 	if (!app.call.active || !app.call.established || !app.outbound_invite ||
@@ -925,8 +939,21 @@ static void send_dialog_bye(void)
 		return;
 	remote_tag = pj_str(app.call.remote_tag);
 	pj_strdup(bye->pool, &PJSIP_MSG_TO_HDR(bye->msg)->tag, &remote_tag);
-	if (pjsip_endpt_send_request(app.endpoint, bye, 30000, NULL, NULL) != PJ_SUCCESS)
-		syslog(LOG_WARNING, "qmodem_voip sip: cellular release BYE send failed");
+	/* Reuse the authenticated TLS flow, as ACK does. The Contact may name
+	 * an IP address rather than the configured certificate hostname. */
+	if (app.outbound && app.outbound_invite->tp_info.transport) {
+		pj_bzero(&selector, sizeof(selector));
+		selector.type = PJSIP_TPSELECTOR_TRANSPORT;
+		selector.u.transport = app.outbound_invite->tp_info.transport;
+		status = pjsip_tx_data_set_transport(bye, &selector);
+		if (status != PJ_SUCCESS) {
+			pjsip_tx_data_dec_ref(bye);
+			return;
+		}
+	}
+	status = pjsip_endpt_send_request(app.endpoint, bye, 30000, NULL, NULL);
+	if (status != PJ_SUCCESS)
+		syslog(LOG_WARNING, "qmodem_voip sip: cellular release BYE send failed status=%d", (int)status);
 }
 
 static void send_lan_bye(void)
@@ -1092,6 +1119,53 @@ static void incoming_invite_cb(void *token, pjsip_event *event)
 
 static void send_incoming_invite(void);
 
+static int incoming_number_valid(void)
+{
+	const char *number = app.incoming_number;
+	if (*number == '+')
+		number++;
+	return *number && strspn(number, "0123456789") == strlen(number);
+}
+
+static void set_incoming_identity(pjsip_tx_data *request)
+{
+	pjsip_from_hdr *from = PJSIP_MSG_FROM_HDR(request->msg);
+	const char *display = app.incoming_caller_id_withheld ? "Anonymous" :
+		(incoming_number_valid() ? app.incoming_number : "Unknown");
+	if (from)
+		pj_strdup2(request->pool, &((pjsip_name_addr *)from->uri)->display, display);
+	if (app.incoming_caller_id_withheld)
+		add_string_header(request, "Privacy", "id");
+	if (!app.incoming_caller_id_withheld && incoming_number_valid()) {
+		char asserted_identity[160];
+		(void)snprintf(asserted_identity, sizeof(asserted_identity), "<sip:%s@%s>",
+			app.incoming_number, app.lan_address);
+		add_string_header(request, "P-Asserted-Identity", asserted_identity);
+	}
+}
+
+static void incoming_offer_timeout(struct uloop_timeout *timeout)
+{
+	(void)timeout;
+	if (app.incoming_ringing)
+		send_incoming_invite();
+}
+
+static void offer_incoming_call(void)
+{
+	if (!app.incoming_ringing || app.call.active)
+		return;
+	if (incoming_number_valid() || app.incoming_caller_id_withheld) {
+		uloop_timeout_cancel(&app.incoming_offer_timeout);
+		send_incoming_invite();
+	} else if (!app.incoming_offer_timeout.pending) {
+		/* RING commonly precedes CLIP or the CLCC response.  Bound the
+		 * wait so unidentified calls still reach the SIP phone. */
+		app.incoming_offer_timeout.cb = incoming_offer_timeout;
+		uloop_timeout_set(&app.incoming_offer_timeout, 1000);
+	}
+}
+
 static void resend_incoming_invite(void)
 {
 	if (app.outbound || !app.incoming_ringing || app.call.established)
@@ -1134,13 +1208,7 @@ static void send_incoming_invite(void)
 					      &contact, NULL, 1, NULL, &request) != PJ_SUCCESS ||
 		set_incoming_offer(request) != 0)
 		return;
-	if (!app.incoming_caller_id_withheld && app.incoming_number[0] &&
-		strspn(app.incoming_number, "0123456789+") == strlen(app.incoming_number)) {
-		char asserted_identity[160];
-		(void)snprintf(asserted_identity, sizeof(asserted_identity), "<sip:%s@%s>",
-			app.incoming_number, app.lan_address);
-		add_string_header(request, "P-Asserted-Identity", asserted_identity);
-	}
+	set_incoming_identity(request);
 	cid = (pjsip_cid_hdr *)pjsip_msg_find_hdr(request->msg, PJSIP_H_CALL_ID, NULL);
 	if (!cid || copy_pj_string(call_id, sizeof(call_id), &cid->id) != 0 ||
 	    qmodem_voip_sip_call_begin(&app.call, QMODEM_VOIP_SIP_CALL_CELLULAR,
@@ -1177,6 +1245,7 @@ static pj_bool_t on_response(pjsip_rx_data *response)
 		return PJ_FALSE;
 	}
 	if (status >= 200 && status < 300) {
+		syslog(LOG_INFO, "qmodem_voip sip: received answer active=%d established=%d", app.call.active, app.call.established);
 		pj_status_t ack_status = send_outbound_ack(app.outbound_invite, response);
 		char remote_tag[QMODEM_VOIP_SIP_TAG_SIZE];
 		pjsip_msg_body *body = response->msg_info.msg->body;
@@ -1201,8 +1270,12 @@ static pj_bool_t on_response(pjsip_rx_data *response)
 			 * attached the RTP/local media socket, so the call looked connected
 			 * while no modem PCM could reach the SIP peer.  Answer first so the
 			 * daemon has an active revision, then bind both media directions. */
-			if (ubus_action("answer", NULL) == 0 && rtp_open() == 0 &&
-				attach_media() == 0 && response->msg_info.to &&
+			int answer_status = ubus_action("answer", NULL);
+			int rtp_status = answer_status == 0 ? rtp_open() : -1;
+			int attach_status = rtp_status == 0 ? attach_media() : -1;
+			syslog(LOG_INFO, "qmodem_voip sip: answer=%d rtp=%d attach=%d active=%d",
+				answer_status, rtp_status, attach_status, app.call.active);
+			if (answer_status == 0 && rtp_status == 0 && attach_status == 0 && response->msg_info.to &&
 			    copy_pj_string(remote_tag, sizeof(remote_tag),
 				&response->msg_info.to->tag) == 0)
 				(void)qmodem_voip_sip_call_establish(&app.call, remote_tag);
@@ -1312,19 +1385,29 @@ static void sms_send_reply(struct ubus_request *request, int type,
 
 static int message_request_id(pjsip_rx_data *request, char output[64])
 {
-	const pj_str_t *call_id;
-	size_t offset = 0;
-	if (!request->msg_info.cid || !request->msg_info.cseq)
-		return -1;
-	call_id = &request->msg_info.cid->id;
-	for (pj_ssize_t i = 0; i < call_id->slen && offset < 44; i++) {
-		unsigned char c = (unsigned char)call_id->ptr[i];
-		output[offset++] = ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-			(c >= '0' && c <= '9') || c == '_' || c == '-') ? (char)c : '_';
-	}
-	(void)snprintf(output + offset, 64 - offset, "-%ld-%s",
-		(long)request->msg_info.cseq->cseq, app.direction);
-	return 0;
+    pj_str_t name = pj_str((char *)"X-Gateway-Delivery-ID");
+    pjsip_generic_string_hdr *header = pjsip_msg_find_hdr_by_name(request->msg_info.msg, &name, NULL);
+    unsigned char digest[SHA256_DIGEST_LENGTH];
+    char *input;
+    size_t length, i;
+    if (header) {
+        if (header->hvalue.slen != 64) return -1;
+        for (i=0; i<64; i++) if (!isxdigit((unsigned char)header->hvalue.ptr[i])) return -1;
+        SHA256((const unsigned char *)header->hvalue.ptr, 64, digest);
+    } else {
+        if (!request->msg_info.cid || !request->msg_info.cseq) return -1;
+        length=(size_t)request->msg_info.cid->id.slen;
+        input=malloc(length+64);
+        if(!input)return -1;
+        memcpy(input,request->msg_info.cid->id.ptr,length);
+        length += (size_t)snprintf(input+length,64,":%ld:%s",(long)request->msg_info.cseq->cseq,app.direction);
+        SHA256((unsigned char *)input,length,digest);
+        free(input);
+    }
+    /* SMSD accepts 63-byte IDs. 240 digest bits plus a namespace fit its bound. */
+    memcpy(output,"gw-",3);
+    for(i=0;i<30;i++) snprintf(output+3+i*2,3,"%02x",digest[i]);
+    return 0;
 }
 
 static void message_to_sms(pjsip_rx_data *request)
@@ -1507,6 +1590,7 @@ static int send_message_method(struct ubus_context *context, struct ubus_object 
 	if (values[MESSAGE_SENDER])
 		add_string_header(tx, "X-QModem-SMS-From", blobmsg_get_string(values[MESSAGE_SENDER]));
 	add_string_header(tx, "X-QModem-Message-ID", blobmsg_get_string(values[MESSAGE_ID]));
+	add_string_header(tx, "X-Gateway-Delivery-ID", blobmsg_get_string(values[MESSAGE_ID]));
 	ubus_defer_request(app.ubus, request, &app.pending_message.request);
 	app.pending_message.active = 1;
 	app.pending_message.auth_retried = 0;
@@ -1541,9 +1625,12 @@ static int sip_status_method(struct ubus_context *context, struct ubus_object *o
 			app.registration_retry.scheduled_delay_ms);
 	}
 	blobmsg_add_u8(&buffer, "voipd_available",
-		ubus_lookup_id(context, "qmodem_voip", &id) == 0);
+		ubus_lookup_id(context, app.voice_object, &id) == 0);
 	blobmsg_add_u8(&buffer, "smsd_available",
 		ubus_lookup_id(context, "qmodem.sms", &id) == 0);
+	blobmsg_add_string(&buffer, "group", app.group);
+	blobmsg_add_string(&buffer, "modem_id", app.modem_id);
+	blobmsg_add_u8(&buffer, "voip_enabled", app.voice_enabled);
 	blobmsg_add_u8(&buffer, "sms_enabled", app.sms_modem[0] != '\0');
 	ubus_send_reply(context, request, buffer.head);
 	blob_buf_free(&buffer);
@@ -1575,7 +1662,11 @@ static pj_bool_t on_request(pjsip_rx_data *request)
 	}
 	if (method->id == PJSIP_INVITE_METHOD ||
 	    (method->id == PJSIP_OTHER_METHOD && str_equal(&method->name, "UPDATE"))) {
-		if (in_dialog_media_refresh(request) == 0)
+		if (!app.voice_enabled) {
+            send_response(request, PJSIP_SC_SERVICE_UNAVAILABLE, PJ_FALSE, PJ_FALSE);
+            return PJ_TRUE;
+        }
+        if (in_dialog_media_refresh(request) == 0)
 			return PJ_TRUE;
 		if (method->id == PJSIP_INVITE_METHOD)
 			invite_call(request);
@@ -1626,6 +1717,7 @@ static uint32_t monotonic_ms(void)
 
 static void detach_media(void)
 {
+	uloop_timeout_cancel(&app.rtp_clock);
 	if (app.media_fd_event.fd >= 0) {
 		uloop_fd_delete(&app.media_fd_event);
 		app.media_fd_event.fd = -1;
@@ -1660,7 +1752,7 @@ static int rtp_open(void)
 	flags = fcntl(fd, F_GETFL, 0);
 	local.sin_family = AF_INET;
 	local.sin_addr.s_addr = htonl(INADDR_ANY);
-	local.sin_port = htons(QMODEM_VOIP_RTP_PORT);
+	local.sin_port = htons((uint16_t)app.rtp_start);
 	if (flags < 0 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) != 0 ||
 	    bind(fd, (struct sockaddr *)&local, sizeof(local)) != 0) {
 		(void)close(fd);
@@ -1670,26 +1762,10 @@ static int rtp_open(void)
 	return 0;
 }
 
-static void media_readable(struct uloop_fd *event, unsigned events)
+static void send_rtp_samples(const int16_t *samples)
 {
-	struct qmodem_voip_media_socket_message message;
-	struct qmodem_voip_media_socket_pcm pcm;
 	uint8_t packet[RTP_PACKET_SIZE] = { 0 };
-	int result;
 	int i;
-	(void)events;
-	(void)event;
-	result = qmodem_voip_media_socket_client_read(&app.media_sock, &message);
-	if (result < 0) {
-		stop_media();
-		return;
-	}
-	if (result == 0)
-		return;
-	if (message.header.type != QMODEM_VOIP_MEDIA_SOCKET_PCM_CAPTURE ||
-	    message.header.payload_length != sizeof(pcm))
-		return;
-	memcpy(&pcm, &message.body.pcm, sizeof(pcm));
 	packet[0] = 0x80;
 	packet[1] = (uint8_t)app.rtp_codec;
 	packet[2] = (uint8_t)(app.rtp_sequence >> 8);
@@ -1702,7 +1778,7 @@ static void media_readable(struct uloop_fd *event, unsigned events)
 	packet[9] = (uint8_t)(app.rtp_ssrc >> 16);
 	packet[10] = (uint8_t)(app.rtp_ssrc >> 8);
 	packet[11] = (uint8_t)app.rtp_ssrc;
-	if (g711_bridge_encode(app.rtp_codec, pcm.samples,
+	if (g711_bridge_encode(app.rtp_codec, samples,
 		QMODEM_VOIP_MEDIA_SAMPLES, &packet[RTP_HEADER_SIZE]) != 0)
 		return;
 	if (app.rtp_attached && app.rtp_fd >= 0 &&
@@ -1716,6 +1792,40 @@ static void media_readable(struct uloop_fd *event, unsigned events)
 	app.rtp_timestamp += QMODEM_VOIP_MEDIA_SAMPLES;
 	for (i = 0; i < (int)sizeof(packet); i++)
 		packet[i] = 0;
+}
+
+static void rtp_clock_tick(struct uloop_timeout *timeout)
+{
+	int16_t silence[QMODEM_VOIP_MEDIA_SAMPLES] = { 0 };
+	(void)timeout;
+	if (!app.rtp_attached)
+		return;
+	if ((uint32_t)(monotonic_ms() - app.last_capture_ms) >= 40U)
+		send_rtp_samples(silence);
+	if (app.rtp_attached)
+		uloop_timeout_set(&app.rtp_clock, 20);
+}
+
+static void media_readable(struct uloop_fd *event, unsigned events)
+{
+	struct qmodem_voip_media_socket_message message;
+	struct qmodem_voip_media_socket_pcm pcm;
+	int result;
+	(void)events;
+	(void)event;
+	result = qmodem_voip_media_socket_client_read(&app.media_sock, &message);
+	if (result < 0) {
+		stop_media();
+		return;
+	}
+	if (result == 0)
+		return;
+	if (message.header.type != QMODEM_VOIP_MEDIA_SOCKET_PCM_CAPTURE ||
+	    message.header.payload_length != sizeof(pcm))
+		return;
+	memcpy(&pcm, &message.body.pcm, sizeof(pcm));
+	app.last_capture_ms = monotonic_ms();
+	send_rtp_samples(pcm.samples);
 }
 
 static int media_playback_to_modem(const uint8_t *packet, size_t length)
@@ -1867,6 +1977,9 @@ static int attach_media(void)
 	uloop_fd_add(&app.rtp_fd_event, ULOOP_READ);
 	app.media_attached = 1;
 	app.rtp_attached = 1;
+	app.last_capture_ms = monotonic_ms() - 40U;
+	app.rtp_clock.cb = rtp_clock_tick;
+	uloop_timeout_set(&app.rtp_clock, 0);
 	return 0;
 }
 
@@ -1943,7 +2056,8 @@ static void consumer_event(struct ubus_context *context,
 		{ .name = "revision", .type = BLOBMSG_TYPE_UNSPEC },
 		{ .name = "remote_number", .type = BLOBMSG_TYPE_STRING },
 		{ .name = "caller_id_withheld", .type = BLOBMSG_TYPE_UNSPEC },
-		{ .name = "answer_owner", .type = BLOBMSG_TYPE_STRING }
+		{ .name = "answer_owner", .type = BLOBMSG_TYPE_STRING },
+		{ .name = "modem_id", .type = BLOBMSG_TYPE_STRING }
 	};
 	struct blob_attr *values[ARRAY_SIZE(policy)] = { 0 };
 	const char *event, *state, *owner;
@@ -1953,6 +2067,8 @@ static void consumer_event(struct ubus_context *context,
 	(void)type;
 	blobmsg_parse(policy, ARRAY_SIZE(policy), values, blob_data(message),
 		      blob_len(message));
+	if (!app.voice_enabled || (app.modem_id[0] && (!values[6] || strcmp(blobmsg_get_string(values[6]), app.modem_id))))
+		return;
 	if (!values[0] || !values[1])
 		return;
 	if (values[3])
@@ -1970,6 +2086,11 @@ static void consumer_event(struct ubus_context *context,
 	state = blobmsg_get_string(values[1]);
 	owner = values[5] ? blobmsg_get_string(values[5]) : "none";
 	app.incoming_ringing = strcmp(state, "incoming_ringing") == 0;
+	if (!app.incoming_ringing) {
+		uloop_timeout_cancel(&app.incoming_offer_timeout);
+		app.incoming_number[0] = '\0';
+		app.incoming_caller_id_withheld = 0;
+	}
 	ended = strcmp(event, "release") == 0 ||
 		(app.call.active && (strcmp(state, "idle") == 0 ||
 		 strcmp(state, "disabled") == 0 || strcmp(state, "fault") == 0)) ||
@@ -1978,6 +2099,8 @@ static void consumer_event(struct ubus_context *context,
 		 strcmp(owner, "none") != 0 &&
 		 strcmp(owner, app.outbound ? "external_sip" : "lan_sip") != 0);
 	if (ended) {
+		syslog(LOG_INFO, "qmodem_voip sip: end event=%s state=%s active=%d established=%d origin=%d",
+			 event, state, app.call.active, app.call.established, app.call.origin);
 		int lan_bye = app.call.active && app.call.established &&
 			app.call.origin == QMODEM_VOIP_SIP_CALL_LAN && app.lan_answer;
 		app.incoming_number[0] = '\0';
@@ -2014,14 +2137,16 @@ static void consumer_event(struct ubus_context *context,
 			app.media_attach_attempts = 0;
 			uloop_timeout_set(&app.media_attach_timeout, 0);
 		}
-	} else if (strcmp(event, "ring") == 0)
-		send_incoming_invite();
+	} else if (app.incoming_ringing &&
+		   (strcmp(event, "ring") == 0 || strcmp(event, "caller_id") == 0 ||
+		    strcmp(event, "call_state") == 0))
+		offer_incoming_call();
 }
 
 static int load_credentials(void)
 {
 	struct qmodem_voip_sip_credentials credentials;
-	if (qmodem_voip_sip_read_credentials(QMODEM_VOIP_SIP_CONFIG, &credentials) != 0)
+	if (qmodem_voip_sip_read_credentials(app.credentials_path, &credentials) != 0)
 		return -1;
 	memcpy(app.username, credentials.username, sizeof(app.username));
 	memcpy(app.ha1, credentials.ha1, sizeof(app.ha1));
@@ -2111,10 +2236,14 @@ int main(int argc, char **argv)
 	(void)snprintf(app.direction, sizeof(app.direction), "%s", "inbound");
 	(void)snprintf(app.pidfile, sizeof(app.pidfile), "%s", DEFAULT_PIDFILE);
 	app.listen_port = 5060;
+	app.voice_enabled = 1;
+	app.rtp_start = 40000;
+	strcpy(app.voice_object, "qmodem_voip");
+	strcpy(app.credentials_path, QMODEM_VOIP_SIP_CONFIG);
 	if (argc < 7 || strcmp(argv[1], "--listen-address") != 0 ||
 	    strcmp(argv[3], "--advertise-address") != 0 ||
 	    strcmp(argv[5], "--media-socket-path") != 0 ||
-	    strcmp(argv[2], "0.0.0.0") != 0 ||
+	    (strcmp(argv[2], "0.0.0.0") && strcmp(argv[2], argv[4])) ||
 	    !qmodem_voip_sip_valid_lan_address(argv[4]) ||
 	    !advertise_address_is_local_voice(argv[4]) ||
 	    !argv[6][0] ||
@@ -2139,7 +2268,19 @@ int main(int argc, char **argv)
 		} else if (strcmp(argv[i], "--sms-modem") == 0 && i + 1 < argc) {
 			if (copy_config_value(app.sms_modem, sizeof(app.sms_modem), argv[++i]) != 0)
 				return 2;
-		} else if (strcmp(argv[i], "--listen-port") == 0 && i + 1 < argc) {
+		} else if (strcmp(argv[i], "--group") == 0 && i + 1 < argc) {
+            if (copy_config_value(app.group, sizeof(app.group), argv[++i]) != 0) return 2;
+        } else if (strcmp(argv[i], "--modem-id") == 0 && i + 1 < argc) {
+            if (copy_config_value(app.modem_id, sizeof(app.modem_id), argv[++i]) != 0) return 2;
+        } else if (strcmp(argv[i], "--voice-enabled") == 0 && i + 1 < argc) {
+            app.voice_enabled = !strcmp(argv[++i], "1");
+        } else if (strcmp(argv[i], "--credentials") == 0 && i + 1 < argc) {
+            if (copy_config_value(app.credentials_path, sizeof(app.credentials_path), argv[++i]) != 0) return 2;
+        } else if (strcmp(argv[i], "--rtp-start") == 0 && i + 1 < argc) {
+            char *end; unsigned long port = strtoul(argv[++i], &end, 10);
+            if (*end || port < 1024 || port > 65534) return 2;
+            app.rtp_start = (unsigned)port;
+        } else if (strcmp(argv[i], "--listen-port") == 0 && i + 1 < argc) {
 			char *end = NULL;
 			unsigned long port = strtoul(argv[++i], &end, 10);
 			if (!end || *end || port < 1 || port > 65535)
@@ -2149,6 +2290,8 @@ int main(int argc, char **argv)
 		else
 			return 2;
 	}
+	if (app.group[0])
+		snprintf(app.voice_object, sizeof(app.voice_object), "qmodem.voip.%s", app.group);
 	if (app.outbound != !strcmp(app.direction, "outbound"))
 		return 2;
 	app.media_sock.fd = -1;
@@ -2221,7 +2364,8 @@ int main(int argc, char **argv)
 		return 1;
 	ubus_add_uloop(app.ubus);
 	(void)snprintf(app.ubus_object_name, sizeof(app.ubus_object_name),
-		"qmodem.sip.%s", app.direction);
+		app.group[0] ? "qmodem.sip.%s.%s" : "qmodem.sip.%s",
+		app.group[0] ? app.group : app.direction, app.direction);
 	app.ubus_object.name = app.ubus_object_name;
 	app.ubus_object.type = &sip_object_type;
 	app.ubus_object.methods = sip_object_type.methods;
