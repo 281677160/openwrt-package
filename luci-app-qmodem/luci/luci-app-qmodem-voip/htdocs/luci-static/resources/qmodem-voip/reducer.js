@@ -40,6 +40,8 @@ function copySnapshot(input) {
 
 	return {
 		state: input.state,
+		modem_id: String(input.modem_id || ''),
+		group: String(input.group || ''),
 		enabled: asBoolean(input.enabled),
 		origin: String(input.origin || 'none'),
 		endpoint: String(input.endpoint || 'none'),
@@ -55,6 +57,13 @@ function copySnapshot(input) {
 		reconcile_pending: asBoolean(input.reconcile_pending),
 		media: String(input.media || ''),
 		media_engine: String(input.media_engine || ''),
+		media_backend: String(input.media_backend || ''),
+		audio_policy: String(input.audio_policy || ''),
+		selection_state: String(input.selection_state || ''),
+		fallback_reason: String(input.fallback_reason || ''),
+		audio_firmware: String(input.audio_firmware || ''),
+		last_error: String(input.last_error || ''),
+		firmware_verified: asBoolean(input.firmware_verified),
 		browser_media: String(input.browser_media || ''),
 		media_url: String(input.media_url || '')
 	};
@@ -108,6 +117,8 @@ function reduce(state, action) {
 	case 'SNAPSHOT':
 		return applySnapshot(current, action.value, 'snapshot', '');
 	case 'EVENT':
+		if (current.snapshot?.modem_id && current.snapshot.modem_id !== action.value?.modem_id)
+			return current;
 		return applySnapshot(current, action.value, 'event', action.value?.event || '');
 	case 'ERROR':
 		return Object.assign({}, current, { error: action.value || null });
