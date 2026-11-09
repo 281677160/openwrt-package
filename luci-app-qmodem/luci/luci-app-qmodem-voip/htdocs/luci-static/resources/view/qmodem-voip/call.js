@@ -37,7 +37,13 @@ return view.extend({
 			L.resolveDefault(rpc.capabilities(), {}),
 			L.resolveDefault(rpc.status(), {}),
 			L.resolveDefault(rpc.callHistory(), { calls: [] })
-		]).then((results) => {
+		]).then(async (results) => {
+			this.modems = results[1].modems || [];
+            this.selectedModem = this.modems[0]?.modem_id || null;
+            if (this.selectedModem) {
+                rpc.selectModem(this.selectedModem);
+                results = await Promise.all([L.resolveDefault(rpc.capabilities(), {}), L.resolveDefault(rpc.status(), {}), L.resolveDefault(rpc.callHistory(), { calls: [] })]);
+            }
 			this.history = Array.isArray(results[2]?.calls) ? results[2].calls : [];
 			this.historyFilter = 'all';
 			this.capabilityPending = !results[0] || Object.keys(results[0]).length === 0;
@@ -50,7 +56,7 @@ return view.extend({
 
 	createServiceMap() {
 		const voiceMap = new form.Map('qmodem_voip');
-		const section = voiceMap.section(form.NamedSection, 'main', 'main',
+		const section = voiceMap.section(form.NamedSection, this.state.snapshot?.group || 'main', this.state.snapshot?.group ? 'modem' : 'main',
 			_('Call service'),
 			_('Changes are stored in UCI and take effect after Save & Apply.'));
 		section.anonymous = true;
@@ -60,11 +66,28 @@ return view.extend({
 		enabled.default = '0';
 		enabled.rmempty = false;
 		enabled.description = _('Starts modem voice preparation and browser media support.');
-		const webEnabled = section.option(form.Flag, 'web_enabled',
+		const webSection = voiceMap.section(form.NamedSection, 'main', 'main');
+        const webEnabled = webSection.option(form.Flag, 'web_enabled',
 			_('Enable HTTPS and WebSocket media access'));
 		webEnabled.default = '0';
 		webEnabled.rmempty = false;
 		webEnabled.description = _('Enables the uhttpd HTTPS listener used by browser WSS media.');
+		if (this.state.capabilities?.hardware === 'RM520N-GL') {
+			const policy = section.option(form.ListValue, 'audio_policy', _('RM520N-GL audio'));
+			policy.value('auto', _('Automatic (prefer UAC)'));
+			policy.value('uac', _('Native UAC only'));
+			policy.value('serial_pcm', _('Native PCM only'));
+			const probe = section.option(form.Button, '_audio_probe', _('Recheck native audio'));
+			probe.inputtitle = _('Probe while idle');
+			probe.onclick = async () => {
+				const response = await this.rpc.reprobeAudio();
+				if (response?.status === 'error') this.showError(response);
+				await this.refresh();
+			};
+			policy.default = 'auto';
+			policy.rmempty = false;
+			policy.description = _('Uses the modem firmware audio without PCM patches. Changes wait until the call ends.');
+		}
 		this.serviceMap = voiceMap;
 		this.serviceOption = enabled;
 		return voiceMap;
@@ -380,6 +403,8 @@ return view.extend({
 	},
 
 	handleEvent(event) {
+		if (this.selectedModem && event?.modem_id !== this.selectedModem)
+			return;
 		if (event?.event) {
 			this.dispatch({ type: 'EVENT', value: event });
 			void this.syncMedia();
@@ -435,6 +460,14 @@ return view.extend({
 		this.refs.mute.disabled = !model.canMute;
 		this.refs.keypad.forEach((key) => { key.disabled = !model.canKeypad || this.dtmfPending; });
 		this.refs.mediaStatus.textContent = this.mediaAttached ? _('Browser audio is connected.') : (this.state.mediaStatus === 'ready' ? _('Browser audio connects while the call is being established.') : _('Media backend is not ready. Browser audio remains inactive.'));
+		if (snapshot.audio_policy) {
+			const backend = snapshot.media_backend === 'uac' ? _('Native UAC') :
+				(snapshot.media_backend === 'serial_pcm' ? _('Native PCM') : _('Media not ready'));
+			const reason = snapshot.media_backend === 'serial_pcm' &&
+				['uac_unavailable', 'uac_unsupported'].includes(snapshot.fallback_reason) ?
+				` (${_('UAC unavailable; using native PCM')})` : '';
+			this.refs.mediaStatus.textContent += ` ${backend}${reason}`;
+		}
 		this.refs.mediaAction.disabled = this.state.mediaStatus !== 'ready' || !model.enabled || Boolean(this.mediaStartRequest) || this.mediaAttached;
 		this.refs.mediaAction.textContent = this.state.mediaPermission === 'denied' ? _('Retry browser audio') : (this.media.hasAudio() ? _('Resume browser audio') : _('Allow browser audio'));
 		this.refs.permission.textContent = this.state.mediaPermission === 'denied' ? _('Microphone permission was denied. Allow it in the browser and try again.') : (this.state.mediaPermission === 'granted' ? _('Microphone permission is active.') : _('No microphone permission has been requested.'));
@@ -452,7 +485,17 @@ return view.extend({
 	},
 
 	async render() {
-		const serviceForm = E('div', {}, await this.createServiceMap().render());
+		const selector = E('select', { class: 'cbi-input-select', change: async (event) => {
+            this.closeMedia();
+            this.selectedModem = event.target.value;
+            rpc.selectModem(this.selectedModem);
+            this.state = reducer.initialState();
+            this.capabilityPending = true;
+            await this.refresh(); await this.refreshHistory();
+            serviceMapNode.replaceChildren(await this.createServiceMap().render());
+        } }, (this.modems || []).map(m => E('option', {value:m.modem_id}, [m.modem_id])));
+        const serviceMapNode = E('div', {}, [await this.createServiceMap().render()]);
+        const serviceForm = E('div', {}, [E('label', {}, [ _('Local modem'), selector ]), serviceMapNode]);
 		surface.build(this, serviceForm);
 		this.updateView();
 		this.updateHistory();

@@ -23,7 +23,7 @@
 #define SAFETY_JOURNAL "/var/lib/qmodem_voip/modem-safety.journal"
 #define UCI_PROGRAM "/sbin/uci"
 #define ADB_UNLOCK_HELPER "/usr/bin/qmodem_voip_adb_unlock"
-#define ADB_PROGRAM "/usr/bin/adb"
+#define ADB_PROGRAM "/usr/lib/qmodem_voip/adb_selected.sh"
 #define QMODEM_VOIP_ACTIVATION_ATTEMPTS 18
 #define QMODEM_VOIP_ACTIVATION_RETRY_MS 10000
 
@@ -101,19 +101,9 @@ int qmodem_voip_prepare_adb(const struct qmodem_voip_modem_profile *profile)
 
 int qmodem_voip_prepare_media_gate(const struct qmodem_voip_modem_profile *profile)
 {
-	pid_t child;
-
-	if (!profile || !profile->voice_server_media_gate)
-		return 0;
-	child = fork();
-	if (child < 0)
-		return -1;
-	if (child == 0) {
-		execl(ADB_UNLOCK_HELPER, ADB_UNLOCK_HELPER, "install-media-gate",
-			(char *)NULL);
-		_exit(127);
-	}
-	return wait_program(child);
+	/* Old injection profiles are intentionally unsupported. Native RM520
+	 * audio must work with the vendor voice-server and no ADB dependency. */
+	return profile && profile->voice_server_media_gate ? -1 : 0;
 }
 
 static int resolve_at_port(char port[QMODEM_VOIP_AT_PORT_SIZE])
@@ -295,7 +285,7 @@ static void restart_voice_server(struct qmodem_voip_context *app)
 static int journal_enabled(void)
 {
 	char line[128];
-	FILE *file = fopen(SAFETY_JOURNAL, "r");
+	FILE *file = fopen(qmodem_voip_ctxt.journal_path[0] ? qmodem_voip_ctxt.journal_path : SAFETY_JOURNAL, "r");
 	if (!file)
 		return 0;
 	while (fgets(line, sizeof(line), file))
@@ -326,9 +316,9 @@ static int set_application_enabled(int enabled)
 	if (child < 0)
 		return -1;
 	if (child == 0) {
-		char *const arguments[] = { "uci", "set",
-			enabled ? "qmodem_voip.main.enabled=1" :
-				"qmodem_voip.main.enabled=0", NULL };
+		char option[160];
+		snprintf(option,sizeof(option),"qmodem_voip.%s.enabled=%d",qmodem_voip_ctxt.group[0] ? qmodem_voip_ctxt.group : "main",enabled);
+		char *const arguments[] = { "uci", "set", option, NULL };
 		execv(UCI_PROGRAM, arguments);
 		_exit(127);
 	}
@@ -428,6 +418,8 @@ void qmodem_voip_cancel_serial_prepare(void)
 void qmodem_voip_add_redacted_status(struct blob_buf *buffer,
 					const struct qmodem_voip_call *call)
 {
+	blobmsg_add_string(buffer, "modem_id", qmodem_voip_ctxt.modem_id);
+	blobmsg_add_string(buffer, "group", qmodem_voip_ctxt.group);
 	blobmsg_add_string(buffer, "state", qmodem_voip_state_name(call->state));
 	blobmsg_add_string(buffer, "origin",
 			   qmodem_voip_endpoint_name(call->origin));
@@ -676,6 +668,7 @@ enum qmodem_voip_activation_result {
 
 static void release_runtime(struct qmodem_voip_context *app)
 {
+	app->native_media_fault_pending = 0;
 	uloop_timeout_cancel(&app->browser_timer);
 	qmodem_voip_browser_media_stop(&app->browser);
 	qmodem_voip_rtp_release(&app->rtp);
@@ -701,11 +694,25 @@ static int activate_runtime(struct qmodem_voip_context *app)
 		syslog(LOG_ERR, "voice-server media gate installation failed");
 		return QMODEM_VOIP_ACTIVATION_FAILED;
 	}
-	if (run_safety("enable", 0) != 0)
-		return QMODEM_VOIP_ACTIVATION_FAILED;
+	result = run_safety("enable", 0);
 	qmodem_voip_profile_select(&app->media.profile, QMODEM_VOIP_PROFILE_PATH);
-	if (qmodem_voip_media_engine_start(&app->media) != 0) {
-		(void)run_safety("disable", 0);
+	if (result != 0) return QMODEM_VOIP_ACTIVATION_FAILED;
+	result = qmodem_voip_media_engine_start(&app->media);
+	if (result == -2 && !strcmp(app->media.profile.model, "RM520N-GL") &&
+	    !strcmp(app->media.profile.audio_policy, "auto") &&
+	    !strcmp(app->media.profile.method, "uac") && run_safety("fallback", 0) == 0) {
+		qmodem_voip_profile_select(&app->media.profile, QMODEM_VOIP_PROFILE_PATH);
+		result = qmodem_voip_media_engine_start(&app->media);
+	}
+	if (result != 0) {
+		/* Keep native failure state/budgets; automatic disable would erase the
+		 * transaction and cause another USB reboot on every activation retry. */
+		if (strcmp(app->media.profile.model, "RM520N-GL"))
+			(void)run_safety("disable", 0);
+		else {
+			(void)run_safety("fail", 0);
+			qmodem_voip_profile_select(&app->media.profile, QMODEM_VOIP_PROFILE_PATH);
+		}
 		return QMODEM_VOIP_ACTIVATION_FAILED;
 	}
 	qmodem_voip_call_set_enabled(&app->call, 1);
@@ -721,6 +728,51 @@ static int activate_runtime(struct qmodem_voip_context *app)
 	uloop_timeout_set(&app->browser_timer, 20);
 	qmodem_voip_publish_event(&app->call, "enabled", app);
 	return QMODEM_VOIP_ACTIVATION_READY;
+}
+
+int qmodem_voip_native_media_fault(void)
+{
+	struct qmodem_voip_context *app = &qmodem_voip_ctxt;
+	int result;
+	if (!app->media.alsa_io_failed || strcmp(app->media.profile.model, "RM520N-GL")) return 0;
+	if (!app->native_media_fault_pending) {
+		app->native_media_fault_pending = 1;
+		if (app->call.state != QMODEM_VOIP_IDLE) {
+			/* Publish FAULT first so SIP terminates its dialog, then reconcile
+			 * the cellular call. USB/audio changes require confirmed idle. */
+			qmodem_voip_issue_at("AT+CHUP", app);
+			app->call.state = QMODEM_VOIP_FAULT;
+			qmodem_voip_call_touch(&app->call);
+			qmodem_voip_publish_event(&app->call, "media_fault", app);
+			(void)qmodem_voip_start_recovery(&app->call, qmodem_voip_issue_at, app);
+		}
+	}
+	if (app->call.state != QMODEM_VOIP_IDLE) return 1;
+	release_runtime(app);
+	result = run_safety("fallback", 0);
+	qmodem_voip_profile_select(&app->media.profile, QMODEM_VOIP_PROFILE_PATH);
+	if (!result) result = qmodem_voip_media_engine_start(&app->media);
+	if (!result) {
+		/* USB composition changes may renumber AT ports. Reconcile through
+		 * run_at(), which selects the newly discovered port and event epoch. */
+		app->command_failed = 0;
+		result = qmodem_voip_start_recovery(&app->call, qmodem_voip_issue_at, app);
+		if (app->command_failed) result = -1;
+	}
+	app->native_media_fault_pending = 0;
+	if (result != 0) {
+		release_runtime(app);
+		(void)run_safety("fail", 0);
+		qmodem_voip_profile_select(&app->media.profile, QMODEM_VOIP_PROFILE_PATH);
+		qmodem_voip_call_set_enabled(&app->call, 0);
+		app->call.state = QMODEM_VOIP_FAULT;
+		app->start_enabled = 0;
+		qmodem_voip_publish_event(&app->call, "media_fault", app);
+	} else {
+		qmodem_voip_publish_event(&app->call, "media_recovered", app);
+		uloop_timeout_set(&app->browser_timer, 20);
+	}
+	return 1;
 }
 
 static void schedule_modem_reenumeration(struct qmodem_voip_context *app)
@@ -799,6 +851,32 @@ static int enable_method(struct ubus_context *ubus, struct ubus_object *object,
 	return qmodem_voip_reply_ok_snapshot(ubus, request);
 }
 
+static int reprobe_audio_method(struct ubus_context *ubus, struct ubus_object *object,
+		struct ubus_request_data *request, const char *method, struct blob_attr *message)
+{
+	struct qmodem_voip_context *app = &qmodem_voip_ctxt;
+	(void)object; (void)method; (void)message;
+	if (strcmp(app->media.profile.model, "RM520N-GL") ||
+	    (app->call.state != QMODEM_VOIP_IDLE && app->call.state != QMODEM_VOIP_DISABLED &&
+	     app->call.state != QMODEM_VOIP_FAULT))
+		return qmodem_voip_reply_status(ubus, request, UBUS_STATUS_NOT_SUPPORTED,
+			"busy", "audio probe requires an idle RM520N-GL");
+	if (set_application_enabled(1) != 0)
+		return qmodem_voip_reply_status(ubus, request, UBUS_STATUS_UNKNOWN_ERROR,
+			"config_failed", "application enable could not be persisted");
+	release_runtime(app);
+	qmodem_voip_call_set_enabled(&app->call, 0);
+	if (run_safety("reprobe", 0) != 0 || activate_runtime(app) != QMODEM_VOIP_ACTIVATION_READY) {
+		app->start_enabled = 0;
+		(void)set_application_enabled(0);
+		qmodem_voip_profile_select(&app->media.profile, QMODEM_VOIP_PROFILE_PATH);
+		return qmodem_voip_reply_status(ubus, request, UBUS_STATUS_NOT_SUPPORTED,
+			"media_not_ready", "native audio probe failed");
+	}
+	app->start_enabled = 1;
+	return qmodem_voip_reply_ok_snapshot(ubus, request);
+}
+
 static int disable_method(struct ubus_context *ubus, struct ubus_object *object,
 			  struct ubus_request_data *request, const char *method,
 			  struct blob_attr *message)
@@ -807,6 +885,11 @@ static int disable_method(struct ubus_context *ubus, struct ubus_object *object,
 	(void)object;
 	(void)method;
 	(void)message;
+	if (!strcmp(app->media.profile.model, "RM520N-GL") &&
+	    app->call.state != QMODEM_VOIP_IDLE && app->call.state != QMODEM_VOIP_DISABLED &&
+	    app->call.state != QMODEM_VOIP_FAULT)
+		return qmodem_voip_reply_status(ubus, request, UBUS_STATUS_NOT_SUPPORTED,
+			"busy", "audio changes require an idle modem");
 	app->command_failed = 0;
 	if (set_application_enabled(0) != 0)
 		return qmodem_voip_reply_status(ubus, request, UBUS_STATUS_UNKNOWN_ERROR,
@@ -881,7 +964,7 @@ static int call_history_method(struct ubus_context *ubus,
 	(void)object;
 	(void)method;
 	(void)message;
-	history = qmodem_voip_call_history_load(QMODEM_VOIP_CALL_HISTORY_PATH);
+	history = qmodem_voip_call_history_load(qmodem_voip_ctxt.history_path[0] ? qmodem_voip_ctxt.history_path : QMODEM_VOIP_CALL_HISTORY_PATH);
 	if (!history)
 		return qmodem_voip_reply_status(ubus, request,
 			UBUS_STATUS_UNKNOWN_ERROR, "history_unavailable",
@@ -912,7 +995,7 @@ void qmodem_voip_publish_event(const struct qmodem_voip_call *call,
 	struct qmodem_voip_completed_call completed;
 	struct blob_buf buffer = { 0 };
 	if (qmodem_voip_call_get_completed(&app->call, &completed)) {
-		if (qmodem_voip_call_history_append(QMODEM_VOIP_CALL_HISTORY_PATH,
+		if (qmodem_voip_call_history_append((qmodem_voip_ctxt.history_path[0] ? qmodem_voip_ctxt.history_path : QMODEM_VOIP_CALL_HISTORY_PATH),
 			&completed) == 0)
 			qmodem_voip_call_ack_completed(&app->call);
 		else
@@ -1010,9 +1093,10 @@ void at_line_event(struct ubus_context *ubus,
 	if (values[5])
 		command_id = blobmsg_get_u64(values[5]);
 	correlation = values[4] ? blobmsg_get_string(values[4]) : NULL;
-	if (!values[5] || command_id == 0 ||
-	    qmodem_voip_correlation_parse(correlation) == QMODEM_VOIP_CORR_IDLE)
-		return;
+	/* Sequence numbers cover every line on the selected port, including
+	 * echoes and unsolicited lines. Filtering those here invents gaps and
+	 * can reconcile an answered call back to idle. The call reducer filters
+	 * other ports and deduplicates the matching URC notification. */
 	app->command_failed = 0;
 	(void)qmodem_voip_line(&app->call, blobmsg_get_string(values[0]),
 			       blobmsg_get_u64(values[1]), blobmsg_get_u64(values[2]),
@@ -1132,6 +1216,7 @@ void qmodem_voip_call_timer(struct uloop_timeout *timeout)
 static const struct ubus_method methods[] = {
 	UBUS_METHOD_NOARG("status", status_method),
 	UBUS_METHOD_NOARG("capabilities", capabilities_method),
+	UBUS_METHOD_NOARG("reprobe_audio", reprobe_audio_method),
 	UBUS_METHOD_NOARG("enable", enable_method),
 	UBUS_METHOD_NOARG("disable", disable_method),
 	UBUS_METHOD("originate", action_method, action_policy),
